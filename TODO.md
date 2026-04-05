@@ -1,21 +1,21 @@
 # Kronos 全局 TODO
 
-> 最后更新：2026-04-05
+> 最后更新：2026-04-06
 > 状态标记：⬜ 未开始 | 🔄 进行中 | ✅ 已完成 | ⏸️ 阻塞
 
 ---
 
 ## 总览
 
-| Phase | 模块 | 任务组数 | 任务数 | 状态 |
-|---|---|---|---|---|
-| Global | global-code-standards | 3 | 13 | 🔄 |
-| Global | global-module-contracts | 4 | 13 | 🔄 |
-| Global | global-release-workflow | 4 | 13 | 🔄 |
-| P1 | p1-data-layer | 9 | 55 | 🔄 |
-| P1 | p1-factor-platform | 7 | 49 | ⬜ |
-| P1 | p1-backtest-engine | 8 | 40 | ⬜ |
-| P2 | p2-experiment-management | 6 | 22 | ⬜ |
+| Phase | 模块 | 已完成/总数 | 状态 |
+|---|---|---|---|
+| Global | global-code-standards | 8/12 | 🔄 |
+| Global | global-module-contracts | 4/11 | 🔄 |
+| Global | global-release-workflow | 4/13 | 🔄 |
+| P1 | p1-data-layer | 50/59 | 🔄 仅剩验收 |
+| P1 | p1-factor-platform | 0/57 | ⬜ |
+| P1 | p1-backtest-engine | 0/42 | ⬜ |
+| P2 | p2-experiment-management | 0/19 | ⬜ |
 | P2 | p2-factor-families | — | 待写 | ⬜ |
 | P2 | p2-signal-diagnostics | — | 待写 | ⬜ |
 | P2 | p2-walkforward | — | 待写 | ⬜ |
@@ -187,14 +187,14 @@ Global 三个模块和 P1 三个模块之间有依赖关系，推荐按以下顺
 - [x] P1-DL-6.4 实现 OI 历史拉取
 - [x] P1-DL-6.5 实现重试 + 指数退避
 - [x] P1-DL-6.6 实现请求间隔控制
-- [ ] P1-DL-6.7 实现 raw 层存储
+- [x] P1-DL-6.7 实现 raw 层存储
 - [x] P1-DL-6.8 编写 adapter 单元测试
 
 ### P1-DL-7. 数据同步管线
 - [x] P1-DL-7.1 实现 sync.py：完整管线
 - [x] P1-DL-7.2 实现增量同步
-- [ ] P1-DL-7.3 实现缺口检测
-- [ ] P1-DL-7.4 编写同步管线集成测试
+- [x] P1-DL-7.3 实现缺口检测
+- [x] P1-DL-7.4 编写同步管线集成测试
 
 ### P1-DL-8. CLI 命令
 - [x] P1-DL-8.1 实现 cli/main.py：Typer 应用骨架
@@ -202,7 +202,7 @@ Global 三个模块和 P1 三个模块之间有依赖关系，推荐按以下顺
 - [x] P1-DL-8.3 实现同步进度显示
 - [x] P1-DL-8.4 实现 `kronos data status` 命令
 - [x] P1-DL-8.5 实现错误处理
-- [ ] P1-DL-8.6 编写 CLI 集成测试
+- [x] P1-DL-8.6 编写 CLI 集成测试
 
 ### P1-DL-9. 验收验证
 - [ ] P1-DL-9.1 端到端验证：拉取 BTCUSDT、ETHUSDT、SOLUSDT

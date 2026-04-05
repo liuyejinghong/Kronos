@@ -10,7 +10,7 @@ import pytest
 
 from kronos.common.errors import DataError
 from kronos.data.storage.parquet_store import write_partition
-from kronos.data.storage.query import coverage, load, load_universe
+from kronos.data.storage.query import coverage, detect_gaps, load, load_universe
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -162,3 +162,125 @@ class TestCoverage:
         _write_test_data(tmp_path)
         infos = coverage("BTCUSDT", base_path=tmp_path)  # defaults: klines_1m, funding, oi
         assert len(infos) == 1  # only klines_1m has data
+
+    def test_coverage_reports_gaps(self, tmp_path: Path) -> None:
+        """Coverage should include gap info when gaps exist."""
+        base = 1709251200000
+        # 10 bars, then skip 5, then 10 more
+        times_a = [base + i * 60_000 for i in range(10)]
+        times_b = [base + (i + 15) * 60_000 for i in range(10)]
+        all_times = times_a + times_b
+        n = len(all_times)
+        now = int(time.time() * 1000)
+        table = pa.table({
+            "event_time": pa.array(all_times, type=pa.int64()),
+            "available_at": pa.array([t + 60_000 for t in all_times], type=pa.int64()),
+            "ingested_at": pa.array([now] * n, type=pa.int64()),
+            "symbol": ["BTCUSDT"] * n,
+            "open": pa.array([67000.0] * n, type=pa.float64()),
+            "high": pa.array([67500.0] * n, type=pa.float64()),
+            "low": pa.array([66800.0] * n, type=pa.float64()),
+            "close": pa.array([67200.0] * n, type=pa.float64()),
+            "volume": pa.array([100.0] * n, type=pa.float64()),
+        })
+        write_partition(table, tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+        infos = coverage("BTCUSDT", base_path=tmp_path, datasets=["klines_1m"])
+        assert len(infos) == 1
+        assert len(infos[0].gaps) == 1
+
+
+class TestDetectGaps:
+    """Tests for gap detection logic."""
+
+    def test_no_gaps_in_continuous_data(self, tmp_path: Path) -> None:
+        _write_test_data(tmp_path, n=60)
+        gaps = detect_gaps("BTCUSDT", "klines_1m", base_path=tmp_path)
+        assert gaps == []
+
+    def test_detects_gap_in_klines(self, tmp_path: Path) -> None:
+        base = 1709251200000
+        # 10 bars, skip 5 minutes, then 10 more bars
+        times_a = [base + i * 60_000 for i in range(10)]
+        times_b = [base + (i + 15) * 60_000 for i in range(10)]
+        all_times = times_a + times_b
+        n = len(all_times)
+        now = int(time.time() * 1000)
+        table = pa.table({
+            "event_time": pa.array(all_times, type=pa.int64()),
+            "available_at": pa.array([t + 60_000 for t in all_times], type=pa.int64()),
+            "ingested_at": pa.array([now] * n, type=pa.int64()),
+            "symbol": ["BTCUSDT"] * n,
+            "open": pa.array([67000.0] * n, type=pa.float64()),
+            "high": pa.array([67500.0] * n, type=pa.float64()),
+            "low": pa.array([66800.0] * n, type=pa.float64()),
+            "close": pa.array([67200.0] * n, type=pa.float64()),
+            "volume": pa.array([100.0] * n, type=pa.float64()),
+        })
+        write_partition(table, tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+
+        gaps = detect_gaps("BTCUSDT", "klines_1m", base_path=tmp_path)
+        assert len(gaps) == 1
+        gap_start, gap_end = gaps[0]
+        # Gap should be between last bar of first chunk and first bar of second chunk
+        assert gap_start == times_a[-1] + 60_000
+        assert gap_end == times_b[0] - 60_000
+
+    def test_ignores_gaps_before_onboard_date(self, tmp_path: Path) -> None:
+        base = 1709251200000
+        onboard = base + 10 * 60_000  # Onboard at bar 10
+        # Gap at bars 5-9 (before onboard), continuous after onboard
+        times_a = [base + i * 60_000 for i in range(5)]
+        times_b = [base + (i + 10) * 60_000 for i in range(20)]
+        all_times = times_a + times_b
+        n = len(all_times)
+        now = int(time.time() * 1000)
+        table = pa.table({
+            "event_time": pa.array(all_times, type=pa.int64()),
+            "available_at": pa.array([t + 60_000 for t in all_times], type=pa.int64()),
+            "ingested_at": pa.array([now] * n, type=pa.int64()),
+            "symbol": ["BTCUSDT"] * n,
+            "open": pa.array([67000.0] * n, type=pa.float64()),
+            "high": pa.array([67500.0] * n, type=pa.float64()),
+            "low": pa.array([66800.0] * n, type=pa.float64()),
+            "close": pa.array([67200.0] * n, type=pa.float64()),
+            "volume": pa.array([100.0] * n, type=pa.float64()),
+        })
+        write_partition(table, tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+
+        gaps = detect_gaps(
+            "BTCUSDT", "klines_1m",
+            base_path=tmp_path,
+            onboard_date=onboard,
+        )
+        assert gaps == []
+
+    def test_no_data_returns_empty(self, tmp_path: Path) -> None:
+        gaps = detect_gaps("BTCUSDT", "klines_1m", base_path=tmp_path)
+        assert gaps == []
+
+    def test_unknown_dataset_returns_empty(self, tmp_path: Path) -> None:
+        gaps = detect_gaps("BTCUSDT", "unknown_dataset", base_path=tmp_path)
+        assert gaps == []
+
+    def test_detects_gap_in_funding(self, tmp_path: Path) -> None:
+        """Funding rate has 8h intervals."""
+        base = 1709251200000
+        interval = 28_800_000  # 8 hours
+        # 3 records, skip 1 (8h gap), then 3 more
+        times_a = [base + i * interval for i in range(3)]
+        times_b = [base + (i + 4) * interval for i in range(3)]
+        all_times = times_a + times_b
+        n = len(all_times)
+        now = int(time.time() * 1000)
+        table = pa.table({
+            "event_time": pa.array(all_times, type=pa.int64()),
+            "available_at": pa.array(all_times, type=pa.int64()),
+            "ingested_at": pa.array([now] * n, type=pa.int64()),
+            "symbol": ["BTCUSDT"] * n,
+            "funding_rate": pa.array([0.0001] * n, type=pa.float64()),
+            "mark_price": pa.array([67000.0] * n, type=pa.float64()),
+        })
+        write_partition(table, tmp_path, "BTCUSDT", "funding", 2024, 3)
+
+        gaps = detect_gaps("BTCUSDT", "funding", base_path=tmp_path)
+        assert len(gaps) == 1

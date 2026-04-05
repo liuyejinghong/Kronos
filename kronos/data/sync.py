@@ -28,20 +28,20 @@ log = get_logger("kronos.data.sync")
 
 
 def _save_raw(
-    data: list[Any],
+    data: list[dict[str, Any]],
     base_path: Path,
     symbol: str,
     dataset: str,
 ) -> None:
     """Save raw API response as NDJSON for audit trail."""
-    from pathlib import Path as PathCls
+    from pathlib import Path as _Path
 
-    raw_dir = PathCls(base_path) / "raw" / symbol / dataset
+    raw_dir = _Path(base_path) / "raw" / symbol / dataset
     raw_dir.mkdir(parents=True, exist_ok=True)
     timestamp = int(time.time())
     raw_file = raw_dir / f"{timestamp}.ndjson"
 
-    with open(raw_file, "a") as f:
+    with open(raw_file, "w") as f:
         for record in data:
             f.write(json.dumps(record) + "\n")
 
@@ -99,6 +99,8 @@ def sync_klines(
         log.info("sync.no_new_data", symbol=symbol, dataset="klines_1m")
         return 0
 
+    _save_raw(table.to_pylist(), base_path, symbol, "klines_1m")
+
     paths = write_records_partitioned(
         table, base_path, symbol, "klines_1m", CANDLE_DEDUP_KEY,
     )
@@ -143,6 +145,8 @@ def sync_funding(
         log.info("sync.no_new_data", symbol=symbol, dataset="funding")
         return 0
 
+    _save_raw(table.to_pylist(), base_path, symbol, "funding")
+
     paths = write_records_partitioned(
         table, base_path, symbol, "funding", FUNDING_DEDUP_KEY,
     )
@@ -186,6 +190,8 @@ def sync_oi(
     if n_rows == 0:
         log.info("sync.no_new_data", symbol=symbol, dataset="oi")
         return 0
+
+    _save_raw(table.to_pylist(), base_path, symbol, "oi")
 
     paths = write_records_partitioned(
         table, base_path, symbol, "oi", OI_DEDUP_KEY,

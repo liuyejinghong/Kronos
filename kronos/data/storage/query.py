@@ -28,6 +28,13 @@ TIMEFRAME_MINUTES: dict[str, int] = {
     "1d": 1440,
 }
 
+# Expected interval between consecutive records per dataset (in ms)
+DATASET_INTERVAL_MS: dict[str, int] = {
+    "klines_1m": 60_000,       # 1 minute
+    "funding": 28_800_000,     # 8 hours
+    "oi": 300_000,             # 5 minutes
+}
+
 
 def _parse_datetime_to_ms(value: str | int | None) -> int | None:
     """Convert a datetime string or epoch-ms to epoch-ms."""
@@ -190,11 +197,87 @@ def load_universe(
     return result
 
 
+def detect_gaps(
+    symbol: str,
+    dataset: str,
+    *,
+    base_path: Path,
+    onboard_date: int | None = None,
+) -> list[tuple[int, int]]:
+    """Detect time gaps in a dataset for a symbol.
+
+    Scans event_time timestamps for missing intervals based on the
+    expected frequency for the dataset type. Uses onboard_date to
+    avoid false positives before the symbol was listed.
+
+    Args:
+        symbol: Trading symbol.
+        dataset: Dataset name (klines_1m, funding, oi).
+        base_path: Base data directory.
+        onboard_date: Symbol listing date (epoch-ms). Gaps before
+            this date are ignored.
+
+    Returns:
+        List of (gap_start_ms, gap_end_ms) tuples representing
+        missing data intervals.
+    """
+    interval_ms = DATASET_INTERVAL_MS.get(dataset)
+    if interval_ms is None:
+        return []
+
+    glob = _glob_pattern(base_path, symbol, dataset)
+    con = duckdb.connect()
+    try:
+        sql = f"""
+            SELECT event_time
+            FROM read_parquet('{glob}', union_by_name=true)
+            ORDER BY event_time
+        """
+        result = con.execute(sql).fetchall()
+    except duckdb.IOException:
+        return []
+    finally:
+        con.close()
+
+    if len(result) < 2:
+        return []
+
+    timestamps = [int(row[0]) for row in result]
+
+    # Apply onboard_date filter
+    start_from = onboard_date if onboard_date is not None else timestamps[0]
+
+    # Allow up to 2x the expected interval before flagging a gap.
+    # This avoids false positives from minor jitter (e.g. funding
+    # settlement delays, OI snapshot timing).
+    threshold = interval_ms * 2
+
+    gaps: list[tuple[int, int]] = []
+    for i in range(1, len(timestamps)):
+        prev, curr = timestamps[i - 1], timestamps[i]
+        if prev < start_from:
+            continue
+        delta = curr - prev
+        if delta >= threshold:
+            gaps.append((prev + interval_ms, curr - interval_ms))
+
+    if gaps:
+        log.info(
+            "gaps.detected",
+            symbol=symbol,
+            dataset=dataset,
+            gap_count=len(gaps),
+        )
+
+    return gaps
+
+
 def coverage(
     symbol: str,
     *,
     base_path: Path,
     datasets: list[str] | None = None,
+    onboard_date: int | None = None,
 ) -> list[CoverageInfo]:
     """Get data coverage info for a symbol.
 
@@ -202,6 +285,8 @@ def coverage(
         symbol: Trading symbol.
         base_path: Base data directory.
         datasets: Datasets to check. Defaults to ["klines_1m", "funding", "oi"].
+        onboard_date: Symbol listing date (epoch-ms). Passed to gap
+            detection to avoid false positives.
 
     Returns:
         List of CoverageInfo, one per dataset.
@@ -232,12 +317,19 @@ def coverage(
         if row is None or row[0] is None:
             continue
 
+        gaps = detect_gaps(
+            symbol, dataset,
+            base_path=base_path,
+            onboard_date=onboard_date,
+        )
+
         results.append(CoverageInfo(
             symbol=symbol,
             dataset=dataset,
             min_event_time=int(row[0]),
             max_event_time=int(row[1]),
             bar_count=int(row[2]),
+            gaps=gaps,
         ))
 
     return results

@@ -71,6 +71,16 @@ class TestSyncKlines:
         assert count == 5
 
     @patch("kronos.data.sync.fetch_klines")
+    def test_saves_raw_ndjson(self, mock_fetch: MagicMock, tmp_path: Path) -> None:
+        mock_fetch.return_value = _make_kline_table(n=3)
+        sync_klines("BTCUSDT", base_path=tmp_path, since=1709251200000)
+        raw_dir = tmp_path / "raw" / "BTCUSDT" / "klines_1m"
+        raw_files = list(raw_dir.glob("*.ndjson"))
+        assert len(raw_files) == 1
+        lines = raw_files[0].read_text().strip().split("\n")
+        assert len(lines) == 3
+
+    @patch("kronos.data.sync.fetch_klines")
     def test_no_data_returns_zero(self, mock_fetch: MagicMock, tmp_path: Path) -> None:
         mock_fetch.return_value = pa.table({
             "event_time": pa.array([], type=pa.int64()),
@@ -98,6 +108,16 @@ class TestSyncFunding:
         count = sync_funding("BTCUSDT", base_path=tmp_path, since=1709251200000)
         assert count == 3
 
+    @patch("kronos.data.sync.fetch_funding_rates")
+    def test_saves_raw_ndjson(self, mock_fetch: MagicMock, tmp_path: Path) -> None:
+        mock_fetch.return_value = _make_funding_table(n=2)
+        sync_funding("BTCUSDT", base_path=tmp_path, since=1709251200000)
+        raw_dir = tmp_path / "raw" / "BTCUSDT" / "funding"
+        raw_files = list(raw_dir.glob("*.ndjson"))
+        assert len(raw_files) == 1
+        lines = raw_files[0].read_text().strip().split("\n")
+        assert len(lines) == 2
+
 
 class TestSyncOI:
     @patch("kronos.data.sync.fetch_open_interest")
@@ -105,6 +125,16 @@ class TestSyncOI:
         mock_fetch.return_value = _make_oi_table()
         count = sync_oi("BTCUSDT", base_path=tmp_path, since=1709251200000)
         assert count == 3
+
+    @patch("kronos.data.sync.fetch_open_interest")
+    def test_saves_raw_ndjson(self, mock_fetch: MagicMock, tmp_path: Path) -> None:
+        mock_fetch.return_value = _make_oi_table(n=2)
+        sync_oi("BTCUSDT", base_path=tmp_path, since=1709251200000)
+        raw_dir = tmp_path / "raw" / "BTCUSDT" / "oi"
+        raw_files = list(raw_dir.glob("*.ndjson"))
+        assert len(raw_files) == 1
+        lines = raw_files[0].read_text().strip().split("\n")
+        assert len(lines) == 2
 
 
 class TestSyncAll:
