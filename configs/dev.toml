@@ -1,0 +1,19 @@
+[runtime]
+mode = "dev"
+data_path = "./data"
+log_level = "DEBUG"
+log_json = false
+
+[data]
+base_path = "./data"
+default_exchange = "binance"
+request_interval_ms = 200
+max_retries = 5
+
+[factor]
+cache_enabled = true
+default_forward_periods = [1, 5, 20]
+
+[backtest]
+fee_bps = 4.0
+slippage_bps = 5.0
