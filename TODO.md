@@ -181,27 +181,27 @@ Global 三个模块和 P1 三个模块之间有依赖关系，推荐按以下顺
 - [x] P1-DL-5.7 编写查询层单元测试
 
 ### P1-DL-6. Binance USDM 数据采集
-- [ ] P1-DL-6.1 实现 binance_usdm.py：Binance USDM adapter
-- [ ] P1-DL-6.2 实现 1m K 线分页拉取
-- [ ] P1-DL-6.3 实现 funding rate 分页拉取
-- [ ] P1-DL-6.4 实现 OI 历史拉取
-- [ ] P1-DL-6.5 实现重试 + 指数退避
-- [ ] P1-DL-6.6 实现请求间隔控制
+- [x] P1-DL-6.1 实现 binance_usdm.py：Binance USDM adapter
+- [x] P1-DL-6.2 实现 1m K 线分页拉取
+- [x] P1-DL-6.3 实现 funding rate 分页拉取
+- [x] P1-DL-6.4 实现 OI 历史拉取
+- [x] P1-DL-6.5 实现重试 + 指数退避
+- [x] P1-DL-6.6 实现请求间隔控制
 - [ ] P1-DL-6.7 实现 raw 层存储
-- [ ] P1-DL-6.8 编写 adapter 单元测试
+- [x] P1-DL-6.8 编写 adapter 单元测试
 
 ### P1-DL-7. 数据同步管线
-- [ ] P1-DL-7.1 实现 sync.py：完整管线
-- [ ] P1-DL-7.2 实现增量同步
+- [x] P1-DL-7.1 实现 sync.py：完整管线
+- [x] P1-DL-7.2 实现增量同步
 - [ ] P1-DL-7.3 实现缺口检测
 - [ ] P1-DL-7.4 编写同步管线集成测试
 
 ### P1-DL-8. CLI 命令
-- [ ] P1-DL-8.1 实现 cli/main.py：Typer 应用骨架
-- [ ] P1-DL-8.2 实现 `kronos data sync` 命令
-- [ ] P1-DL-8.3 实现同步进度显示
-- [ ] P1-DL-8.4 实现 `kronos data status` 命令
-- [ ] P1-DL-8.5 实现错误处理
+- [x] P1-DL-8.1 实现 cli/main.py：Typer 应用骨架
+- [x] P1-DL-8.2 实现 `kronos data sync` 命令
+- [x] P1-DL-8.3 实现同步进度显示
+- [x] P1-DL-8.4 实现 `kronos data status` 命令
+- [x] P1-DL-8.5 实现错误处理
 - [ ] P1-DL-8.6 编写 CLI 集成测试
 
 ### P1-DL-9. 验收验证
