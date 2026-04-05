@@ -13,10 +13,10 @@ build/
 venv/
 
 # Data (local, not tracked)
-data/
-experiments/
-logs/
-reports/
+/data/
+/experiments/
+/logs/
+/reports/
 
 # Parquet temp files
 *.parquet.tmp

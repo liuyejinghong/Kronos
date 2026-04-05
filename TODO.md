@@ -157,28 +157,28 @@ Global 三个模块和 P1 三个模块之间有依赖关系，推荐按以下顺
 - [x] P1-DL-2.7 编写 schema 单元测试
 
 ### P1-DL-3. 市场元数据
-- [ ] P1-DL-3.1 实现 exchange_info.py：Binance exchangeInfo 拉取
-- [ ] P1-DL-3.2 提取 symbol 列表、onboardDate、精度信息
-- [ ] P1-DL-3.3 存储到 exchange_info.parquet
-- [ ] P1-DL-3.4 实现 symbol 有效性验证函数
-- [ ] P1-DL-3.5 编写元数据单元测试
+- [x] P1-DL-3.1 实现 exchange_info.py：Binance exchangeInfo 拉取
+- [x] P1-DL-3.2 提取 symbol 列表、onboardDate、精度信息
+- [x] P1-DL-3.3 存储到 exchange_info.parquet
+- [x] P1-DL-3.4 实现 symbol 有效性验证函数
+- [x] P1-DL-3.5 编写元数据单元测试
 
 ### P1-DL-4. 存储层（月分区 + 原子写入）
-- [ ] P1-DL-4.1 实现 parquet_store.py：月分区 Parquet 写入
-- [ ] P1-DL-4.2 实现分区读取
-- [ ] P1-DL-4.3 实现分区追加（去重 + 排序 + 原子重写）
-- [ ] P1-DL-4.4 实现临时文件清理
-- [ ] P1-DL-4.5 实现目录自动创建
-- [ ] P1-DL-4.6 编写存储层单元测试
+- [x] P1-DL-4.1 实现 parquet_store.py：月分区 Parquet 写入
+- [x] P1-DL-4.2 实现分区读取
+- [x] P1-DL-4.3 实现分区追加（去重 + 排序 + 原子重写）
+- [x] P1-DL-4.4 实现临时文件清理
+- [x] P1-DL-4.5 实现目录自动创建
+- [x] P1-DL-4.6 编写存储层单元测试
 
 ### P1-DL-5. 查询层（DuckDB over Parquet）
-- [ ] P1-DL-5.1 实现 query.py：DuckDB 直接查询 Parquet
-- [ ] P1-DL-5.2 实现 kronos.data.load() API
-- [ ] P1-DL-5.3 实现时间框架重采样
-- [ ] P1-DL-5.4 实现 kronos.data.load_universe() API
-- [ ] P1-DL-5.5 实现 as_of 过滤
-- [ ] P1-DL-5.6 实现覆盖范围查询
-- [ ] P1-DL-5.7 编写查询层单元测试
+- [x] P1-DL-5.1 实现 query.py：DuckDB 直接查询 Parquet
+- [x] P1-DL-5.2 实现 kronos.data.load() API
+- [x] P1-DL-5.3 实现时间框架重采样
+- [x] P1-DL-5.4 实现 kronos.data.load_universe() API
+- [x] P1-DL-5.5 实现 as_of 过滤
+- [x] P1-DL-5.6 实现覆盖范围查询
+- [x] P1-DL-5.7 编写查询层单元测试
 
 ### P1-DL-6. Binance USDM 数据采集
 - [ ] P1-DL-6.1 实现 binance_usdm.py：Binance USDM adapter
