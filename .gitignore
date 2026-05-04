@@ -82,3 +82,6 @@ openspec/
 web/node_modules/
 web/.next/
 pytz.py
+reports/
+logs/
+data/
