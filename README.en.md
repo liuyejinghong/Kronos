@@ -12,8 +12,11 @@ Kronos is a local-first crypto quantitative research system. It provides a compl
 
 ## Quick Start
 
+**Prerequisites**: Python 3.12+, [uv](https://docs.astral.sh/uv/)
+
 ```bash
-git clone git@github.com:liuyejinghong/Kronos.git && cd Kronos
+git clone https://github.com/liuyejinghong/Kronos.git
+cd Kronos
 uv sync --dev
 uv run kronos quickstart
 ```
