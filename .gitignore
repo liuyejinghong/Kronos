@@ -55,3 +55,29 @@ web/*.tsbuildinfo
 *.tsbuildinfo
 .gstack/
 web/reports/
+
+# 个人开发过程文件
+findings.md
+task_plan.md
+progress.md
+
+# Docker
+Dockerfile*
+
+# IDE / 工具
+.claude/
+.deepseek/
+.opencode/
+.omx/
+
+# 截图
+*.png
+*.jpg
+
+# 临时文件
+pytz.py
+
+# OpenSpec（本地规划用）
+openspec/
+web/node_modules/
+web/.next/

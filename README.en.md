@@ -6,9 +6,7 @@
 
 [中文](README.md)
 
-**Kronos** is a local-first crypto quantitative research agent. It reads past research results, selects candidate strategies, proposes hypotheses, invokes deterministic validation tools, produces auditable conclusions, and displays every step in a Web workbench.
-
-> It does not run scheduled reports, trade automatically, or generate daily briefings. It is a **researcher** — asking questions, designing experiments, validating hypotheses, persisting conclusions.
+Kronos is a local-first crypto quantitative research system. It provides a complete research toolchain — from data ingestion to strategy validation — plus an AI agent that actively drives the research process forward.
 
 ---
 
@@ -20,20 +18,20 @@ uv sync --dev
 uv run kronos quickstart
 ```
 
-`quickstart` generates sample data, verifies the system works, and tells you what to do next. For Chinese output: `kronos quickstart --lang zh`.
+`quickstart` generates sample data and verifies the system is functional. For Chinese output: `kronos quickstart --lang zh`.
 
 ---
 
-## What is Kronos
+## What It Does
 
-Kronos re-adapts legacy A-share / futures quantitative strategies for crypto markets. Currently, 12 legacy strategy candidates have completed 90-day crypto backtesting.
-
-**How it works**: read past research → select candidates → propose hypotheses → invoke validation → read evidence → write conclusions → persist memory.
-
-**Current capabilities**:
-- Agent MVP complete, powered by DeepSeek-V4 dual models
-- Web workbench: candidate pool, timeline, reports
-- Full backtest engine, factor validation pipeline, walkforward validation, signal diagnostics
+| Capability | Description |
+|------|------|
+| **Data Pipeline** | Binance USDM ingestion (Klines/Funding/OI), Parquet storage, PIT-safe queries |
+| **Factor Platform** | 17 built-in factors across 5 families, custom factor registration, full validation pipeline, Alphalens integration |
+| **Backtest Engine** | Signal scheduling, cost modeling, Freqtrade cross-validation |
+| **AI Agent** | Multi-role LLM-driven research (DeepSeek-V4), automated hypothesis generation, tool execution, conclusion persistence |
+| **Web Workbench** | Candidate pool dashboard, agent timeline, report reader, model settings, approval center |
+| **Experiment Management** | run_id threading, JSONL ledger, DuckDB queries, knowledge base (SQLite + FTS) |
 
 ---
 
@@ -50,13 +48,25 @@ uv run pytest -m "not e2e"                          # Run tests
 
 ---
 
+## Architecture
+
+```
+Data Layer  (kronos/data)     → Market data ingestion, storage, PIT-safe queries
+Factor Layer (kronos/factor)  → Factor definition, registration, computation, validation
+Research Layer (kronos/research) → Backtesting, walkforward, experiments, knowledge base
+Agent Layer (kronos/agent)    → Multi-role LLM, tool execution, event timeline
+Portfolio Layer (kronos/portfolio) → Position sizing, risk management
+Web Layer  (kronos/web)       → FastAPI backend, Next.js frontend
+```
+
+---
+
 ## Documentation
 
 | Document | Description |
 |------|------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase roadmap and priorities |
+| [`CLAUDE.md`](CLAUDE.md) | Developer guide (commands, architecture, invariants) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase roadmap |
 | [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | Project status dashboard |
-| [`CLAUDE.md`](CLAUDE.md) | Developer guide (architecture, commands, invariants) |
 | [`docs/CODE_REVIEW_20260504.md`](docs/CODE_REVIEW_20260504.md) | Comprehensive code review |
-| [`docs/ACCEPTANCE_20260504_AGENT_MVP_PRODUCT_REVIEW.md`](docs/ACCEPTANCE_20260504_AGENT_MVP_PRODUCT_REVIEW.md) | Product acceptance report |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version changelog |

@@ -6,9 +6,7 @@
 
 [English](README.en.md)
 
-**Kronos** 是一个本地优先的加密货币量化研究 Agent。它能读取历史研究结果、选择候选策略、提出假设、调用确定性验证工具、输出可审计结论——并在 Web 工作台展示每一步。
-
-> 它不是定时任务系统，不会自动交易，也没有每日固定报告。它是一个**研究员**——提出问题、设计实验、验证假设、沉淀结论。
+Kronos 是一个本地优先的加密货币量化研究系统。它提供从数据采集到策略验证的完整研究工具链，并内置了一个能主动推进研究的 AI Agent。
 
 ---
 
@@ -20,20 +18,20 @@ uv sync --dev
 uv run kronos quickstart
 ```
 
-`quickstart` 会自动生成 sample 数据、验证系统可用，并告诉你下一步怎么做。
+`quickstart` 自动生成 sample 数据并验证系统可用。切换到英文：`kronos quickstart --lang en`。
 
 ---
 
-## 这是什么
+## 能做什么
 
-Kronos 把传统 A 股/期货的量化策略资产重新适配到加密货币市场。当前 12 个旧策略候选已完成 90 天 crypto 复验。
-
-**工作方式**：读历史研究结果 → 选候选 → 提出假设 → 调用验证工具 → 读证据 → 写结论 → 沉淀记忆
-
-**当前能力**：
-- Agent MVP 完成，支持 DeepSeek-V4 双模型驱动研究
-- Web 工作台可浏览候选池、时间线、报告
-- 完整回测引擎、因子验证管线、滚动窗口验证、信号诊断
+| 能力 | 说明 |
+|------|------|
+| **数据管线** | Binance USDM 数据拉取（K 线/Funding/OI）、Parquet 分区存储、PIT-safe 查询 |
+| **因子平台** | 17 个内置因子、5 个家族、自定义因子注册、完整验证管线、Alphalens 集成 |
+| **回测引擎** | 信号调度、成本模型、Freqtrade 交叉验证 |
+| **AI Agent** | 多角色 LLM 驱动研究（DeepSeek-V4）、自动假设生成、工具执行、结论沉淀 |
+| **Web 工作台** | 候选池看板、Agent 时间线、报告阅读、模型配置、审批中心 |
+| **实验管理** | run_id 贯穿全链路、JSONL 账本、DuckDB 查询、知识库（SQLite + FTS） |
 
 ---
 
@@ -50,13 +48,25 @@ uv run pytest -m "not e2e"                          # 跑测试
 
 ---
 
-## 文档索引
+## 架构
+
+```
+数据层 (kronos/data)     → 行情采集、存储、PIT-safe 查询
+因子层 (kronos/factor)   → 因子定义、注册、计算、验证、诊断
+研究层 (kronos/research) → 回测、滚动窗口、实验管理、知识库
+Agent 层 (kronos/agent)  → 多角色 LLM、工具执行、事件时间线
+组合层 (kronos/portfolio) → 仓位构建、风险控制
+Web 层  (kronos/web)     → FastAPI 后端、Next.js 前端
+```
+
+---
+
+## 文档
 
 | 文档 | 说明 |
 |------|------|
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 阶段路线图和优先级 |
-| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | 项目总控面板 |
-| [`CLAUDE.md`](CLAUDE.md) | 开发指南（架构、命令、关键约束） |
-| [`docs/CODE_REVIEW_20260504.md`](docs/CODE_REVIEW_20260504.md) | 全量代码审查报告 |
-| [`docs/ACCEPTANCE_20260504_AGENT_MVP_PRODUCT_REVIEW.md`](docs/ACCEPTANCE_20260504_AGENT_MVP_PRODUCT_REVIEW.md) | 产品验收报告 |
+| [`CLAUDE.md`](CLAUDE.md) | 开发指南（命令、架构、关键约束） |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 阶段路线图 |
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | 项目状态总览 |
+| [`docs/CODE_REVIEW_20260504.md`](docs/CODE_REVIEW_20260504.md) | 代码审查报告 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 版本变更记录 |
