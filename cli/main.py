@@ -958,6 +958,24 @@ def _echo_promotion_preflight(
     return ready
 
 
+@agent_app.command("start")
+def agent_start(
+    lang: str | None = _LANG_OPTION,
+    config: str = typer.Option(
+        "configs/dev.toml",
+        help="Path to config file.",
+    ),
+) -> None:
+    """Launch the interactive Agent console."""
+    init_i18n(cli_lang=lang)
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.agent.console import start_agent_console
+
+    start_agent_console(config_path=config)
+
+
 @app.command("quickstart")
 def quickstart(
     lang: str | None = _LANG_OPTION,

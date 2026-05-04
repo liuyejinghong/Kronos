@@ -110,6 +110,211 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "已写入 {bars} 根 K 线到 {path}",
         "en": "Wrote {bars} bars to {path}",
     },
+    # Console REPL
+    "console.banner_title": {
+        "zh": "║         Kronos Agent — 交互模式          ║",
+        "en": "║        Kronos Agent — Interactive        ║",
+    },
+    "console.banner_hint": {
+        "zh": "║    输入数字选择，Ctrl+C 退出             ║",
+        "en": "║    Type a number, Ctrl+C to quit         ║",
+    },
+    "console.env_status": {
+        "zh": "环境状态",
+        "en": "Environment",
+    },
+    "console.data_available": {
+        "zh": "本地数据: {count} 个币种, {bars} 根 K 线",
+        "en": "Local data: {count} symbols, {bars} bars",
+    },
+    "console.synthetic": {
+        "zh": "sample",
+        "en": "sample",
+    },
+    "console.and_more": {
+        "zh": "...及其他 {n} 个币种",
+        "en": "...and {n} more",
+    },
+    "console.no_data": {
+        "zh": "未找到本地数据",
+        "en": "No local data found",
+    },
+    "console.no_data_hint": {
+        "zh": "运行 kronos quickstart 生成 sample 数据，或 kronos data sync 拉取真实行情",
+        "en": "Run kronos quickstart for sample data, or kronos data sync for real data",
+    },
+    "console.model_ready": {
+        "zh": "已配置",
+        "en": "Configured",
+    },
+    "console.model_not_configured": {
+        "zh": "未配置（Agent 研究功能受限）",
+        "en": "Not configured (research features limited)",
+    },
+    "console.past_runs": {
+        "zh": "历史运行: {n} 次",
+        "en": "Past runs: {n}",
+    },
+    "console.no_past_runs": {
+        "zh": "尚无历史运行记录",
+        "en": "No past runs yet",
+    },
+    "console.menu_prompt": {
+        "zh": "你想做什么？",
+        "en": "What would you like to do?",
+    },
+    "console.menu_market": {
+        "zh": "查看可用行情数据",
+        "en": "View available market data",
+    },
+    "console.menu_research": {
+        "zh": "开始一轮研究",
+        "en": "Start a research cycle",
+    },
+    "console.menu_candidates": {
+        "zh": "查看候选策略池",
+        "en": "View candidate strategy pool",
+    },
+    "console.menu_settings": {
+        "zh": "配置模型",
+        "en": "Configure models",
+    },
+    "console.menu_history": {
+        "zh": "查看历史运行",
+        "en": "View run history",
+    },
+    "console.menu_exit": {
+        "zh": "退出",
+        "en": "Exit",
+    },
+    "console.goodbye": {
+        "zh": "再见！",
+        "en": "Goodbye!",
+    },
+    "console.invalid_choice": {
+        "zh": "无效选择，请重试。",
+        "en": "Invalid choice, try again.",
+    },
+    "console.market_title": {
+        "zh": "可用行情数据",
+        "en": "Available Market Data",
+    },
+    "console.market_next": {
+        "zh": "💡 更多币种: kronos data sync --symbols BTCUSDT,ETHUSDT",
+        "en": "💡 More symbols: kronos data sync --symbols BTCUSDT,ETHUSDT",
+    },
+    "console.research_title": {
+        "zh": "开始一轮研究",
+        "en": "Start a Research Cycle",
+    },
+    "console.research_gen_data": {
+        "zh": "未找到数据，正在生成 sample…",
+        "en": "No data found, generating sample…",
+    },
+    "console.research_data_ready": {
+        "zh": "Sample 数据就绪",
+        "en": "Sample data ready",
+    },
+    "console.research_available_symbols": {
+        "zh": "可用币种",
+        "en": "Available symbols",
+    },
+    "console.research_select_symbols": {
+        "zh": "选择币种（逗号分隔，回车默认前三个）",
+        "en": "Select symbols (comma-separated, Enter for default)",
+    },
+    "console.research_using": {
+        "zh": "使用",
+        "en": "Using",
+    },
+    "console.research_goal_prompt": {
+        "zh": "研究目标（可选，回车跳过）",
+        "en": "Research goal (optional, Enter to skip)",
+    },
+    "console.research_confirm": {
+        "zh": "确认",
+        "en": "Confirm",
+    },
+    "console.research_symbols_label": {
+        "zh": "币种",
+        "en": "Symbols",
+    },
+    "console.research_goal_label": {
+        "zh": "目标",
+        "en": "Goal",
+    },
+    "console.research_default_goal": {
+        "zh": "评估候选因子，找出下一轮最值得验证的方向",
+        "en": "Evaluate candidate factors, find next research direction",
+    },
+    "console.research_proceed": {
+        "zh": "开始运行",
+        "en": "Proceed",
+    },
+    "console.research_cancelled": {
+        "zh": "已取消。",
+        "en": "Cancelled.",
+    },
+    "console.research_running": {
+        "zh": "研究运行中",
+        "en": "Research running",
+    },
+    "console.research_failed": {
+        "zh": "研究失败",
+        "en": "Research failed",
+    },
+    "console.research_done": {
+        "zh": "研究完成",
+        "en": "Research complete",
+    },
+    "console.research_evaluated": {
+        "zh": "评估候选",
+        "en": "Evaluated",
+    },
+    "console.research_promoted": {
+        "zh": "晋升",
+        "en": "Promoted",
+    },
+    "console.research_report": {
+        "zh": "报告",
+        "en": "Report",
+    },
+    "console.research_next_hint": {
+        "zh": "下一步: 打开 Web 工作台查看完整报告 → cd web && npm run dev",
+        "en": "Next: Open Web workbench → cd web && npm run dev",
+    },
+    "console.candidates_title": {
+        "zh": "候选策略池",
+        "en": "Candidate Strategy Pool",
+    },
+    "console.candidates_count": {
+        "zh": "共 {n} 个候选策略",
+        "en": "{n} candidate strategies",
+    },
+    "console.candidates_hint": {
+        "zh": "💡 更多详情: 打开 Web 工作台 → 候选池页面",
+        "en": "💡 More details: Open Web workbench → Candidates page",
+    },
+    "console.no_candidates": {
+        "zh": "暂无可研究候选。",
+        "en": "No candidates available.",
+    },
+    "console.settings_title": {
+        "zh": "模型配置",
+        "en": "Model Settings",
+    },
+    "console.model_config_hint": {
+        "zh": "在 Web 设置页或 ~/.kronos/ 中保存 API Key 以启用 Agent 研究",
+        "en": "Save API Key in Web settings or ~/.kronos/ to enable Agent research",
+    },
+    "console.roles_title": {
+        "zh": "Agent 角色",
+        "en": "Agent Roles",
+    },
+    "console.history_title": {
+        "zh": "历史运行",
+        "en": "Run History",
+    },
 }
 
 
