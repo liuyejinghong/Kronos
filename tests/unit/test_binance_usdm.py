@@ -194,3 +194,25 @@ class TestFetchOI:
         table = fetch_open_interest("BTCUSDT", request_interval_ms=0)
         assert table.num_rows == 0
         assert "sum_open_interest" in table.column_names
+
+    @patch("kronos.data.loaders.binance_usdm._request_with_retry")
+    @patch("kronos.data.loaders.binance_usdm._now_ms")
+    def test_pagination_at_limit(self, mock_now: MagicMock, mock_req: MagicMock) -> None:
+        """When first page returns exactly OI_LIMIT (500) records, must paginate."""
+        mock_now.return_value = 1709300000000
+        base_ts = 1709251200000
+        interval = 300_000  # 5m
+
+        # First page: 500 records (triggers pagination)
+        page1 = [_mock_oi_record(base_ts + i * interval) for i in range(500)]
+        # Second page: 200 records (< OI_LIMIT, stops pagination)
+        page2 = [_mock_oi_record(base_ts + (500 + i) * interval) for i in range(200)]
+
+        mock_req.side_effect = [page1, page2]
+
+        table = fetch_open_interest("BTCUSDT", start_time=base_ts, request_interval_ms=0)
+        assert table.num_rows == 700
+        # Verify second call used correct startTime
+        second_call_params = mock_req.call_args_list[1][0][1]
+        expected_start = int(page1[-1]["timestamp"]) + 1
+        assert second_call_params["startTime"] == expected_start

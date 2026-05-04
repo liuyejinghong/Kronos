@@ -29,6 +29,10 @@ class FactorRegistryError(FactorError):
     """Factor registry errors (duplicate registration, not found)."""
 
 
+class FactorVersionError(FactorRegistryError):
+    """Factor version not found or default version not configured."""
+
+
 class BacktestError(KronosError):
     """Errors related to backtesting."""
 

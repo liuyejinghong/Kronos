@@ -48,10 +48,9 @@ def _request_with_retry(
     Raises:
         IngestionError: If all retries fail.
     """
-    # Respect request interval
-    time.sleep(request_interval_ms / 1000)
-
     for attempt in range(max_retries + 1):
+        if attempt > 0:
+            time.sleep(request_interval_ms / 1000)
         try:
             resp = httpx.get(url, params=params, timeout=30.0)
 
@@ -342,6 +341,7 @@ def fetch_open_interest(
         if end_time is not None:
             params["endTime"] = end_time
 
+        data: list[dict[str, Any]] = []
         try:
             data = _request_with_retry(
                 url,
@@ -350,7 +350,8 @@ def fetch_open_interest(
                 request_interval_ms=request_interval_ms,
             )
         except IngestionError:
-            log.warning("oi.history_limited", symbol=symbol)
+            if not all_rows:
+                log.warning("oi.history_limited", symbol=symbol)
             break
 
         if not data:

@@ -17,3 +17,27 @@ default_forward_periods = [1, 5, 20]
 [backtest]
 fee_bps = 4.0
 slippage_bps = 5.0
+
+[agent.llm.deepseek]
+base_url = "https://api.deepseek.com"
+model_name = ""
+
+[research.backtest]
+timeframe = "1h"
+rebalance_frequency = "1h"
+mode = "market_neutral"
+top_n = 20
+fee_bps = 4.0
+slippage_bps = 5.0
+apply_funding = false
+signal_forward_fill = false
+execution_delay_bars = 1
+worst_period_window = 5
+universe = []
+
+[research.freqtrade_bridge]
+final_equity_abs_diff = 0.05
+max_drawdown_abs_diff = 0.05
+sharpe_abs_diff = 0.5
+trade_count_abs_diff = 10
+equity_curve_mae = 0.05

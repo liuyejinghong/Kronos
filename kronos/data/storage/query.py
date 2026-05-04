@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 log = get_logger("kronos.data.storage.query")
+
+_SAFE_IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
 
 # Valid resample timeframes and their minute multipliers
 TIMEFRAME_MINUTES: dict[str, int] = {
@@ -36,6 +39,19 @@ DATASET_INTERVAL_MS: dict[str, int] = {
 }
 
 
+def _parquet_files_exist(base_path: Path, symbol: str, dataset: str) -> bool:
+    """Check whether any parquet files exist for the given symbol/dataset."""
+    pattern = base_path / "curated" / symbol / dataset / "**" / "*.parquet"
+    return any(pattern.parent.rglob("*.parquet")) if pattern.parent.exists() else False
+
+
+def _validate_identifier(value: str, label: str) -> str:
+    """Reject identifiers containing characters unsafe for filesystem/SQL use."""
+    if not value or not _SAFE_IDENTIFIER.match(value):
+        raise DataError(f"Invalid {label}: {value!r}")
+    return value
+
+
 def _parse_datetime_to_ms(value: str | int | None) -> int | None:
     """Convert a datetime string or epoch-ms to epoch-ms."""
     if value is None:
@@ -48,6 +64,8 @@ def _parse_datetime_to_ms(value: str | int | None) -> int | None:
 
 def _glob_pattern(base_path: Path, symbol: str, dataset: str) -> str:
     """Build a glob pattern for DuckDB to scan Parquet files."""
+    _validate_identifier(symbol, "symbol")
+    _validate_identifier(dataset, "dataset")
     return str(base_path / "curated" / symbol / dataset / "**" / "*.parquet")
 
 
@@ -81,6 +99,8 @@ def load(
     if timeframe not in TIMEFRAME_MINUTES:
         raise DataError(f"Invalid timeframe: {timeframe}. Valid: {list(TIMEFRAME_MINUTES.keys())}")
 
+    _validate_identifier(symbol, "symbol")
+    _validate_identifier(dataset, "dataset")
     glob = _glob_pattern(base_path, symbol, dataset)
     since_ms = _parse_datetime_to_ms(since)
     until_ms = _parse_datetime_to_ms(until)
@@ -141,9 +161,13 @@ def load(
 
         result: pd.DataFrame = con.execute(sql, params).fetchdf()
     except duckdb.IOException:
-        # No parquet files found
-        log.warning("query.no_data", symbol=symbol, dataset=dataset)
-        return pd.DataFrame()
+        if not _parquet_files_exist(base_path, symbol, dataset):
+            log.warning("query.no_data", symbol=symbol, dataset=dataset)
+            return pd.DataFrame()
+        raise DataError(
+            f"Failed to read parquet data for {symbol}/{dataset}: "
+            f"files exist but DuckDB could not read them (possible corruption)"
+        )
     finally:
         con.close()
 

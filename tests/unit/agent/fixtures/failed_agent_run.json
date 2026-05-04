@@ -1,0 +1,34 @@
+{
+  "run_id": "fixture-failed-run",
+  "status": "failed",
+  "goal_zh": "验证趋势回踩候选是否值得进入改造。",
+  "current_task_id": "task-tool",
+  "tasks": [
+    {
+      "run_id": "fixture-failed-run",
+      "task_id": "task-tool",
+      "status": "failed",
+      "title_zh": "执行确定性验证工具",
+      "candidate_id": "trend_pullback_entry",
+      "lifecycle_state": "validating",
+      "artifact_paths": [],
+      "error_ref": {
+        "error_code": "tool_failed",
+        "message_zh": "确定性工具运行失败。",
+        "traceback_ref": "errors/fixture-failed-run/tool_failed.trace",
+        "recoverable": true,
+        "user_action_zh": "检查数据覆盖后重试。"
+      },
+      "metadata": {}
+    }
+  ],
+  "artifact_paths": [],
+  "error_ref": {
+    "error_code": "tool_failed",
+    "message_zh": "确定性工具运行失败。",
+    "traceback_ref": "errors/fixture-failed-run/tool_failed.trace",
+    "recoverable": true,
+    "user_action_zh": "检查数据覆盖后重试。"
+  },
+  "metadata": {}
+}

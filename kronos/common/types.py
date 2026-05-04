@@ -96,6 +96,7 @@ class Constraints:
     """Portfolio construction constraints."""
     max_leverage: float = 3.0
     max_single_weight: float = 0.3
+    target_volatility: float | None = None
     min_holding_bars: int = 1
     max_turnover: float = 1.0
     max_long_exposure: float = 1.0
@@ -157,6 +158,5 @@ class CrossValidationResult:
 class TargetPortfolio:
     """Target portfolio weights for execution layer."""
     timestamp: int
-    weights: dict[str, float]
-    constraints: Constraints
-    rebalance_id: str
+    positions: dict[str, float]
+    metadata: dict[str, Any]

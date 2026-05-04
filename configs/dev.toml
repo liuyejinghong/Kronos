@@ -17,3 +17,7 @@ default_forward_periods = [1, 5, 20]
 [backtest]
 fee_bps = 4.0
 slippage_bps = 5.0
+
+[agent.llm.deepseek]
+base_url = "https://api.deepseek.com"
+model_name = ""

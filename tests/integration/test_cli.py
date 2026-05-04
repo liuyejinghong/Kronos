@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pyarrow as pa
-from typer.testing import CliRunner
-
 from cli.main import app
+from typer.testing import CliRunner
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,6 +33,40 @@ def _make_kline_table(symbol: str = "BTCUSDT", n: int = 10) -> pa.Table:
         "quote_volume": pa.array([6720000.0] * n, type=pa.float64()),
         "trade_count": pa.array([100] * n, type=pa.int64()),
         "taker_buy_volume": pa.array([50.0] * n, type=pa.float64()),
+        "venue": ["binance"] * n,
+    })
+
+
+def _make_variable_kline_table(symbol: str = "BTCUSDT", n: int = 90) -> pa.Table:
+    base = 1709251200000
+    now = int(time.time() * 1000)
+    opens = [67000.0 + i * 8.0 + (i % 7) * 3.0 for i in range(n)]
+    closes = [price + ((i % 5) - 2) * 5.0 + i * 0.4 for i, price in enumerate(opens)]
+    highs = [
+        max(open_, close) + 12.0 + (i % 3)
+        for i, (open_, close) in enumerate(zip(opens, closes, strict=True))
+    ]
+    lows = [
+        min(open_, close) - 12.0 - (i % 4)
+        for i, (open_, close) in enumerate(zip(opens, closes, strict=True))
+    ]
+    volumes = [100.0 + (i % 13) * 7.0 for i in range(n)]
+    return pa.table({
+        "event_time": pa.array([base + i * 60_000 for i in range(n)], type=pa.int64()),
+        "available_at": pa.array([base + (i + 1) * 60_000 for i in range(n)], type=pa.int64()),
+        "ingested_at": pa.array([now] * n, type=pa.int64()),
+        "symbol": [symbol] * n,
+        "open": pa.array(opens, type=pa.float64()),
+        "high": pa.array(highs, type=pa.float64()),
+        "low": pa.array(lows, type=pa.float64()),
+        "close": pa.array(closes, type=pa.float64()),
+        "volume": pa.array(volumes, type=pa.float64()),
+        "quote_volume": pa.array(
+            [close * volume for close, volume in zip(closes, volumes, strict=True)],
+            type=pa.float64(),
+        ),
+        "trade_count": pa.array([100 + i for i in range(n)], type=pa.int64()),
+        "taker_buy_volume": pa.array([volume * 0.52 for volume in volumes], type=pa.float64()),
         "venue": ["binance"] * n,
     })
 
@@ -170,3 +204,710 @@ class TestDataSyncCLI:
         assert result.exit_code == 1
         output = result.stdout + (result.stderr or "")
         assert "Cannot connect" in output or "Connection refused" in output
+
+
+class TestResearchPromotionCLI:
+    """Integration tests for 'kronos research promote-candidates' command."""
+
+    def test_promote_candidates_requires_local_data(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+
+        result = runner.invoke(app, [
+            "research", "promote-candidates",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--config", str(config),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "Cannot run promotion batch" in output
+
+    def test_promote_candidates_preflight_reports_ready_data(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=90),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+        write_partition(
+            _make_funding_table(n=3),
+            data_path,
+            "BTCUSDT",
+            "funding",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "promote-candidates",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--preflight-only",
+            "--config", str(config),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Promotion Preflight" in result.stdout
+        assert "ready: yes" in result.stdout
+
+    def test_promote_candidates_writes_batch_summary(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=90),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+        write_partition(
+            _make_funding_table(n=3),
+            data_path,
+            "BTCUSDT",
+            "funding",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "promote-candidates",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--batch-id", "test-batch",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Promotion Batch Summary" in result.stdout
+        assert "evaluated: 1" in result.stdout
+        assert "artifact:" in result.stdout
+        assert "report:" in result.stdout
+        assert (
+            reports_path
+            / "experiments"
+            / "test-batch"
+            / "promotion_batch_summary.json"
+        ).exists()
+        assert (
+            reports_path
+            / "experiments"
+            / "test-batch"
+            / "promotion_batch_report.md"
+        ).exists()
+
+    def test_workbench_writes_pm_report_and_failure_groups(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=90),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+        write_partition(
+            _make_funding_table(n=3),
+            data_path,
+            "BTCUSDT",
+            "funding",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "workbench",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--batch-id", "test-workbench",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        pm_report = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "research_workbench_report.md"
+        )
+        failure_groups = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "failure_reason_groups.json"
+        )
+        candidate_dispositions = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "candidate_dispositions.json"
+        )
+        candidate_disposition_report = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "candidate_disposition_report.md"
+        )
+        watchlist_reviews = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "watchlist_reviews.json"
+        )
+        watchlist_review_report = (
+            reports_path
+            / "experiments"
+            / "test-workbench"
+            / "watchlist_review_report.md"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Research Workbench Summary" in result.stdout
+        assert "pm_report:" in result.stdout
+        assert "candidate_dispositions:" in result.stdout
+        assert "watchlist_reviews:" in result.stdout
+        assert pm_report.exists()
+        assert failure_groups.exists()
+        assert candidate_dispositions.exists()
+        assert candidate_disposition_report.exists()
+        assert watchlist_reviews.exists()
+        assert watchlist_review_report.exists()
+        report_text = pm_report.read_text(encoding="utf-8")
+        assert "一句话结论" in report_text
+        assert "funding" in report_text
+        assert "失败原因分层" in report_text
+        assert "候选处置清单" in report_text
+        assert "观察名单二次复盘" in report_text
+
+    def test_watchlist_evidence_writes_focused_report(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=120),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "watchlist-evidence",
+            "--symbols", "BTCUSDT",
+            "--candidate", "range_chop_filter",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--min-history-days", "0",
+            "--batch-id", "test-watchlist-evidence",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        evidence_report = (
+            reports_path
+            / "experiments"
+            / "test-watchlist-evidence"
+            / "watchlist_evidence_report.md"
+        )
+        evidence_json = (
+            reports_path
+            / "experiments"
+            / "test-watchlist-evidence"
+            / "watchlist_evidence_review.json"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Watchlist Evidence Summary" in result.stdout
+        assert "evidence_report:" in result.stdout
+        assert evidence_report.exists()
+        assert evidence_json.exists()
+        report_text = evidence_report.read_text(encoding="utf-8")
+        assert "观察名单补证据专项报告" in report_text
+        assert "分币种证据" in report_text
+        assert "分市场状态证据" in report_text
+        assert "候选改造评估" in report_text
+
+    def test_auto_run_writes_daily_report_and_summary(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=120),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+        write_partition(
+            _make_funding_table(n=3),
+            data_path,
+            "BTCUSDT",
+            "funding",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "auto-run",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--min-history-days", "0",
+            "--run-id", "test-auto-run",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        auto_report = (
+            reports_path
+            / "experiments"
+            / "test-auto-run"
+            / "auto_run_report.md"
+        )
+        auto_summary = (
+            reports_path
+            / "experiments"
+            / "test-auto-run"
+            / "auto_run_summary.json"
+        )
+        workbench_report = (
+            reports_path
+            / "experiments"
+            / "test-auto-run-workbench"
+            / "research_workbench_report.md"
+        )
+        evidence_report = (
+            reports_path
+            / "experiments"
+            / "test-auto-run-evidence-range_chop_filter"
+            / "watchlist_evidence_report.md"
+        )
+        body_energy_report = (
+            reports_path
+            / "experiments"
+            / "test-auto-run-evidence-body_energy"
+            / "watchlist_evidence_report.md"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Auto Runner Summary" in result.stdout
+        assert "daily_report:" in result.stdout
+        assert auto_report.exists()
+        assert auto_summary.exists()
+        assert workbench_report.exists()
+        assert evidence_report.exists()
+        assert body_energy_report.exists()
+
+        report_text = auto_report.read_text(encoding="utf-8")
+        assert "Kronos 自动研究日报" in report_text
+        assert "不会自动下单" in report_text
+
+        summary = json.loads(auto_summary.read_text(encoding="utf-8"))
+        assert summary["summary"]["run_id"] == "test-auto-run"
+        assert summary["summary"]["evidence_reviews"] == 2
+        assert summary["artifact_paths"]["workbench_report"] == str(workbench_report)
+
+    def test_run_today_writes_system_status_and_wraps_auto_run(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=120),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+        write_partition(
+            _make_funding_table(n=3),
+            data_path,
+            "BTCUSDT",
+            "funding",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "run", "today",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--min-history-days", "0",
+            "--max-data-age-hours", "0",
+            "--run-id", "test-kronos-run",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        status_report = (
+            reports_path
+            / "experiments"
+            / "test-kronos-run"
+            / "kronos_run_status.md"
+        )
+        status_json = (
+            reports_path
+            / "experiments"
+            / "test-kronos-run"
+            / "kronos_run_status.json"
+        )
+        auto_report = (
+            reports_path
+            / "experiments"
+            / "test-kronos-run-research"
+            / "auto_run_report.md"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Kronos Run Summary" in result.stdout
+        assert "status: success" in result.stdout
+        assert status_report.exists()
+        assert status_json.exists()
+        assert auto_report.exists()
+
+        report_text = status_report.read_text(encoding="utf-8")
+        assert "Kronos 运行状态" in report_text
+        assert "整体状态" in report_text
+        assert "成功" in report_text
+        assert "自动研究日报" in report_text
+
+        summary = json.loads(status_json.read_text(encoding="utf-8"))
+        assert summary["summary"]["run_id"] == "test-kronos-run"
+        assert summary["summary"]["status"] == "success"
+        assert summary["artifact_paths"]["auto_run_report"] == str(auto_report)
+
+    def test_run_today_writes_failure_status_when_data_is_missing(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        reports_path = tmp_path / "reports"
+
+        result = runner.invoke(app, [
+            "run", "today",
+            "--symbols", "BTCUSDT",
+            "--candidates", "indicator_spread_regime",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--min-history-days", "90",
+            "--run-id", "test-kronos-run-failed",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        status_report = (
+            reports_path
+            / "experiments"
+            / "test-kronos-run-failed"
+            / "kronos_run_status.md"
+        )
+        status_json = (
+            reports_path
+            / "experiments"
+            / "test-kronos-run-failed"
+            / "kronos_run_status.json"
+        )
+
+        assert result.exit_code == 1
+        assert "status: failed" in result.stdout
+        assert status_report.exists()
+        assert status_json.exists()
+
+        report_text = status_report.read_text(encoding="utf-8")
+        assert "整体状态" in report_text
+        assert "失败" in report_text
+        assert "缺少 BTCUSDT / 1m K线数据" in report_text
+
+        summary = json.loads(status_json.read_text(encoding="utf-8"))
+        assert summary["summary"]["status"] == "failed"
+        assert summary["failure_reason"].startswith("数据检查未通过")
+
+
+class TestAgentCLI:
+    """Integration tests for Agent MVP commands."""
+
+    def test_agent_status_outputs_no_active_run(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        runtime_path = tmp_path / "agent_runtime"
+
+        result = runner.invoke(app, [
+            "agent", "status",
+            "--runtime-path", str(runtime_path),
+            "--config", str(config),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Kronos Agent Status" in result.stdout
+        assert "active: no" in result.stdout
+        assert "pending_count: 0" in result.stdout
+        assert "当前没有正在运行的 Agent 任务" in result.stdout
+
+    def test_agent_status_outputs_current_run(self, tmp_path: Path) -> None:
+        from kronos.agent.supervisor import AgentSupervisor
+
+        config = _write_test_config(tmp_path)
+        runtime_path = tmp_path / "agent_runtime"
+        AgentSupervisor(runtime_path).start_run(
+            run_id="test-agent-run",
+            goal_zh="验证下一轮候选。",
+            task_id="task-1",
+            task_title_zh="生成研究假设",
+        )
+
+        result = runner.invoke(app, [
+            "agent", "status",
+            "--runtime-path", str(runtime_path),
+            "--config", str(config),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "active: yes" in result.stdout
+        assert "current_run: test-agent-run" in result.stdout
+        assert "run_status: running" in result.stdout
+        assert "current_task: task-1" in result.stdout
+        assert "task_status: running" in result.stdout
+        assert "last_event_type: run_started" in result.stdout
+
+    def test_agent_propose_writes_research_plan(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        reports_path = tmp_path / "reports"
+        summary_path = tmp_path / "auto_run_summary.json"
+        summary_path.write_text(
+            json.dumps(
+                {
+                    "run_id": "source-run",
+                    "summary": {"promoted": 0},
+                    "workbench": {
+                        "candidate_dispositions": [
+                            {
+                                "candidate_id": "multi_timeframe_confirmation",
+                                "candidate_title": "Multi Timeframe Confirmation",
+                                "factor_name": "multi_timeframe_confirmation",
+                                "status": "watchlist",
+                                "status_label_zh": "观察名单",
+                                "recommendation_zh": "保留观察",
+                                "rationale_zh": "基础验证出现弱信号, 但未达到晋升门槛。",
+                                "metrics": {
+                                    "validation_outcome": "review",
+                                    "mean_rank_ic": 0.003,
+                                    "top_minus_bottom": 0.00002,
+                                    "walkforward_positive_test_window_ratio": 0.53,
+                                },
+                            }
+                        ],
+                    },
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "agent", "propose",
+            "--summary-json", str(summary_path),
+            "--run-id", "test-agent-plan",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        report_path = reports_path / "experiments" / "test-agent-plan" / "agent_research_plan.md"
+        plan_json_path = (
+            reports_path
+            / "experiments"
+            / "test-agent-plan"
+            / "agent_research_plan.json"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Kronos Agent Plan" in result.stdout
+        assert "hypotheses:" in result.stdout
+        assert report_path.exists()
+        assert plan_json_path.exists()
+        assert "下一轮研究假设与实验" in report_path.read_text(encoding="utf-8")
+
+    def test_agent_conclude_writes_decision_report(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        reports_path = tmp_path / "reports"
+        evidence_path = tmp_path / "watchlist_evidence_review.json"
+        evidence_path.write_text(
+            json.dumps(
+                {
+                    "summary": {
+                        "candidate_id": "multi_timeframe_confirmation",
+                        "factor_name": "multi_timeframe_confirmation",
+                        "history_status": "enough_history",
+                        "supportive_slices": 0,
+                        "weak_positive_slices": 1,
+                    },
+                    "candidate_id": "multi_timeframe_confirmation",
+                    "candidate_title": "Multi Timeframe Confirmation",
+                    "factor_name": "multi_timeframe_confirmation",
+                    "history_status": "enough_history",
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "agent", "conclude",
+            "--evidence-json", str(evidence_path),
+            "--run-id", "test-agent-decision",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        report_path = (
+            reports_path
+            / "experiments"
+            / "test-agent-decision"
+            / "agent_research_decision.md"
+        )
+        decision_json_path = (
+            reports_path
+            / "experiments"
+            / "test-agent-decision"
+            / "agent_research_decision.json"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Kronos Agent Decision" in result.stdout
+        assert report_path.exists()
+        assert decision_json_path.exists()
+        assert "处置建议" in report_path.read_text(encoding="utf-8")
+
+    def test_agent_run_once_writes_cycle_report(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        reports_path = tmp_path / "reports"
+        summary_path = tmp_path / "auto_run_summary.json"
+        evidence_path = tmp_path / "watchlist_evidence_review.json"
+        summary_path.write_text(
+            json.dumps(
+                {
+                    "run_id": "source-run",
+                    "summary": {"promoted": 0},
+                    "workbench": {
+                        "candidate_dispositions": [
+                            {
+                                "candidate_id": "trend_pullback_entry",
+                                "candidate_title": "Trend Pullback Entry",
+                                "factor_name": "trend_pullback_entry",
+                                "status": "watchlist",
+                                "status_label_zh": "观察名单",
+                                "recommendation_zh": "保留观察",
+                                "rationale_zh": "基础验证出现弱信号, 但未达到晋升门槛。",
+                                "metrics": {
+                                    "validation_outcome": "review",
+                                    "mean_rank_ic": 0.002,
+                                    "top_minus_bottom": 0.00001,
+                                    "walkforward_positive_test_window_ratio": 0.52,
+                                },
+                            }
+                        ],
+                    },
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        evidence_path.write_text(
+            json.dumps(
+                {
+                    "summary": {
+                        "candidate_id": "trend_pullback_entry",
+                        "factor_name": "trend_pullback_entry",
+                        "history_status": "enough_history",
+                        "supportive_slices": 0,
+                        "weak_positive_slices": 4,
+                    },
+                    "candidate_id": "trend_pullback_entry",
+                    "candidate_title": "Trend Pullback Entry",
+                    "factor_name": "trend_pullback_entry",
+                    "history_status": "enough_history",
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "agent", "run-once",
+            "--summary-json", str(summary_path),
+            "--evidence-json", str(evidence_path),
+            "--run-id", "test-agent-cycle",
+            "--output-path", str(reports_path),
+            "--runtime-path", str(tmp_path / "agent_runtime"),
+            "--config", str(config),
+        ])
+
+        run_dir = reports_path / "experiments" / "test-agent-cycle"
+        report_path = run_dir / "agent_run_report.md"
+        summary_output_path = run_dir / "agent_run_summary.json"
+        events_path = run_dir / "agent_events.jsonl"
+
+        assert result.exit_code == 0, result.output
+        assert "Kronos Agent Run Once" in result.stdout
+        assert "status: completed" in result.stdout
+        assert "tools: 2" in result.stdout
+        assert report_path.exists()
+        assert summary_output_path.exists()
+        assert events_path.exists()
+        runtime_status_path = tmp_path / "agent_runtime" / "agent_supervisor_status.json"
+        assert runtime_status_path.exists()
+        report_text = report_path.read_text(encoding="utf-8")
+        assert "Kronos Agent 研究报告" in report_text
+        assert "下一步" in report_text

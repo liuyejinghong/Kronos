@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,8 @@ import pyarrow as pa
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+from unittest.mock import patch
 
 from kronos.data.storage.parquet_store import (
     _year_month_from_epoch_ms,
@@ -174,3 +177,28 @@ class TestCleanup:
 
     def test_no_temps_returns_zero(self, tmp_path: Path) -> None:
         assert cleanup_temp_files(tmp_path) == 0
+
+
+class TestAtomicWriteCrashSafety:
+    """Verify that a crash during write does not corrupt existing data."""
+
+    def test_crash_before_replace_preserves_old_data(self, tmp_path: Path) -> None:
+        """If os.replace fails (simulating crash), the original file must remain intact."""
+        original = _make_candle_table(n=3)
+        write_partition(original, tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+
+        new_data = _make_candle_table(n=10)
+        with (
+            patch("kronos.data.storage.parquet_store.os.replace", side_effect=OSError("disk full")),
+            contextlib.suppress(OSError),
+        ):
+            write_partition(new_data, tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+
+        # Original data must still be readable and intact
+        result = read_partition(tmp_path, "BTCUSDT", "klines_1m", 2024, 3)
+        assert result is not None
+        assert result.num_rows == 3
+
+        # No leftover temp files
+        temps = list((tmp_path / "curated").rglob("*.parquet.tmp"))
+        assert len(temps) == 0

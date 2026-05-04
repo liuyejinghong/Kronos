@@ -1,18 +1,51 @@
-"""Kronos CLI — data sync and status commands."""
+"""Kronos CLI — data and research workflow commands."""
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
 from kronos.common.config import load_config
+from kronos.common.i18n import init_i18n, t
 from kronos.common.log import setup_logging
 
-app = typer.Typer(name="kronos", help="Kronos — crypto-native quantitative research system")
+if TYPE_CHECKING:
+    from kronos.factor.candidates import CandidateFactorSpec
+
+_LANG_OPTION = typer.Option(
+    None,
+    "--lang",
+    help="Display language: zh (简体中文) or en (English).",
+)
+
+app = typer.Typer(
+    name="kronos",
+    help="Kronos — crypto-native quantitative research system",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 data_app = typer.Typer(name="data", help="Data management commands")
+research_app = typer.Typer(name="research", help="Research workflow commands")
+run_app = typer.Typer(name="run", help="System-level Kronos run commands")
+agent_app = typer.Typer(name="agent", help="Kronos Agent MVP commands")
 app.add_typer(data_app)
+app.add_typer(research_app)
+app.add_typer(run_app)
+app.add_typer(agent_app)
+
+
+@app.callback(invoke_without_command=True)
+def _global(
+    ctx: typer.Context,
+    lang: str | None = _LANG_OPTION,
+) -> None:
+    """Resolve language and config before any subcommand runs."""
+    init_i18n(cli_lang=lang)
+    if ctx.invoked_subcommand is None:
+        raise typer.Exit()
 
 
 def _parse_since(since: str | None) -> int | None:
@@ -21,6 +54,32 @@ def _parse_since(since: str | None) -> int | None:
         return None
     dt = datetime.strptime(since, "%Y-%m-%d").replace(tzinfo=UTC)
     return int(dt.timestamp() * 1000)
+
+
+def _split_csv(value: str | None) -> list[str]:
+    if value is None:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _parse_periods(value: str) -> list[int]:
+    periods = [int(item) for item in _split_csv(value)]
+    if not periods:
+        raise typer.BadParameter("periods must contain at least one integer")
+    return periods
+
+
+def _resolve_candidate_specs(candidates: str | None) -> tuple[list[CandidateFactorSpec], set[str]]:
+    from kronos.factor.candidates import list_candidate_factors
+
+    candidate_filter = set(_split_csv(candidates))
+    candidate_specs = list_candidate_factors()
+    if candidate_filter:
+        candidate_specs = [
+            spec for spec in candidate_specs
+            if spec.candidate_id in candidate_filter or spec.implementation_name in candidate_filter
+        ]
+    return candidate_specs, candidate_filter
 
 
 @data_app.command("sync")
@@ -130,3 +189,834 @@ def data_status(
                     g_start = datetime.fromtimestamp(gap_start / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M")
                     g_end = datetime.fromtimestamp(gap_end / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M")
                     typer.echo(f"{'':>12} {'GAP':<12} {g_start:<22} {g_end:<22}")
+
+
+@research_app.command("promote-candidates")
+def research_promote_candidates(
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT,SOLUSDT",
+        help="Comma-separated symbol list to load from curated data.",
+    ),
+    candidates: str | None = typer.Option(
+        None,
+        help="Optional comma-separated candidate IDs or implementation factor names.",
+    ),
+    timeframe: str = typer.Option("1h", help="Market data timeframe to load."),
+    since: str | None = typer.Option(None, help="Start time accepted by data loader."),
+    until: str | None = typer.Option(None, help="End time accepted by data loader."),
+    batch_id: str | None = typer.Option(None, help="Promotion batch id."),
+    output_path: str = typer.Option("reports/research", help="Base path for experiment outputs."),
+    git_commit: str = typer.Option("working-tree", help="Git commit or working tree label."),
+    data_snapshot_id: str = typer.Option("local-curated-data", help="Data snapshot id."),
+    periods: str = typer.Option("1,5,20", help="Comma-separated forward periods."),
+    train_size: int = typer.Option(120, help="Walk-forward train window size in bars."),
+    validation_size: int = typer.Option(40, help="Walk-forward validation window size in bars."),
+    test_size: int = typer.Option(40, help="Walk-forward test window size in bars."),
+    step_size: int | None = typer.Option(None, help="Walk-forward step size in bars."),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+    preflight_only: bool = typer.Option(
+        False,
+        "--preflight-only",
+        help="Check candidate selection and local data readiness without running promotion.",
+    ),
+) -> None:
+    """Run a local-data candidate factor promotion batch."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.common.errors import DataError
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import PromotionCriteria, run_market_data_promotion_batch
+
+    symbol_list = _split_csv(symbols)
+    candidate_specs, candidate_filter = _resolve_candidate_specs(candidates)
+    if not candidate_specs:
+        typer.echo("No matching candidate factors.", err=True)
+        raise typer.Exit(code=1)
+
+    base_path = Path(cfg.data.base_path)
+    if preflight_only:
+        ready = _echo_promotion_preflight(
+            base_path=base_path,
+            symbols=symbol_list,
+            candidate_count=len(candidate_specs),
+            timeframe=timeframe,
+        )
+        if not ready:
+            raise typer.Exit(code=1)
+        return
+
+    resolved_batch_id = batch_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-candidate-promotion")
+    try:
+        batch = run_market_data_promotion_batch(
+            registry=registry,
+            symbols=symbol_list,
+            data_base_path=base_path,
+            output_base_path=Path(output_path),
+            batch_id=resolved_batch_id,
+            git_commit=git_commit,
+            data_snapshot_id=data_snapshot_id,
+            config_snapshot={
+                "command": "research promote-candidates",
+                "timeframe": timeframe,
+                "symbols": symbol_list,
+                "candidates": sorted(candidate_filter),
+            },
+            candidate_specs=candidate_specs,
+            timeframe=timeframe,
+            since=since,
+            until=until,
+            validation_config=ValidationConfig(periods=_parse_periods(periods)),
+            criteria=PromotionCriteria(),
+            train_size=train_size,
+            validation_size=validation_size,
+            test_size=test_size,
+            step_size=step_size,
+        )
+    except DataError as exc:
+        typer.echo(f"Cannot run promotion batch: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = batch.summary()
+    typer.echo("--- Promotion Batch Summary ---")
+    typer.echo(f"batch_id: {batch.batch_id}")
+    typer.echo(f"evaluated: {summary['evaluated']}")
+    typer.echo(f"promoted: {summary['promoted']}")
+    typer.echo(f"not_promoted: {summary['not_promoted']}")
+    typer.echo(f"skipped: {summary['skipped']}")
+    if batch.artifact_path:
+        typer.echo(f"artifact: {batch.artifact_path}")
+    report_path = batch.artifact_paths.get("report")
+    if report_path:
+        typer.echo(f"report: {report_path}")
+
+
+@research_app.command("workbench")
+def research_workbench(
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT,SOLUSDT",
+        help="Comma-separated symbol list to load from curated data.",
+    ),
+    candidates: str | None = typer.Option(
+        None,
+        help="Optional comma-separated candidate IDs or implementation factor names.",
+    ),
+    timeframe: str = typer.Option("1m", help="Market data timeframe to load."),
+    since: str | None = typer.Option(None, help="Start time accepted by data loader."),
+    until: str | None = typer.Option(None, help="End time accepted by data loader."),
+    batch_id: str | None = typer.Option(None, help="Research workbench batch id."),
+    output_path: str = typer.Option("reports/research", help="Base path for workbench outputs."),
+    git_commit: str = typer.Option("working-tree", help="Git commit or working tree label."),
+    data_snapshot_id: str = typer.Option("local-curated-data", help="Data snapshot id."),
+    periods: str = typer.Option("1,5,20", help="Comma-separated forward periods."),
+    train_size: int = typer.Option(720, help="Walk-forward train window size in bars."),
+    validation_size: int = typer.Option(360, help="Walk-forward validation window size in bars."),
+    test_size: int = typer.Option(360, help="Walk-forward test window size in bars."),
+    step_size: int = typer.Option(360, help="Walk-forward step size in bars."),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+    preflight_only: bool = typer.Option(
+        False,
+        "--preflight-only",
+        help="Check candidate selection and local data readiness without running workbench.",
+    ),
+) -> None:
+    """Run the fixed product-facing research workbench flow."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.common.errors import DataError
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import PromotionCriteria, run_research_workbench
+
+    symbol_list = _split_csv(symbols)
+    candidate_specs, candidate_filter = _resolve_candidate_specs(candidates)
+    if not candidate_specs:
+        typer.echo("No matching candidate factors.", err=True)
+        raise typer.Exit(code=1)
+
+    base_path = Path(cfg.data.base_path)
+    if preflight_only:
+        ready = _echo_promotion_preflight(
+            base_path=base_path,
+            symbols=symbol_list,
+            candidate_count=len(candidate_specs),
+            timeframe=timeframe,
+        )
+        if not ready:
+            raise typer.Exit(code=1)
+        return
+
+    resolved_batch_id = batch_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-workbench")
+    try:
+        result = run_research_workbench(
+            registry=registry,
+            symbols=symbol_list,
+            data_base_path=base_path,
+            output_base_path=Path(output_path),
+            batch_id=resolved_batch_id,
+            git_commit=git_commit,
+            data_snapshot_id=data_snapshot_id,
+            config_snapshot={
+                "command": "research workbench",
+                "timeframe": timeframe,
+                "symbols": symbol_list,
+                "candidates": sorted(candidate_filter),
+            },
+            candidate_specs=candidate_specs,
+            timeframe=timeframe,
+            since=since,
+            until=until,
+            validation_config=ValidationConfig(periods=_parse_periods(periods)),
+            criteria=PromotionCriteria(),
+            train_size=train_size,
+            validation_size=validation_size,
+            test_size=test_size,
+            step_size=step_size,
+        )
+    except DataError as exc:
+        typer.echo(f"Cannot run research workbench: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Research Workbench Summary ---")
+    typer.echo(f"batch_id: {result.batch.batch_id}")
+    typer.echo(f"readiness: {summary['readiness']}")
+    typer.echo(f"evaluated: {summary['evaluated']}")
+    typer.echo(f"promoted: {summary['promoted']}")
+    typer.echo(f"not_promoted: {summary['not_promoted']}")
+    typer.echo(f"skipped: {summary['skipped']}")
+    typer.echo(f"pm_report: {result.artifact_paths['pm_report']}")
+    typer.echo(f"failure_groups: {result.artifact_paths['failure_groups']}")
+    typer.echo(f"candidate_dispositions: {result.artifact_paths['candidate_dispositions']}")
+    typer.echo(f"watchlist_reviews: {result.artifact_paths['watchlist_reviews']}")
+
+
+@research_app.command("auto-run")
+def research_auto_run(
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT,SOLUSDT",
+        help="Comma-separated symbol list to load from curated data.",
+    ),
+    candidates: str | None = typer.Option(
+        None,
+        help="Optional comma-separated candidate IDs or implementation factor names.",
+    ),
+    watchlist_candidates: str | None = typer.Option(
+        "range_chop_filter,body_energy",
+        help="Optional comma-separated watchlist candidates for focused evidence.",
+    ),
+    timeframe: str = typer.Option("1m", help="Market data timeframe to load."),
+    since: str | None = typer.Option(None, help="Start time accepted by data loader."),
+    until: str | None = typer.Option(None, help="End time accepted by data loader."),
+    run_id: str | None = typer.Option(None, help="Auto-run id."),
+    output_path: str = typer.Option("reports/research", help="Base path for auto-run outputs."),
+    git_commit: str = typer.Option("working-tree", help="Git commit or working tree label."),
+    data_snapshot_id: str = typer.Option("local-curated-data", help="Data snapshot id."),
+    periods: str = typer.Option("1,5,20", help="Comma-separated forward periods."),
+    train_size: int = typer.Option(720, help="Walk-forward train window size in bars."),
+    validation_size: int = typer.Option(360, help="Walk-forward validation window size in bars."),
+    test_size: int = typer.Option(360, help="Walk-forward test window size in bars."),
+    step_size: int = typer.Option(360, help="Walk-forward step size in bars."),
+    min_history_days: int = typer.Option(
+        90,
+        help="Minimum history span required before a watchlist candidate can be upgraded.",
+    ),
+    sync_data: bool = typer.Option(
+        False,
+        "--sync-data/--skip-sync-data",
+        help="Refresh market data before running research. Defaults to local-only.",
+    ),
+    sync_since: str | None = typer.Option(
+        None,
+        help="Start date (YYYY-MM-DD) for optional data sync.",
+    ),
+    run_watchlist_evidence: bool = typer.Option(
+        True,
+        "--watchlist-evidence/--skip-watchlist-evidence",
+        help="Run focused evidence for configured watchlist candidates.",
+    ),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Run one automatic research cycle and write a PM-readable daily report."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.common.errors import DataError
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import PromotionCriteria, run_auto_research_cycle
+
+    symbol_list = _split_csv(symbols)
+    candidate_specs, candidate_filter = _resolve_candidate_specs(candidates)
+    if not candidate_specs:
+        typer.echo("No matching candidate factors.", err=True)
+        raise typer.Exit(code=1)
+
+    watchlist_specs: list[CandidateFactorSpec] = []
+    if run_watchlist_evidence:
+        watchlist_specs, watchlist_filter = _resolve_candidate_specs(watchlist_candidates)
+        if not watchlist_specs:
+            typer.echo("No matching watchlist candidate factors.", err=True)
+            raise typer.Exit(code=1)
+    else:
+        watchlist_filter = set[str]()
+
+    resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-auto-run")
+    try:
+        result = run_auto_research_cycle(
+            registry=registry,
+            symbols=symbol_list,
+            data_base_path=Path(cfg.data.base_path),
+            output_base_path=Path(output_path),
+            run_id=resolved_run_id,
+            git_commit=git_commit,
+            data_snapshot_id=data_snapshot_id,
+            config_snapshot={
+                "command": "research auto-run",
+                "timeframe": timeframe,
+                "symbols": symbol_list,
+                "candidates": sorted(candidate_filter),
+                "watchlist_candidates": sorted(watchlist_filter),
+            },
+            candidate_specs=candidate_specs,
+            watchlist_candidate_specs=watchlist_specs,
+            timeframe=timeframe,
+            since=since,
+            until=until,
+            validation_config=ValidationConfig(periods=_parse_periods(periods)),
+            criteria=PromotionCriteria(),
+            train_size=train_size,
+            validation_size=validation_size,
+            test_size=test_size,
+            step_size=step_size,
+            sync_data=sync_data,
+            sync_since=_parse_since(sync_since),
+            max_retries=cfg.data.max_retries,
+            request_interval_ms=cfg.data.request_interval_ms,
+            min_history_days=min_history_days,
+        )
+    except DataError as exc:
+        typer.echo(f"Cannot run auto research cycle: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Auto Runner Summary ---")
+    typer.echo(f"run_id: {result.run_id}")
+    typer.echo(f"sync_data: {'yes' if result.sync_requested else 'no'}")
+    typer.echo(f"readiness: {summary['readiness']}")
+    typer.echo(f"evaluated: {summary['evaluated']}")
+    typer.echo(f"promoted: {summary['promoted']}")
+    typer.echo(f"not_promoted: {summary['not_promoted']}")
+    typer.echo(f"skipped: {summary['skipped']}")
+    typer.echo(f"watchlist_evidence: {summary['evidence_reviews']}")
+    typer.echo(f"evidence_blockers: {summary['evidence_blockers']}")
+    typer.echo(f"daily_report: {result.artifact_paths['auto_run_report']}")
+    typer.echo(f"auto_run_summary: {result.artifact_paths['auto_run_summary']}")
+
+
+@run_app.command("today")
+def run_today(
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT,SOLUSDT",
+        help="Default comma-separated symbol list for today's Kronos run.",
+    ),
+    candidates: str | None = typer.Option(
+        None,
+        help="Optional comma-separated candidate IDs or implementation factor names.",
+    ),
+    watchlist_candidates: str | None = typer.Option(
+        "range_chop_filter,body_energy",
+        help="Optional comma-separated watchlist candidates for focused evidence.",
+    ),
+    timeframe: str = typer.Option("1m", help="Market data timeframe to load."),
+    since: str | None = typer.Option(None, help="Start time accepted by data loader."),
+    until: str | None = typer.Option(None, help="End time accepted by data loader."),
+    run_id: str | None = typer.Option(None, help="Top-level Kronos run id."),
+    output_path: str = typer.Option("reports/research", help="Base path for run outputs."),
+    git_commit: str = typer.Option("working-tree", help="Git commit or working tree label."),
+    data_snapshot_id: str = typer.Option("local-curated-data", help="Data snapshot id."),
+    periods: str = typer.Option("1,5,20", help="Comma-separated forward periods."),
+    train_size: int = typer.Option(720, help="Walk-forward train window size in bars."),
+    validation_size: int = typer.Option(360, help="Walk-forward validation window size in bars."),
+    test_size: int = typer.Option(360, help="Walk-forward test window size in bars."),
+    step_size: int = typer.Option(360, help="Walk-forward step size in bars."),
+    min_history_days: int = typer.Option(
+        90,
+        help="Minimum local history span required before the default run proceeds.",
+    ),
+    max_data_age_hours: int = typer.Option(
+        72,
+        help="Warn when local data is older than this many hours. Use 0 to disable.",
+    ),
+    require_fresh_data: bool = typer.Option(
+        False,
+        "--require-fresh-data/--allow-stale-data",
+        help="Fail the run when local data is stale instead of only warning.",
+    ),
+    sync_data: bool = typer.Option(
+        False,
+        "--sync-data/--skip-sync-data",
+        help="Refresh market data before running research. Defaults to local-only.",
+    ),
+    sync_since: str | None = typer.Option(
+        None,
+        help="Start date (YYYY-MM-DD) for optional data sync.",
+    ),
+    run_watchlist_evidence: bool = typer.Option(
+        True,
+        "--watchlist-evidence/--skip-watchlist-evidence",
+        help="Run focused evidence for configured watchlist candidates.",
+    ),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Run today's default Kronos MVP flow and write a system status report."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import PromotionCriteria
+    from kronos.run_mvp import run_kronos_today
+
+    symbol_list = _split_csv(symbols)
+    candidate_specs, candidate_filter = _resolve_candidate_specs(candidates)
+    if not candidate_specs:
+        typer.echo("No matching candidate factors.", err=True)
+        raise typer.Exit(code=1)
+
+    watchlist_specs: list[CandidateFactorSpec] = []
+    if run_watchlist_evidence:
+        watchlist_specs, watchlist_filter = _resolve_candidate_specs(watchlist_candidates)
+        if not watchlist_specs:
+            typer.echo("No matching watchlist candidate factors.", err=True)
+            raise typer.Exit(code=1)
+    else:
+        watchlist_filter = set[str]()
+
+    resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-kronos-run")
+    result = run_kronos_today(
+        registry=registry,
+        symbols=symbol_list,
+        data_base_path=Path(cfg.data.base_path),
+        output_base_path=Path(output_path),
+        run_id=resolved_run_id,
+        git_commit=git_commit,
+        data_snapshot_id=data_snapshot_id,
+        config_snapshot={
+            "command": "kronos run today",
+            "timeframe": timeframe,
+            "symbols": symbol_list,
+            "candidates": sorted(candidate_filter),
+            "watchlist_candidates": sorted(watchlist_filter),
+        },
+        candidate_specs=candidate_specs,
+        watchlist_candidate_specs=watchlist_specs,
+        timeframe=timeframe,
+        since=since,
+        until=until,
+        validation_config=ValidationConfig(periods=_parse_periods(periods)),
+        criteria=PromotionCriteria(),
+        train_size=train_size,
+        validation_size=validation_size,
+        test_size=test_size,
+        step_size=step_size,
+        sync_data=sync_data,
+        sync_since=_parse_since(sync_since),
+        max_retries=cfg.data.max_retries,
+        request_interval_ms=cfg.data.request_interval_ms,
+        min_history_days=min_history_days,
+        max_data_age_hours=max_data_age_hours,
+        require_fresh_data=require_fresh_data,
+    )
+
+    summary = result.summary()
+    typer.echo("--- Kronos Run Summary ---")
+    typer.echo(f"run_id: {result.run_id}")
+    typer.echo(f"status: {summary['status']}")
+    typer.echo(f"blockers: {summary['blockers']}")
+    typer.echo(f"warnings: {summary['warnings']}")
+    typer.echo(f"evaluated: {summary['evaluated']}")
+    typer.echo(f"promoted: {summary['promoted']}")
+    typer.echo(f"skipped: {summary['skipped']}")
+    if result.failure_reason is not None:
+        typer.echo(f"failure_reason: {result.failure_reason}")
+    typer.echo(f"status_report: {result.artifact_paths['run_status_report']}")
+    typer.echo(f"status_json: {result.artifact_paths['run_status_json']}")
+    if "auto_run_report" in result.artifact_paths:
+        typer.echo(f"auto_run_report: {result.artifact_paths['auto_run_report']}")
+    if result.status != "success":
+        raise typer.Exit(code=1)
+
+
+@agent_app.command("propose")
+def agent_propose(
+    summary_json: str = typer.Option(
+        ...,
+        "--summary-json",
+        help="Path to the latest deterministic research summary JSON.",
+    ),
+    goal: str = typer.Option(
+        "把旧 A 股 / 期货策略资产重新适配到 crypto 市场并找出下一轮最值得验证的方向",
+        help="Research goal for the Agent MVP planning cycle.",
+    ),
+    run_id: str | None = typer.Option(None, help="Agent planning run id."),
+    output_path: str = typer.Option("reports/research", help="Base path for agent outputs."),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Generate the next RD-Agent-style hypotheses and experiments."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.research import run_research_agent_planner
+
+    resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-agent-plan")
+    try:
+        result = run_research_agent_planner(
+            summary_json_path=summary_json,
+            output_base_path=Path(output_path),
+            run_id=resolved_run_id,
+            goal_zh=goal,
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        typer.echo(f"Cannot generate agent research plan: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Kronos Agent Plan ---")
+    typer.echo(f"run_id: {result.run_id}")
+    typer.echo(f"source_run_id: {summary['source_run_id'] or '-'}")
+    typer.echo(f"selected_candidates: {summary['selected_candidates']}")
+    typer.echo(f"retirement_review_candidates: {summary['retirement_review_candidates']}")
+    typer.echo(f"hypotheses: {summary['hypotheses']}")
+    typer.echo(f"next_action: {summary['next_action_zh']}")
+    typer.echo(f"agent_plan_report: {result.artifact_paths['agent_plan_report']}")
+    typer.echo(f"agent_plan_json: {result.artifact_paths['agent_plan_json']}")
+
+
+@agent_app.command("status")
+def agent_status(
+    runtime_path: str = typer.Option(
+        "reports/agent_runtime",
+        help="Path to the local Agent runtime status directory.",
+    ),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Show the current local Agent runtime status."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.agent.supervisor import AgentSupervisor
+
+    status = AgentSupervisor(Path(runtime_path)).get_status()
+
+    typer.echo("--- Kronos Agent Status ---")
+    typer.echo(f"active: {'yes' if status.active else 'no'}")
+    typer.echo(f"pending_count: {status.pending_count}")
+    if status.current_run is None:
+        typer.echo("message: 当前没有正在运行的 Agent 任务。")
+        return
+
+    typer.echo(f"current_run: {status.current_run.run_id}")
+    typer.echo(f"run_status: {status.current_run.status.value}")
+    if status.current_task is not None:
+        typer.echo(f"current_task: {status.current_task.task_id}")
+        typer.echo(f"task_status: {status.current_task.status.value}")
+        typer.echo(f"task_title: {status.current_task.title_zh}")
+    else:
+        typer.echo("current_task: -")
+        typer.echo("task_status: -")
+    if status.last_event is not None:
+        typer.echo(f"last_event: {status.last_event.message_zh}")
+        typer.echo(f"last_event_type: {status.last_event.event_type.value}")
+    else:
+        typer.echo("last_event: -")
+        typer.echo("last_event_type: -")
+
+
+@agent_app.command("run-once")
+def agent_run_once(
+    summary_json: str = typer.Option(
+        ...,
+        "--summary-json",
+        help="Path to the latest deterministic research summary JSON.",
+    ),
+    evidence_json: str = typer.Option(
+        ...,
+        "--evidence-json",
+        help="Comma-separated deterministic evidence review JSON paths.",
+    ),
+    goal: str = typer.Option(
+        "把旧 A 股 / 期货策略资产重新适配到 crypto 市场并找出下一轮最值得验证的方向",
+        help="Research goal for this bounded Agent cycle.",
+    ),
+    run_id: str | None = typer.Option(None, help="Agent cycle run id."),
+    output_path: str = typer.Option("reports/research", help="Base path for agent outputs."),
+    runtime_path: str = typer.Option(
+        "reports/agent_runtime",
+        help="Path to publish the latest Web-readable Agent status snapshot.",
+    ),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Run one bounded Agent cycle: plan, execute approved tools, and conclude."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.agent.planner import run_agent_once
+    from kronos.agent.types import AgentRunStatus
+
+    resolved_evidence_json = _split_csv(evidence_json)
+    if not resolved_evidence_json:
+        typer.echo("At least one --evidence-json path is required.", err=True)
+        raise typer.Exit(code=1)
+
+    resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-agent-cycle")
+    try:
+        result = run_agent_once(
+            summary_json_path=Path(summary_json),
+            evidence_json_paths=[Path(path) for path in resolved_evidence_json],
+            output_base_path=Path(output_path),
+            run_id=resolved_run_id,
+            goal_zh=goal,
+            runtime_path=Path(runtime_path),
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        typer.echo(f"Cannot run agent cycle: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Kronos Agent Run Once ---")
+    typer.echo(f"run_id: {result.run_id}")
+    typer.echo(f"status: {summary['status']}")
+    typer.echo(f"tools: {summary['tools']}")
+    typer.echo(f"failed_tools: {summary['failed_tools']}")
+    typer.echo(f"next_action: {summary['next_action_zh']}")
+    typer.echo(f"agent_run_report: {result.artifact_paths['agent_run_report']}")
+    typer.echo(f"agent_run_summary: {result.artifact_paths['agent_run_summary']}")
+    typer.echo(f"agent_events: {result.artifact_paths['agent_events']}")
+    if "agent_errors" in result.artifact_paths:
+        typer.echo(f"agent_errors: {result.artifact_paths['agent_errors']}")
+    if result.status != AgentRunStatus.COMPLETED:
+        raise typer.Exit(code=1)
+
+
+@agent_app.command("conclude")
+def agent_conclude(
+    evidence_json: str = typer.Option(
+        "",
+        "--evidence-json",
+        help="Comma-separated deterministic evidence review JSON paths.",
+    ),
+    run_id: str | None = typer.Option(None, help="Agent decision run id."),
+    output_path: str = typer.Option("reports/research", help="Base path for agent outputs."),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Read deterministic evidence and produce Agent next-step decisions."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.research import run_research_agent_decision
+
+    resolved_evidence_json = _split_csv(evidence_json)
+    if not resolved_evidence_json:
+        typer.echo("At least one --evidence-json path is required.", err=True)
+        raise typer.Exit(code=1)
+
+    resolved_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-agent-decision")
+    try:
+        result = run_research_agent_decision(
+            evidence_json_paths=[Path(path) for path in resolved_evidence_json],
+            output_base_path=Path(output_path),
+            run_id=resolved_run_id,
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        typer.echo(f"Cannot generate agent research decision: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Kronos Agent Decision ---")
+    typer.echo(f"run_id: {result.run_id}")
+    typer.echo(f"evidence_reviews: {summary['evidence_reviews']}")
+    typer.echo(f"decisions: {summary['decisions']}")
+    typer.echo(f"next_action: {summary['next_action_zh']}")
+    typer.echo(f"agent_decision_report: {result.artifact_paths['agent_decision_report']}")
+    typer.echo(f"agent_decision_json: {result.artifact_paths['agent_decision_json']}")
+
+
+@research_app.command("watchlist-evidence")
+def research_watchlist_evidence(
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT,SOLUSDT",
+        help="Comma-separated symbol list to load from curated data.",
+    ),
+    candidate: str = typer.Option(
+        "range_chop_filter",
+        help="Candidate ID or implementation factor name to review.",
+    ),
+    timeframe: str = typer.Option("1m", help="Market data timeframe to load."),
+    since: str | None = typer.Option(None, help="Start time accepted by data loader."),
+    until: str | None = typer.Option(None, help="End time accepted by data loader."),
+    batch_id: str | None = typer.Option(None, help="Watchlist evidence batch id."),
+    output_path: str = typer.Option("reports/research", help="Base path for evidence outputs."),
+    data_snapshot_id: str = typer.Option("local-curated-data", help="Data snapshot id."),
+    periods: str = typer.Option("1,5,20", help="Comma-separated forward periods."),
+    min_history_days: int = typer.Option(
+        90,
+        help="Minimum history span required before a watchlist candidate can be upgraded.",
+    ),
+    config: str = typer.Option("configs/dev.toml", help="Path to config file."),
+) -> None:
+    """Run a focused evidence review for one watchlist candidate."""
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    from kronos.common.errors import DataError
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import run_watchlist_evidence_review
+
+    symbol_list = _split_csv(symbols)
+    candidate_specs, _ = _resolve_candidate_specs(candidate)
+    if not candidate_specs:
+        typer.echo("No matching candidate factor.", err=True)
+        raise typer.Exit(code=1)
+    if len(candidate_specs) > 1:
+        typer.echo("Watchlist evidence requires exactly one candidate.", err=True)
+        raise typer.Exit(code=1)
+
+    resolved_batch_id = batch_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-watchlist-evidence")
+    try:
+        result = run_watchlist_evidence_review(
+            registry=registry,
+            symbols=symbol_list,
+            data_base_path=Path(cfg.data.base_path),
+            output_base_path=Path(output_path),
+            batch_id=resolved_batch_id,
+            candidate_spec=candidate_specs[0],
+            data_snapshot_id=data_snapshot_id,
+            config_snapshot={
+                "command": "research watchlist-evidence",
+                "symbols": symbol_list,
+                "candidate": candidate,
+            },
+            timeframe=timeframe,
+            since=since,
+            until=until,
+            validation_config=ValidationConfig(periods=_parse_periods(periods)),
+            min_history_days=min_history_days,
+        )
+    except DataError as exc:
+        typer.echo(f"Cannot run watchlist evidence review: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    summary = result.summary()
+    typer.echo("--- Watchlist Evidence Summary ---")
+    typer.echo(f"batch_id: {result.batch_id}")
+    typer.echo(f"candidate: {result.candidate_id}")
+    typer.echo(f"factor: {result.factor_name}")
+    typer.echo(f"history_status: {summary['history_status']}")
+    typer.echo(f"supportive_slices: {summary['supportive_slices']}")
+    typer.echo(f"weak_positive_slices: {summary['weak_positive_slices']}")
+    typer.echo(f"evidence_report: {result.artifact_paths['evidence_report']}")
+    typer.echo(f"evidence_json: {result.artifact_paths['evidence_json']}")
+
+
+def _echo_promotion_preflight(
+    *,
+    base_path: Path,
+    symbols: list[str],
+    candidate_count: int,
+    timeframe: str,
+) -> bool:
+    from kronos.data.storage.query import coverage
+
+    typer.echo("--- Promotion Preflight ---")
+    typer.echo(f"data_path: {base_path}")
+    typer.echo(f"timeframe: {timeframe}")
+    typer.echo(f"candidates: {candidate_count}")
+
+    ready = candidate_count > 0 and bool(symbols)
+    if not symbols:
+        typer.echo("symbols: none", err=True)
+        ready = False
+
+    for symbol in symbols:
+        infos = coverage(symbol, base_path=base_path, datasets=["klines_1m"])
+        if not infos:
+            typer.echo(f"{symbol}: no klines_1m data")
+            ready = False
+            continue
+
+        info = infos[0]
+        from_dt = datetime.fromtimestamp(info.min_event_time / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M")
+        to_dt = datetime.fromtimestamp(info.max_event_time / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M")
+        gap_text = f", gaps={len(info.gaps)}" if info.gaps else ""
+        typer.echo(f"{symbol}: {info.bar_count} bars, {from_dt} -> {to_dt}{gap_text}")
+
+    typer.echo(f"ready: {'yes' if ready else 'no'}")
+    return ready
+
+
+@app.command("quickstart")
+def quickstart(
+    lang: str | None = _LANG_OPTION,
+    config: str = typer.Option(
+        "configs/dev.toml",
+        help="Path to config file.",
+    ),
+    skip_data_gen: bool = typer.Option(
+        False,
+        "--skip-data-gen",
+        help="Skip sample data generation.",
+    ),
+    symbols: str = typer.Option(
+        "BTCUSDT",
+        help="Symbol for sample data generation.",
+    ),
+    days: int = typer.Option(
+        7,
+        help="Days of sample data to generate.",
+        min=1,
+        max=30,
+    ),
+) -> None:
+    """One-command bootstrap: generate sample data and run a minimal research cycle."""
+    init_i18n(cli_lang=lang)
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    base_path = Path(cfg.data.base_path)
+
+    typer.echo(f"⚡ {t('quickstart.title')}")
+    typer.echo()
+
+    # Step 1: ensure data exists
+    typer.echo(f"… {t('quickstart.checking_data')}")
+    from kronos.data.seed import generate_sample_klines, has_any_data
+
+    if not skip_data_gen and not has_any_data(base_path):
+        typer.echo(f"  {t('quickstart.generating_sample')}")
+        symbol = symbols.split(",")[0].strip()
+        bars = generate_sample_klines(symbol, base_path=base_path, days=days)
+        typer.echo(f"  {t('quickstart.sample_ready', path=str(base_path / 'curated' / symbol))}")
+        typer.echo(f"  [{bars} bars, {days}d, venue=synthetic]")
+    else:
+        typer.echo(f"  {t('quickstart.data_found')}")
+    typer.echo()
+
+    # Step 2: verify data is readable
+    from kronos.data.storage.query import coverage
+    symbol = symbols.split(",")[0].strip()
+    infos = coverage(symbol, base_path=base_path, datasets=["klines_1m"])
+    bar_count = infos[0].bar_count if infos else 0
+    from_ms = infos[0].min_event_time if infos else 0
+    to_ms = infos[0].max_event_time if infos else 0
+    from_dt = datetime.fromtimestamp(from_ms / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M") if from_ms else "—"
+    to_dt = datetime.fromtimestamp(to_ms / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M") if to_ms else "—"
+    typer.echo(f"  {symbol}: {bar_count} bars, {from_dt} → {to_dt}")
+
+    typer.echo()
+    typer.echo(f"✅ {t('quickstart.complete')}")
+    typer.echo()
+    typer.echo(t("quickstart.next_steps"))

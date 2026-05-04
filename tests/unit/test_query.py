@@ -58,6 +58,18 @@ class TestLoad:
         df = load("BTCUSDT", base_path=tmp_path, timeframe="1h")
         assert len(df) == 2
 
+    def test_load_4h_resamples(self, tmp_path: Path) -> None:
+        _write_test_data(tmp_path, n=480)  # 8 hours → 2 bars
+        df = load("BTCUSDT", base_path=tmp_path, timeframe="4h")
+        assert len(df) == 2
+
+    def test_load_1d_resamples(self, tmp_path: Path) -> None:
+        _write_test_data(tmp_path, n=1440)  # 24 hours → 1 bar
+        df = load("BTCUSDT", base_path=tmp_path, timeframe="1d")
+        assert len(df) == 1
+        row = df.iloc[0]
+        assert row["volume"] == pytest.approx(1440 * 100.0)
+
     def test_resample_ohlc_correctness(self, tmp_path: Path) -> None:
         """Verify OHLC aggregation: open=first, high=max, low=min, close=last."""
         _write_test_data(tmp_path, n=60)  # 1 hour

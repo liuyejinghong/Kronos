@@ -34,9 +34,24 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.kronos-secrets/
 
 # Coverage
 htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+.omx/
+.playwright-mcp/
+
+# Web frontend
+node_modules/
+.next/
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+web/*.tsbuildinfo
+*.tsbuildinfo
+.gstack/
+web/reports/

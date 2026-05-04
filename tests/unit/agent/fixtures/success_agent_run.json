@@ -1,0 +1,36 @@
+{
+  "run_id": "fixture-success-run",
+  "status": "completed",
+  "goal_zh": "验证趋势回踩候选是否值得进入改造。",
+  "current_task_id": "task-decision",
+  "tasks": [
+    {
+      "run_id": "fixture-success-run",
+      "task_id": "task-decision",
+      "status": "completed",
+      "title_zh": "读取证据并形成决策",
+      "candidate_id": "trend_pullback_entry",
+      "lifecycle_state": "agent_analysis",
+      "artifact_paths": [
+        {
+          "name": "agent_run_report",
+          "path": "reports/research/experiments/fixture-success-run/agent_run_report.md",
+          "artifact_type": "markdown_report",
+          "summary_zh": "Agent run 产品报告。"
+        }
+      ],
+      "error_ref": null,
+      "metadata": {}
+    }
+  ],
+  "artifact_paths": [
+    {
+      "name": "agent_run_summary",
+      "path": "reports/research/experiments/fixture-success-run/agent_run_summary.json",
+      "artifact_type": "json_summary",
+      "summary_zh": "Agent run 机器摘要。"
+    }
+  ],
+  "error_ref": null,
+  "metadata": {}
+}
