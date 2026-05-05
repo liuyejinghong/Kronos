@@ -268,8 +268,17 @@ class AgentConsole:
 
         self._println(f"  {self._T('console.candidates_count', n=len(candidates))}")
         self._println("")
+        _STATE_LABELS: dict[str, str] = {
+            "material_intake": "材料进入", "migration_review": "迁移审查",
+            "hypothesis": "假设生成", "experiment_planned": "实验计划",
+            "validating": "验证中", "agent_analysis": "Agent 分析",
+            "committee_scoring": "投委会评分", "observe": "观察",
+            "redesign": "候选改造", "simulate": "模拟盘",
+            "live_approval_required": "待实盘审批", "retired": "淘汰",
+        }
         for c in candidates[:10]:
-            state_label = getattr(c.lifecycle_state, "value", str(c.lifecycle_state)) if c.lifecycle_state else "—"
+            raw_state = c.lifecycle_state.value if c.lifecycle_state else ""
+            state_label = _STATE_LABELS.get(raw_state, raw_state) if raw_state else "—"
             self._println(f"  {c.migration_rank:2d}. {c.title}  [{c.family}]  → {state_label}")
         self._println("")
         self._println(f"  💡 {self._T('console.candidates_hint')}")
