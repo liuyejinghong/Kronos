@@ -108,3 +108,33 @@ CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]
 2. **`.dockerignore` 是第一优先级**。不写的话整个项目目录（含 `.git/`、`data/`、`reports/`）都进 build context，白白浪费时间和带宽。
 
 3. **COPY 顺序决定缓存效率**。`pyproject.toml` + `kronos/` 在 `uv sync` 之前，这样依赖层可以缓存；`cli/`、`configs/` 在之后，源码改动不触发重装。
+
+---
+
+## 问题清单（共 6 项）
+
+| # | 问题 | 根因 | 用户视角 | 状态 |
+|---|------|------|----------|------|
+| 1 | `docker compose up` 直接失败：`Dockerfile: no such file or directory` | `.gitignore` 里 `Dockerfile*` 规则把正式 `Dockerfile` 也排除了，文件未提交到 Git | `docker-compose.yml` 存在，但报错说找不到 Dockerfile。不知道是 bug 还是自己操作错了。停止。 | ✅ 已修 |
+| 2 | 构建 8 分钟后网络超时失败：`Failed to fetch ... 502 Bad Gateway` | `apt-get install build-essential git curl nodejs npm` 从 Debian 官方源下载 500+ 个包（~300MB），国内网络不稳定 | 等了很久进度条，最后红色报错。完全不知道发生了什么。放弃。 | ✅ 已修 |
+| 3 | `uv sync` 阶段失败：`hatchling` 报 `Unable to determine which files to ship` | Dockerfile 里 `COPY kronos/` 在 `uv sync` **之后**，hatchling 构建时找不到源码目录 | 构建到一半又报错了。前面下依赖明明成功了，为什么又失败？ | ✅ 已修 |
+| 4 | quickstart 研究循环失败：`ModuleNotFoundError: No module named 'matplotlib'` | `matplotlib` 在 `diagnostics/reporting.py` 里是模块级 `import`，但未列入 `pyproject.toml` 的生产依赖；Docker 用 `--no-dev` 时缺失 | 数据生成了、策略注册了，但跑研究的时候崩溃。Python 报错看不懂。 | ✅ 已修 |
+| 5 | quickstart 完成后的"下一步"提示包含 `cd web && npm run dev` | Docker 镜像里没有安装 Node.js/npm，用户按提示操作会直接失败 | 系统说做第 1 步、第 2 步，但第 1 步就报 `command not found`。不知道怎么办。 | ⏳ 待修 |
+| 6 | Docker 容器启动即退出，用户看不到结果 | `CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]` — quickstart 完成后进程退出，容器停止。用户来不及看输出，也不知道报告存在哪个 volume 里 | 跑完了？结果在哪？容器关了，什么都看不到。 | ⏳ 待修 |
+
+## 问题聚类
+
+```
+问题 1: Git 管理失误 → Dockerfile 未提交
+问题 2: 无脑复制 apt-get → 500+ 个不需要的系统包
+问题 3: COPY 顺序错误 → hatchling 找不到源码
+问题 4: 依赖声明遗漏 → matplotlib 模块级 import 未列入生产依赖
+问题 5: 输出文案未考虑运行环境 → Docker 里提示 node 命令
+问题 6: 产品设计未考虑 Docker 的瞬态特性 → 结果不可见
+```
+
+## 根本教训
+
+1. **Dockerfile 里永远不要写 `apt-get install build-essential`，除非验证了真的需要编译。** Python 科学计算栈（pyarrow、duckdb、numpy、pandas、scipy、matplotlib）全部有预编译 wheel，`pip install` 即可。
+2. **`.dockerignore` 是第一优先级。** 不写的话 `.git/`、`data/`、`reports/`、`__pycache__/` 全进 build context。
+3. **生产依赖和 dev 依赖要用 `--no-dev` 验证。** 模块级 import 的包必须列入 `dependencies`，不能靠 dev 依赖间接引入。
