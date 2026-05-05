@@ -106,15 +106,17 @@ export function WorkbenchApp() {
                       <span className="rounded border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
                         本地研究 Agent
                       </span>
-                      <span className="max-w-full break-all rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">
-                        批次 {currentRunId}
-                      </span>
+                      {statusQuery.data?.current_run?.run_id ? (
+                        <span className="max-w-full break-all rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">
+                          批次 {currentRunId}
+                        </span>
+                      ) : null}
                     </div>
                     <h1 className="break-words text-2xl font-semibold text-slate-950 sm:text-3xl">
                       Kronos Agent
                     </h1>
                     <p className="mt-2 max-w-4xl break-words text-sm leading-6 text-slate-600">
-                      本地加密货币量化研究工作台：把旧 A 股 / 期货策略资产迁移、验证、分析并沉淀为下一轮研究动作。
+                      加密货币策略研究助手——定义策略、回测验证、发现问题、迭代优化。
                     </p>
                   </div>
                   <button

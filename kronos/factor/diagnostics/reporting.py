@@ -7,8 +7,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import matplotlib.pyplot as plt
-
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -55,6 +53,7 @@ def persist_signal_diagnostics_result(
 
 
 def _save_heatmap(matrix: pd.DataFrame, output_path: Path, title: str) -> None:
+    import matplotlib.pyplot as plt
     if matrix.empty:
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.text(0.5, 0.5, "No correlation data", ha="center", va="center")

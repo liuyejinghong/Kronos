@@ -421,12 +421,19 @@ class AgentConsole:
             self._say(f"  {self._T('conv.report_at')}: {result.artifact_paths['auto_run_report']}")
         self._say("")
         self._say(self._T("conv.research_next"))
-        self._say("  [1] " + self._T("conv.open_web"))
-        self._say("  [2] " + self._T("conv.another_run"))
-        self._say("  [3] " + self._T("conv.done"))
+        self._say("")
+        self._say("  [1] " + self._T("conv.tune_params"))
+        self._say("  [2] " + self._T("conv.another_symbol"))
+        self._say("  [3] " + self._T("conv.open_web"))
+        self._say("  [4] " + self._T("conv.done"))
         self._say("")
         c = self._ask()
-        if c == "1" or c == "2":
+        if c == "1":
+            self._show_tuning_guide()
+            self._returning_flow()
+        elif c == "2":
+            self._returning_flow()
+        elif c == "3":
             self._returning_flow()
         else:
             self._say(self._T("conv.goodbye"))
@@ -489,6 +496,18 @@ class AgentConsole:
         sys.stdout.write(prompt)
         sys.stdout.flush()
         return sys.stdin.readline().rstrip("\n")
+
+    def _show_tuning_guide(self) -> None:
+        """Show the user how to tune R-breaker parameters."""
+        self._say("")
+        self._say(self._T("conv.tuning_title"))
+        self._say("")
+        self._say(self._T("conv.tuning_params"))
+        self._say("")
+        self._say(self._T("conv.tuning_how"))
+        self._say("")
+        self._say(self._T("conv.tuning_example"))
+        self._say("")
 
     def _mark_first_run_complete(self) -> None:
         _first_run_marker().parent.mkdir(parents=True, exist_ok=True)

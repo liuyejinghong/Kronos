@@ -604,6 +604,30 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "今天就到这",
         "en": "That's enough for today",
     },
+    "conv.tune_params": {
+        "zh": "调整 R-breaker 参数再跑一次",
+        "en": "Tune R-breaker parameters and re-run",
+    },
+    "conv.another_symbol": {
+        "zh": "换个币种再跑一次",
+        "en": "Run on a different symbol",
+    },
+    "conv.tuning_title": {
+        "zh": "参数调整指南",
+        "en": "Parameter Tuning Guide",
+    },
+    "conv.tuning_params": {
+        "zh": "R-breaker 可调参数: volatility_multiplier (突破倍数, 默认1.5), stop_loss_pct (止损%, 默认2.0), atr_period (ATR周期, 默认14)",
+        "en": "R-breaker params: volatility_multiplier (default 1.5), stop_loss_pct (default 2.0), atr_period (default 14)",
+    },
+    "conv.tuning_how": {
+        "zh": "编辑 ~/.kronos/strategies/r_breaker.toml 修改参数，然后回到这里选'开始一个新方向'重跑。",
+        "en": "Edit ~/.kronos/strategies/r_breaker.toml, then come back and start a new research cycle.",
+    },
+    "conv.tuning_example": {
+        "zh": "常见调整: 震荡市 → 降低 volatility_multiplier (1.0-1.2) / 趋势市 → 提高 stop_loss_pct (3-5%)",
+        "en": "Common: reduce volatility_multiplier (1.0-1.2) in range-bound / increase stop_loss_pct (3-5%) in trending",
+    },
     "conv.explore_title": {
         "zh": "好的，先看看有什么。",
         "en": "OK, let's see what's here.",
