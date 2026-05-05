@@ -7,8 +7,6 @@ services:
       - kronos_home:/root/.kronos
     environment:
       - KRONOS_LANG=zh
-    stdin_open: true
-    tty: true
 
 volumes:
   kronos_data:
