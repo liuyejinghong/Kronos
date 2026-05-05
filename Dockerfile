@@ -17,5 +17,7 @@ RUN uv sync --frozen --no-dev --no-cache
 COPY cli/ cli/
 COPY configs/ configs/
 COPY VERSION ./
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
-CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
