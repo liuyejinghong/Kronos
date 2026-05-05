@@ -23,6 +23,7 @@ uv run kronos quickstart
 一键完成：生成数据 → 注册 R-breaker 策略 → 跑回测 → 出结果。英文：`kronos quickstart --lang en`。
 
 进阶使用：`kronos agent start`（交互式对话 Agent）。
+Docker 用户：`docker compose up`。
 
 ---
 
