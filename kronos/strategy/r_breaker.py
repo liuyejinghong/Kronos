@@ -9,6 +9,8 @@ Implements the ``Factor`` protocol: ``compute(df) → pd.Series``.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 
 from kronos.common.types import FactorFamily
@@ -46,7 +48,13 @@ class RBreakerFactor(BaseFactor):
         self.atr_period = atr_period
         self.volatility_multiplier = volatility_multiplier
 
-    def metadata(self) -> FactorMeta:
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "atr_period": self.atr_period,
+            "volatility_multiplier": self.volatility_multiplier,
+        }
+
+    def meta(self) -> FactorMeta:
         return FactorMeta(
             name="r_breaker",
             version="1.0.0",
@@ -72,7 +80,9 @@ class RBreakerFactor(BaseFactor):
         if df.empty:
             return pd.Series(dtype=float)
 
+        idx = df.index
         df = df.copy()
+        df.index = idx  # preserve original index
         df["date"] = pd.to_datetime(df["event_time"], unit="ms").dt.date
 
         # Compute daily OHLC
@@ -93,9 +103,12 @@ class RBreakerFactor(BaseFactor):
         daily["b_break"] = daily["prev_high"] + 2.0 * (daily["pivot"] - daily["prev_low"])
         daily["s_break"] = daily["prev_low"] - 2.0 * (daily["prev_high"] - daily["pivot"])
 
-        # Merge levels back to intraday bars
-        level_cols = daily[["pivot", "b_break", "s_break"]]
+        # Merge levels back to intraday bars, preserving original index
+        level_cols = daily[["pivot", "b_break", "s_break"]].reset_index()
+        df["_order"] = range(len(df))
         df = df.merge(level_cols, on="date", how="left")
+        df = df.sort_values("_order").drop(columns=["_order"])
+        df.index = idx
 
         # ATR for volatility normalization
         df["tr"] = pd.concat([

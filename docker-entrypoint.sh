@@ -1,12 +1,15 @@
 #!/bin/bash
 set -e
 
+if [ $# -gt 0 ]; then
+    exec uv run --no-dev "$@"
+fi
+
 echo "╔══════════════════════════════════════════╗"
 echo "║     Kronos — Docker Quickstart          ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
-# Run quickstart
 uv run --no-dev kronos quickstart
 
 echo ""

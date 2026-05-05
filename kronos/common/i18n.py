@@ -134,10 +134,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "接下来可以做什么",
         "en": "What to do next",
     },
-    "quickstart.running_research": {
-        "zh": "正在运行研究循环（最小窗口，快速验证）…",
-        "en": "Running research cycle (minimal window, fast validation)…",
-    },
     "quickstart.complete": {
         "zh": "快速开始完成！",
         "en": "Quickstart complete!",
@@ -621,8 +617,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "R-breaker params: volatility_multiplier (default 1.5), stop_loss_pct (default 2.0), atr_period (default 14)",
     },
     "conv.tuning_how": {
-        "zh": "编辑 ~/.kronos/strategies/r_breaker.toml 修改参数，然后回到这里选'开始一个新方向'重跑。",
-        "en": "Edit ~/.kronos/strategies/r_breaker.toml, then come back and start a new research cycle.",
+        "zh": "用 kronos quickstart 重新生成数据后重跑（参数通过代码修改，TOML 配置将在 v0.4.0 支持）。",
+        "en": "Re-run kronos quickstart after modifying params in code (TOML config coming in v0.4.0).",
     },
     "conv.tuning_example": {
         "zh": "常见调整: 震荡市 → 降低 volatility_multiplier (1.0-1.2) / 趋势市 → 提高 stop_loss_pct (3-5%)",

@@ -922,7 +922,7 @@ def research_watchlist_evidence(
     typer.echo(f"evidence_json: {result.artifact_paths['evidence_json']}")
 
 
-def _print_benchmark(symbol: str, base_path: Path, result: Any) -> None:
+def _print_benchmark(symbol: str, base_path: Path, _result: object | None = None) -> None:
     """Print benchmark comparison: strategy vs buy-and-hold."""
     from kronos.data.storage.query import load
 
