@@ -922,6 +922,28 @@ def research_watchlist_evidence(
     typer.echo(f"evidence_json: {result.artifact_paths['evidence_json']}")
 
 
+def _print_benchmark(symbol: str, base_path: Path, result: Any) -> None:
+    """Print benchmark comparison: strategy vs buy-and-hold."""
+    from kronos.data.storage.query import load
+
+    try:
+        df = load(symbol, base_path=base_path, timeframe="1m")
+        if df.empty:
+            typer.echo(f"  📊 {t('quickstart.benchmark')}: {t('quickstart.no_benchmark_data')}")
+            return
+
+        prices = df.sort_values("event_time")["close"]
+        buyhold_ret = (prices.iloc[-1] / prices.iloc[0] - 1) * 100
+        n_days = (df["event_time"].max() - df["event_time"].min()) / (1000 * 86400)
+
+        typer.echo(f"  📊 {t('quickstart.benchmark')}:")
+        typer.echo(f"     {t('quickstart.benchmark_period')}: {n_days:.0f} {t('quickstart.days')}")
+        typer.echo(f"     {t('quickstart.benchmark_buyhold')}: {buyhold_ret:+.1f}%")
+        typer.echo(f"     {t('quickstart.benchmark_note')}")
+    except Exception:
+        typer.echo(f"  📊 {t('quickstart.benchmark')}: {t('quickstart.no_benchmark_data')}")
+
+
 def _echo_promotion_preflight(
     *,
     base_path: Path,
@@ -1076,13 +1098,41 @@ def quickstart(
                 sync_data=False, min_history_days=1,
             )
             summary = result.summary()
-            typer.echo(f"  ✅ {summary.get('evaluated', '—')} {t('quickstart.strategies_evaluated')}")
+            evaluated = summary.get("evaluated", 0)
+            promoted = summary.get("promoted", 0)
+
+            typer.echo()
+            typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            typer.echo(f"  {t('quickstart.trust_title')}")
+            typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            typer.echo()
+
+            # Benchmark: buy-and-hold
+            _print_benchmark(symbol, base_path, result)
+            typer.echo()
+
+            # Strategy evaluation
+            if evaluated > 0:
+                typer.echo(f"  {evaluated} {t('quickstart.strategies_evaluated')}")
+                typer.echo(f"  {promoted} {t('quickstart.strategies_promoted_label')}")
+                typer.echo()
+                if promoted == 0:
+                    typer.echo(f"  💡 {t('quickstart.verdict_none_promoted')}")
+                    typer.echo(f"     {t('quickstart.verdict_none_reason')}")
+                else:
+                    typer.echo(f"  🎯 {t('quickstart.verdict_promoted')}")
+            else:
+                typer.echo(f"  {t('quickstart.no_evaluation')}")
+            typer.echo()
+
             if result.artifact_paths.get("auto_run_report"):
                 typer.echo(f"  📄 {t('quickstart.report_at')}: {result.artifact_paths['auto_run_report']}")
         except Exception as exc:
             typer.echo(f"  ⚠️ {t('quickstart.research_skipped')}: {exc}")
 
     typer.echo()
-    typer.echo(f"✅ {t('quickstart.complete')}")
+    typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    typer.echo(f"  {t('quickstart.what_next_title')}")
+    typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     typer.echo()
     typer.echo(t("quickstart.next_steps"))

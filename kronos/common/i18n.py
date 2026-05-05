@@ -82,6 +82,58 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "跳过研究（{exc}）",
         "en": "Research skipped ({exc})",
     },
+    "quickstart.trust_title": {
+        "zh": "策略评估结果",
+        "en": "Strategy Evaluation",
+    },
+    "quickstart.benchmark": {
+        "zh": "市场基准",
+        "en": "Market Benchmark",
+    },
+    "quickstart.benchmark_period": {
+        "zh": "数据周期",
+        "en": "Period",
+    },
+    "quickstart.days": {
+        "zh": "天",
+        "en": "days",
+    },
+    "quickstart.benchmark_buyhold": {
+        "zh": "同期持有 BTC",
+        "en": "Buy & hold BTC",
+    },
+    "quickstart.benchmark_note": {
+        "zh": "（策略收益需扣除手续费后才能与此对比）",
+        "en": "(strategy returns must deduct fees before comparison)",
+    },
+    "quickstart.no_benchmark_data": {
+        "zh": "无法计算（数据不足）",
+        "en": "Cannot compute (insufficient data)",
+    },
+    "quickstart.strategies_promoted_label": {
+        "zh": "通过验证",
+        "en": "Passed validation",
+    },
+    "quickstart.verdict_none_promoted": {
+        "zh": "当前没有策略通过验证。这在首次运行中很常见：",
+        "en": "No strategies passed validation. This is common on first run:",
+    },
+    "quickstart.verdict_none_reason": {
+        "zh": "策略需要足够长的真实数据才能形成可信结论。sample 数据只是演示流程，建议用 kronos data sync 拉取真实行情后重跑。",
+        "en": "Strategies need sufficient real data for reliable conclusions. Sample data demonstrates the flow — sync real data with kronos data sync and re-run.",
+    },
+    "quickstart.verdict_promoted": {
+        "zh": "有策略通过了验证！查看报告了解详情。",
+        "en": "Strategies passed validation! Check the report for details.",
+    },
+    "quickstart.no_evaluation": {
+        "zh": "没有完成策略评估。检查数据和策略配置后重试。",
+        "en": "No strategies were evaluated. Check data and strategy config, then retry.",
+    },
+    "quickstart.what_next_title": {
+        "zh": "接下来可以做什么",
+        "en": "What to do next",
+    },
     "quickstart.running_research": {
         "zh": "正在运行研究循环（最小窗口，快速验证）…",
         "en": "Running research cycle (minimal window, fast validation)…",
