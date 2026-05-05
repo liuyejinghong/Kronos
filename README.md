@@ -67,8 +67,7 @@ Web 层  (kronos/web)     → FastAPI 后端、Next.js 前端
 
 | 文档 | 说明 |
 |------|------|
-| [`CLAUDE.md`](CLAUDE.md) | 开发指南（命令、架构、关键约束） |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 阶段路线图 |
-| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | 项目状态总览 |
-| [`docs/CODE_REVIEW_20260504.md`](docs/CODE_REVIEW_20260504.md) | 代码审查报告 |
-| [`CHANGELOG.md`](CHANGELOG.md) | 版本变更记录 |
+| [`CLAUDE.md`](CLAUDE.md) | 开发指南（命令、架构、不变量） |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 路线图 |
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | 项目状态 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 变更记录 |

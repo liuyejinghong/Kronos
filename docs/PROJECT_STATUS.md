@@ -1,9 +1,6 @@
 # Kronos Project Status
 
-更新时间：2026-04-30
-
-**最新验收（2026-05-04）**：`docs/ACCEPTANCE_20260504_AGENT_MVP_PRODUCT_REVIEW.md` — CC 无头浏览器全页面验收，功能链路全部通过 ✅，产品可用性部分通过 ⚠️。
-**最新代码审查（2026-05-04）**：`docs/CODE_REVIEW_20260504.md` — 全量审查，8 CRITICAL、20 MAJOR、47 MINOR。
+更新时间：2026-05-05
 
 ## 一句话判断
 
@@ -137,17 +134,6 @@ Agent 本轮结论：
 
 ## 维护规则
 
-- `PRODUCT_CONTROL_PANEL.md` 面向产品经理，回答当前能否使用、能做什么、下一次看什么。
-- `ROADMAP.md` 管阶段计划和优先级。
-- `TODO.md` 管可执行待办。
-- `AGENT_MVP_ACCEPTANCE.md` 管 Agent MVP 验收口径。
-- `AGENT_MVP_DELIVERY.md` 管当前 Agent MVP 交付验收入口、能做什么、不能做什么和验收清单。
-- `AGENT_ARCHITECTURE_TECH_SELECTION.md` 管 Agent 架构、Web 技术栈和开源框架选型边界。
-- `AGENT_MVP_TECH_SELECTION_REVIEW.md` 管研发准入级架构借鉴评审。
-- `openspec/changes/p0-agent-runtime-web-workbench/` 管 Agent MVP 实现前的 spec gate。
-- `AGENT_MVP_DEVELOPMENT_PLAN.md` 管 Agent MVP 的开发批次、模块边界、验收顺序和当前不做事项。
-- `AGENT_MVP_EXECUTION_PLAN.md` 管每个 Batch 内的任务 ID、允许文件范围、产出、验收和禁止扩展项。
-- `AGENT_MVP_ASSET_INVENTORY.md` 管已有资产复用、适配、延期和主线归档判断。
-- `ARCHIVE_INDEX.md` 管不再作为当前 Agent MVP 主线的资产索引。
-- `MVP_ACCEPTANCE.md` 只保留 Run MVP 工具入口验收，不再代表整体产品 MVP。
-- OpenSpec 管设计边界，不直接当完成度看板。
+- `ROADMAP.md`：阶段计划和优先级
+- `TODO.md`：可执行待办
+- `CLAUDE.md`：开发指南

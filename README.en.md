@@ -67,8 +67,7 @@ Web Layer  (kronos/web)       → FastAPI backend, Next.js frontend
 
 | Document | Description |
 |------|------|
-| [`CLAUDE.md`](CLAUDE.md) | Developer guide (commands, architecture, invariants) |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase roadmap |
-| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | Project status dashboard |
-| [`docs/CODE_REVIEW_20260504.md`](docs/CODE_REVIEW_20260504.md) | Comprehensive code review |
-| [`CHANGELOG.md`](CHANGELOG.md) | Version changelog |
+| [`CLAUDE.md`](CLAUDE.md) | Developer guide (commands, architecture) |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Roadmap |
+| [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | Project status |
+| [`CHANGELOG.md`](CHANGELOG.md) | Changelog |
