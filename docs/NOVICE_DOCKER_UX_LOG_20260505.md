@@ -98,8 +98,8 @@ CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]
 | 2 | `apt-get build-essential` 完全多余 | 8 分钟下载 500+ 包后失败，无法理解 | 🔴 已修 |
 | 3 | `matplotlib` 模块级 import 但不在生产依赖 | `--no-dev` 下 ModuleNotFoundError | 🔴 已修 |
 | 4 | Dockerfile COPY 顺序错误 | hatchling 找不到源码目录 | 🟡 已修 |
-| 5 | 下一步引导仍指向 `npm run dev`（Docker 里没 node） | 用户按提示做会失败 | 🟡 待修 |
-| 6 | Docker 容器启动即退出（quickstart 完成后） | 用户看不到结果，不知道数据在哪 | 🟡 待修 |
+| 5 | 下一步引导仍指向 `npm run dev`（Docker 里没 node） | 用户按提示做会失败 | ✅ 已修（`docker-entrypoint.sh` 追加 Docker 专用指引） |
+| 6 | Docker 容器启动即退出（quickstart 完成后） | 用户看不到结果，不知道数据在哪 | ✅ 已修（entrypoint 输出报告查看命令和 volume 路径） |
 
 ## 关键经验
 
@@ -119,8 +119,8 @@ CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]
 | 2 | 构建 8 分钟后网络超时失败：`Failed to fetch ... 502 Bad Gateway` | `apt-get install build-essential git curl nodejs npm` 从 Debian 官方源下载 500+ 个包（~300MB），国内网络不稳定 | 等了很久进度条，最后红色报错。完全不知道发生了什么。放弃。 | ✅ 已修 |
 | 3 | `uv sync` 阶段失败：`hatchling` 报 `Unable to determine which files to ship` | Dockerfile 里 `COPY kronos/` 在 `uv sync` **之后**，hatchling 构建时找不到源码目录 | 构建到一半又报错了。前面下依赖明明成功了，为什么又失败？ | ✅ 已修 |
 | 4 | quickstart 研究循环失败：`ModuleNotFoundError: No module named 'matplotlib'` | `matplotlib` 在 `diagnostics/reporting.py` 里是模块级 `import`，但未列入 `pyproject.toml` 的生产依赖；Docker 用 `--no-dev` 时缺失 | 数据生成了、策略注册了，但跑研究的时候崩溃。Python 报错看不懂。 | ✅ 已修 |
-| 5 | quickstart 完成后的"下一步"提示包含 `cd web && npm run dev` | Docker 镜像里没有安装 Node.js/npm，用户按提示操作会直接失败 | 系统说做第 1 步、第 2 步，但第 1 步就报 `command not found`。不知道怎么办。 | ⏳ 待修 |
-| 6 | Docker 容器启动即退出，用户看不到结果 | `CMD ["uv", "run", "--no-dev", "kronos", "quickstart"]` — quickstart 完成后进程退出，容器停止。用户来不及看输出，也不知道报告存在哪个 volume 里 | 跑完了？结果在哪？容器关了，什么都看不到。 | ⏳ 待修 |
+| 5 | quickstart 完成后的"下一步"提示包含 `cd web && npm run dev` | Docker 镜像里没有安装 Node.js/npm，用户按提示操作会直接失败 | 系统说做第 1 步、第 2 步，但第 1 步就报 `command not found`。不知道怎么办。 | ✅ 已修 |
+| 6 | Docker 容器启动即退出，用户看不到结果 | 原 `CMD` 是 quickstart，完成后进程退出 | 跑完了？结果在哪？容器关了，什么都看不到。 | ✅ 已修 |
 
 ## 问题聚类
 
