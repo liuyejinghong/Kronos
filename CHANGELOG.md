@@ -5,6 +5,16 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-05-05
+
+### Fixed
+
+- benchmark 对比不再对 synthetic 数据展示虚假数字（随机游走收益无参考价值）
+- quickstart 在 Docker 环境下自动切换输出指引（不再建议 `npm run dev`）
+- `docker compose run` 不再重复下载 dev 依赖（`ENV UV_NO_SYNC=1`）
+- pyproject.toml 版本号同步为 0.3.0（之前是 0.0.0）
+- README 添加 Docker 部署说明
+
 ## [0.3.0] — 2026-05-05
 
 ### Added
