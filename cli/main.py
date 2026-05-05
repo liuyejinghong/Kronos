@@ -1023,8 +1023,19 @@ def quickstart(
         typer.echo(f"  {t('quickstart.data_found')}")
     typer.echo()
 
-    # Step 2: verify data is readable
+    # Step 2: register builtin strategies
+    typer.echo()
+    typer.echo(f"… {t('quickstart.registering_strategies')}")
+    from kronos.factor.candidates import register_builtin_strategies
+
+    builtins = register_builtin_strategies()
+    for spec in builtins:
+        typer.echo(f"  ✅ {spec.title} ({spec.candidate_id}) — {spec.family}")
+    typer.echo()
+
+    # Step 3: verify data is readable
     from kronos.data.storage.query import coverage
+
     symbol = symbols.split(",")[0].strip()
     infos = coverage(symbol, base_path=base_path, datasets=["klines_1m"])
     bar_count = infos[0].bar_count if infos else 0
@@ -1033,6 +1044,43 @@ def quickstart(
     from_dt = datetime.fromtimestamp(from_ms / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M") if from_ms else "—"
     to_dt = datetime.fromtimestamp(to_ms / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M") if to_ms else "—"
     typer.echo(f"  {symbol}: {bar_count} bars, {from_dt} → {to_dt}")
+    typer.echo()
+
+    # Step 4: run minimal research
+    typer.echo(f"… {t('quickstart.running_research')}")
+    from kronos.factor.bootstrap import registry
+    from kronos.factor.candidates import list_candidate_factors
+    from kronos.factor.validation.thresholds import ValidationConfig
+    from kronos.research import PromotionCriteria, run_auto_research_cycle
+
+    candidates = list_candidate_factors()
+    if candidates:
+        try:
+            run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-quickstart")
+            result = run_auto_research_cycle(
+                registry=registry,
+                symbols=[symbol],
+                data_base_path=base_path,
+                output_base_path=Path("reports/research"),
+                run_id=run_id,
+                git_commit="quickstart",
+                data_snapshot_id="quickstart-sample",
+                config_snapshot={"command": "quickstart", "symbols": [symbol]},
+                candidate_specs=candidates,
+                watchlist_candidate_specs=candidates,
+                timeframe="1m",
+                since=None, until=None,
+                validation_config=ValidationConfig(periods=[1, 5]),
+                criteria=PromotionCriteria(),
+                train_size=60, validation_size=20, test_size=20, step_size=20,
+                sync_data=False, min_history_days=1,
+            )
+            summary = result.summary()
+            typer.echo(f"  ✅ {summary.get('evaluated', '—')} {t('quickstart.strategies_evaluated')}")
+            if result.artifact_paths.get("auto_run_report"):
+                typer.echo(f"  📄 {t('quickstart.report_at')}: {result.artifact_paths['auto_run_report']}")
+        except Exception as exc:
+            typer.echo(f"  ⚠️ {t('quickstart.research_skipped')}: {exc}")
 
     typer.echo()
     typer.echo(f"✅ {t('quickstart.complete')}")

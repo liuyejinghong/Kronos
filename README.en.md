@@ -17,10 +17,12 @@ Kronos is a local-first crypto quantitative research system. It provides a compl
 ```bash
 git clone https://github.com/liuyejinghong/Kronos.git && cd Kronos
 uv sync --dev
-uv run kronos agent start
+uv run kronos quickstart
 ```
 
-The Agent checks your environment, shows available data, and guides you through your first research cycle. Chinese: `kronos agent start --lang zh`.
+One command: generate data → register R-breaker → run backtest → see results. Chinese: `kronos quickstart --lang zh`.
+
+Advanced: `kronos agent start` (interactive conversational Agent).
 
 ---
 

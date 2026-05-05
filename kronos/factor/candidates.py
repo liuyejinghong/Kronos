@@ -57,3 +57,29 @@ def list_candidate_factors() -> list[CandidateFactorSpec]:
 def clear_candidates() -> None:
     """Remove all registered candidates (useful for testing)."""
     _registry.clear()
+
+
+def register_builtin_strategies() -> list[CandidateFactorSpec]:
+    """Register the built-in example strategies. Idempotent — no duplicates.
+
+    Currently includes: R-breaker intraday breakout.
+    Call once at startup (agent start or quickstart).
+    """
+    existing = {c.candidate_id for c in _registry}
+
+    builtins: list[CandidateFactorSpec] = []
+    if "r_breaker" not in existing:
+        spec = CandidateFactorSpec(
+            candidate_id="r_breaker",
+            family="mean_reversion",
+            title="R-breaker 日内突破",
+            source_strategies=("BTCUSDT", "ETHUSDT"),
+            migration_rank=1,
+            implementation_name="r_breaker",
+            origin="builtin",
+            lifecycle_state=CandidateLifecycleState.OBSERVE,
+        )
+        _registry.append(spec)
+        builtins.append(spec)
+
+    return builtins

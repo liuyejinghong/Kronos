@@ -4,6 +4,8 @@
 
 ## 一句话判断
 
+2026-05-05 外部交易者视角全新试用已完成，记录见 `docs/EXTERNAL_TRADER_ONBOARDING_REVIEW_20260505.md`。结论是：当前 Agent/Web 对内部验收可理解，但全新用户还不能从 README 路径直接完成“跑一个 BTC 策略看看”。最高优先级需要从内部交付批次验收转向首次使用闭环修复：`quickstart` 必须跑出一个内置示例策略结果，README 主路径应改为 quickstart，Web 全新 clone 不应默认指向不存在的交付批次，Web 启动说明要覆盖前后端、依赖安装、API 地址和 localhost / 127.0.0.1 差异，并补齐本地 Docker 部署资产。
+
 Kronos 已经从“让系统能跑”切换到 **Agent MVP** 阶段。架构借鉴、OpenSpec 准入、开发批次拆分、执行级任务拆分和旧资产盘点都已完成，Agent MVP Batch 1 到 Batch 8 已完成。
 
 当前产品目标不是每天自动运行，也不是继续让单个研究模块变强，而是让 Kronos 成为能主动推进研究的加密货币策略研究 Agent：读上一轮结果，选下一轮方向，提出假设，生成实验，调用确定性工具，读结果，写记忆，并保留人工闸门。
@@ -23,6 +25,7 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 | 执行级任务拆分 | 已完成 | 每个 Batch 已拆成任务 ID、文件边界、输入输出、验收和禁止扩展项；Batch 1 到 Batch 8 已完成 | 下一步按验收反馈进入下一阶段 |
 | 旧资产盘点 | 已完成 | 已确认数据、因子、验证、回测、实验账本、知识库和测试可复用；定时器、Run MVP 口径和空占位包已归档出主线 | 后续开发前先查资产清单，避免重复造轮子 |
 | Agent MVP | Batch 8 已完成，可验收 | 已能从上一轮研究结果生成下一轮研究假设、读取专项证据、通过白名单确定性工具形成单轮 Agent 总报告；本地 Web 能读取本轮 Agent 摘要、事件时间线、候选池、设置、材料、审批和 DeepSeek 配置状态 | 下一步由产品验收决定是否进入候选评分、失败记忆约束和真实图表增强 |
+| 首次使用闭环 | 外部交易者试用未通过 | 全新 clone 能安装、能生成 BTCUSDT 样例数据、能打开 Agent 和 Web；但没有内置可运行示例策略，`agent start` / `kronos run today` 都停在没有候选策略/因子 | P0 修复 quickstart 最小策略结果、README 主路径、完整示例策略和 Web 空状态 |
 | Run MVP | V0.1 已跑通 | 证明系统入口、数据检查、研究工具和状态报告可用 | 现在只是 Agent 工具底座，不是产品终点 |
 | 旧策略资产迁移 | 第一轮验证完成 | 12 个 legacy 候选已完成 90 天 crypto 复验 | 10 个候选待退休评审，2 个观察候选待专项复盘 |
 | Web 研究工作台 | 首版可验收 | 已有 FastAPI 后端和 Next.js 本地前端，可展示候选池、Agent 时间线、候选详情、Agent run brief、ECharts 候选分布、masked LLM settings、DeepSeek 配置状态、材料导入和审批中心 | 下一步补更多真实研究图表、角色启停联动和审批项生成 |
@@ -126,10 +129,10 @@ Agent 本轮结论：
 
 ## 当前最高优先级
 
-1. 产品验收 `docs/AGENT_MVP_DELIVERY.md` 和 Web 工作台默认批次 `20260430-agent-mvp-delivery-v1`。
-2. 验收通过后，优先做候选评分维度、失败记忆约束和 `trend_pullback_entry` 的 crypto-native 改造 proposal。
-3. 继续使用 Batch 5 API、Batch 6 Web 工作台和 Batch 8 交付产物，不直接让前端读本地文件、不保存明文 secret。
-4. 暂不安装定时器。
+1. 首次使用闭环修复：让全新用户执行 README 主路径后能跑出一个 BTC 示例策略结果，证据见 `docs/EXTERNAL_TRADER_ONBOARDING_REVIEW_20260505.md`。
+2. README 和 quickstart 口径收敛：主路径优先 `uv run kronos quickstart`，并说明 Web 后端、前端依赖、API 地址、端口冲突、localhost / 127.0.0.1 差异和 DeepSeek 配置边界。
+3. Web 全新 clone 空状态修复：没有 `reports/` 时不要默认展示 `20260430-agent-mvp-delivery-v1`，而是引导运行 quickstart 或导入已有报告。
+4. 补 Docker 本地部署资产：Dockerfile / compose / `.env.example` / 健康检查，满足“本地 Docker 全新部署”试用。
 5. 暂不推进组合风控、执行或实盘。
 
 ## 维护规则

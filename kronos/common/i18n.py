@@ -63,6 +63,26 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Local data found, skipping generation.",
     },
     "quickstart.running_research": {
+        "zh": "正在运行最小研究循环（R-breaker × BTCUSDT）…",
+        "en": "Running minimal research cycle (R-breaker × BTCUSDT)…",
+    },
+    "quickstart.registering_strategies": {
+        "zh": "正在注册内置策略…",
+        "en": "Registering built-in strategies…",
+    },
+    "quickstart.strategies_evaluated": {
+        "zh": "个策略已评估",
+        "en": " strategies evaluated",
+    },
+    "quickstart.report_at": {
+        "zh": "研究报告",
+        "en": "Report",
+    },
+    "quickstart.research_skipped": {
+        "zh": "跳过研究（{exc}）",
+        "en": "Research skipped ({exc})",
+    },
+    "quickstart.running_research": {
         "zh": "正在运行研究循环（最小窗口，快速验证）…",
         "en": "Running research cycle (minimal window, fast validation)…",
     },

@@ -1,0 +1,16 @@
+services:
+  kronos:
+    build: .
+    volumes:
+      - kronos_data:/kronos/data
+      - kronos_reports:/kronos/reports
+      - kronos_home:/root/.kronos
+    environment:
+      - KRONOS_LANG=zh
+    stdin_open: true
+    tty: true
+
+volumes:
+  kronos_data:
+  kronos_reports:
+  kronos_home:

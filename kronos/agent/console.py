@@ -100,7 +100,7 @@ class AgentConsole:
             self.ctx._past_runs = sorted(
                 p for p in exp_root.iterdir() if p.is_dir() and not p.name.startswith(".")
             )
-        self.ctx.is_first_time = not self.ctx._past_runs and not self.ctx.has_data
+        self.ctx.is_first_time = not _first_run_marker().exists()
 
         self._scanned = True
 
@@ -124,6 +124,7 @@ class AgentConsole:
     def _loop(self) -> None:
         if self.ctx.is_first_time:
             self._first_time_flow()
+            self._mark_first_run_complete()
         else:
             self._returning_flow()
 
@@ -489,6 +490,10 @@ class AgentConsole:
         sys.stdout.flush()
         return sys.stdin.readline().rstrip("\n")
 
+    def _mark_first_run_complete(self) -> None:
+        _first_run_marker().parent.mkdir(parents=True, exist_ok=True)
+        _first_run_marker().touch()
+
     def _list_symbols(self) -> list[str]:
         root = self.data_path / "curated"
         if not root.exists():
@@ -521,6 +526,10 @@ _FAMILY_LABEL_ZH: dict[str, str] = {
 # ------------------------------------------------------------------
 # CLI entry point
 # ------------------------------------------------------------------
+
+
+def _first_run_marker() -> Path:
+    return Path.home() / ".kronos" / ".first_run_completed"
 
 
 def start_agent_console(*, config_path: str | None = None) -> None:

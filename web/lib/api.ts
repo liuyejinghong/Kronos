@@ -1,6 +1,6 @@
 export const API_BASE = process.env.NEXT_PUBLIC_KRONOS_API_BASE_URL ?? "/api/kronos";
 export const DEFAULT_RUN_ID =
-  process.env.NEXT_PUBLIC_KRONOS_DEFAULT_RUN_ID ?? "20260430-agent-mvp-delivery-v1";
+  process.env.NEXT_PUBLIC_KRONOS_DEFAULT_RUN_ID ?? "latest";
 
 export type HealthResponse = {
   status: string;
