@@ -35,6 +35,7 @@ from kronos.factor.implementations.volatility import (
     RangeChopFilterFactor,
 )
 from kronos.factor.registry import registry
+from kronos.strategy.r_breaker import RBreakerFactor
 
 # Register seed factors with their defaults
 _SEED_FACTORS = [
@@ -55,6 +56,7 @@ _SEED_FACTORS = [
     (TrendPullbackToleranceFactor(), False),
     (TrendPullbackEntryFactor(), False),
     (MultiTimeframeConfirmationFactor(), False),
+    (RBreakerFactor(), False),
 ]
 
 for _factor, _as_default in _SEED_FACTORS:

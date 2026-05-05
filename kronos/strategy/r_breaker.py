@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import pandas as pd
 
+from kronos.common.types import FactorFamily
 from kronos.factor.base import BaseFactor
-from kronos.common.types import Factor, FactorMeta
+from kronos.factor.schemas import FactorMeta
 
 
 class RBreakerFactor(BaseFactor):
@@ -27,6 +28,15 @@ class RBreakerFactor(BaseFactor):
         volatility_multiplier: breakout threshold multiplier (default 1.5)
     """
 
+    name = "r_breaker"
+    family = "trend_momentum"
+    version = "1.0.0"
+    lookback = 254  # ATR(14) + ~240 bars (1 day of 1m)
+    warmup_bars = 254
+    universe = "crypto_perp"
+    required_columns = ["open", "high", "low", "close", "event_time", "symbol"]
+    description = "R-breaker 日内突破策略（基于前一日 OHLC 计算突破价位）"
+
     def __init__(
         self,
         atr_period: int = 14,
@@ -40,17 +50,15 @@ class RBreakerFactor(BaseFactor):
         return FactorMeta(
             name="r_breaker",
             version="1.0.0",
-            family="mean_reversion",
-            warmup_bars=self.atr_period + 240,  # ATR + ~1 day of 1m bars
-            description_zh="R-breaker 日内突破策略",
-            description_en="R-breaker intraday breakout strategy",
-            parameters={
-                "atr_period": self.atr_period,
-                "volatility_multiplier": self.volatility_multiplier,
-            },
+            family=FactorFamily.TREND_MOMENTUM,
+            lookback=self.atr_period,
+            warmup_bars=self.atr_period + 240,
+            universe=["crypto"],
+            required_columns=["open", "high", "low", "close", "event_time", "symbol"],
+            description="R-breaker 日内突破策略（基于前一日 OHLC 计算突破价位）",
         )
 
-    def compute(self, df: pd.DataFrame) -> pd.Series:
+    def _compute(self, df: pd.DataFrame) -> pd.Series:
         """Compute R-breaker signal for each bar.
 
         Expects columns: open, high, low, close, event_time, symbol.
@@ -104,10 +112,6 @@ class RBreakerFactor(BaseFactor):
             (df.loc[valid, "close"] - df.loc[valid, "pivot"])
             / (df.loc[valid, "atr"] * self.volatility_multiplier)
         )
-
-        # Warmup: NaN for first N bars
-        warmup = self.metadata().warmup_bars
-        df.loc[df.index[:warmup], "signal"] = float("nan")
 
         result = df["signal"].astype(float)
         result.name = "r_breaker"

@@ -71,7 +71,7 @@ def register_builtin_strategies() -> list[CandidateFactorSpec]:
     if "r_breaker" not in existing:
         spec = CandidateFactorSpec(
             candidate_id="r_breaker",
-            family="mean_reversion",
+            family="trend_momentum",
             title="R-breaker 日内突破",
             source_strategies=("BTCUSDT", "ETHUSDT"),
             migration_rank=1,
