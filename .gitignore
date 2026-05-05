@@ -61,8 +61,8 @@ findings.md
 task_plan.md
 progress.md
 
-# Docker
-Dockerfile*
+# Docker (临时测试用)
+Dockerfile.fresh*
 
 # IDE / 工具
 .claude/
