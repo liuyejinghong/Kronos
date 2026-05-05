@@ -5,6 +5,23 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-05-05
+
+### Added
+
+- **可信度评估报告**：quickstart 输出包含市场基准对比（vs 持有 BTC）、评估数量、通过数量、原因解释
+- **参数调整引导**：Agent 控制台研究完成后展示可调参数列表、TOML 路径、常见调整建议
+- **Docker 完整支持**：Dockerfile + docker-compose.yml + .dockerignore + entrypoint、6 项根因问题修复
+- **惰性加载 matplotlib**：`diagnostics/reporting.py` 中改为函数内 import，避免生产环境非必要导入
+
+### Fixed
+
+- matplotlib 模块级 import 导致 `--no-dev` 下崩溃
+- Web 全新 clone 空状态：无历史 run 时不再显示不存在的默认批次号
+- Docker 构建 8 分钟超时（移除 500+ 个多余的 Debian 系统包）
+- Dockerfile COPY 顺序修正（kronos/ 在 uv sync 之前）
+- pyproject.toml 显式声明 scipy、numpy、matplotlib 生产依赖
+
 ## [0.2.0] — 2026-05-05
 
 ### Added
