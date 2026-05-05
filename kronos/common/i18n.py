@@ -315,6 +315,249 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "历史运行",
         "en": "Run History",
     },
+    # Conversational Agent
+    "conv.greeting": {
+        "zh": "你好！我是 Kronos，一个加密货币量化研究助手。",
+        "en": "Hello! I'm Kronos, a crypto quantitative research assistant.",
+    },
+    "conv.what_i_can_do": {
+        "zh": "我可以帮你分析策略的历史表现，回测交易想法，或者让 AI 帮你找到新的研究方向。",
+        "en": "I can analyze strategy performance, backtest trading ideas, or help you discover new research directions.",
+    },
+    "conv.checking_env": {
+        "zh": "正在检查你的环境…",
+        "en": "Checking your environment…",
+    },
+    "conv.first_time_no_data": {
+        "zh": "你还没有行情数据。让我帮你准备一下：",
+        "en": "You don't have market data yet. Let me help you get started:",
+    },
+    "conv.gen_sample": {
+        "zh": "生成 7 天 BTC 模拟数据，先体验一下",
+        "en": "Generate 7 days of BTC sample data to try things out",
+    },
+    "conv.connect_exchange": {
+        "zh": "连接交易所拉取真实数据",
+        "en": "Connect to an exchange for real data",
+    },
+    "conv.look_around": {
+        "zh": "先随便看看，等会儿再弄数据",
+        "en": "Just look around for now",
+    },
+    "conv.exchange_hint": {
+        "zh": "运行 kronos data sync --symbols BTCUSDT 从 Binance 拉取数据。需要网络连接。",
+        "en": "Run kronos data sync --symbols BTCUSDT to pull data from Binance. Requires network access.",
+    },
+    "conv.first_time_has_data": {
+        "zh": "你已经有一些数据了（{syms} 等），可以直接开始。",
+        "en": "You already have some data ({syms} and more). Ready to go.",
+    },
+    "conv.model_ready_short": {"zh": "AI 模型已就绪", "en": "AI model ready"},
+    "conv.model_not_ready_short": {"zh": "AI 模型未配置", "en": "AI model not configured"},
+    "conv.start_research": {
+        "zh": "帮我分析一下这些策略的表现",
+        "en": "Analyze how these strategies are performing",
+    },
+    "conv.browse_strategies": {
+        "zh": "先看看有什么策略",
+        "en": "Browse available strategies",
+    },
+    "conv.configure_model": {
+        "zh": "怎么配置 AI 模型？",
+        "en": "How do I configure the AI model?",
+    },
+    "conv.welcome_back": {
+        "zh": "欢迎回来！当前环境: {syms} | {model}。",
+        "en": "Welcome back! Environment: {syms} | {model}.",
+    },
+    "conv.last_run": {
+        "zh": "上次运行: {run}",
+        "en": "Last run: {run}",
+    },
+    "conv.continue_last": {
+        "zh": "继续上次的研究",
+        "en": "Continue last research",
+    },
+    "conv.new_research": {
+        "zh": "开始一个新方向",
+        "en": "Start a new direction",
+    },
+    "conv.review_strategies": {
+        "zh": "看看目前的策略池",
+        "en": "Review the strategy pool",
+    },
+    "conv.just_browse": {
+        "zh": "随便看看",
+        "en": "Just browse",
+    },
+    "conv.generating_data": {
+        "zh": "好的，正在生成 7 天的 BTC 模拟数据…",
+        "en": "OK, generating 7 days of BTC sample data…",
+    },
+    "conv.data_generated": {
+        "zh": "数据已就绪 — {bars} 根 K 线。虽然是模拟数据，但足够让你了解系统怎么用。",
+        "en": "Data ready — {bars} bars. It's synthetic, but enough to explore the system.",
+    },
+    "conv.synthetic": {"zh": "模拟数据", "en": "synthetic"},
+    "conv.no_strategies": {
+        "zh": "当前没有可用的策略。",
+        "en": "No strategies available right now.",
+    },
+    "conv.strategies_title": {
+        "zh": "这里有 {n} 个策略，按关注度排列：",
+        "en": "Here are {n} strategies, ranked by relevance:",
+    },
+    "conv.strategies_active": {
+        "zh": "🔥 值得关注的:",
+        "en": "🔥 Worth your attention:",
+    },
+    "conv.strategies_archived": {
+        "zh": "📦 还有 {n} 个已验证过的策略（不太适合当前市场）",
+        "en": "📦 {n} more have been validated (less suitable for current market)",
+    },
+    "conv.strategies_prompt": {
+        "zh": "这些策略在 crypto 上跑了 90 天验证，但没有一个能直接赚钱——这是正常的，好的策略需要反复打磨。",
+        "en": "These strategies were validated on 90 days of crypto data. None is profitable yet — that's normal, good strategies take iteration.",
+    },
+    "conv.pick_strategy": {
+        "zh": "选一个策略，帮我分析",
+        "en": "Pick a strategy to analyze",
+    },
+    "conv.run_on_all": {
+        "zh": "全部跑一遍看看",
+        "en": "Run analysis on all of them",
+    },
+    "conv.back": {"zh": "返回", "en": "Go back"},
+    "conv.research_start": {
+        "zh": "好的，我来帮你做一轮策略分析。",
+        "en": "OK, let me run a strategy analysis for you.",
+    },
+    "conv.no_data_gen": {
+        "zh": "需要一些数据，正在生成…",
+        "en": "Need some data, generating…",
+    },
+    "conv.research_no_symbols": {
+        "zh": "没有找到可用的交易品种。请先准备数据。",
+        "en": "No trading symbols found. Please prepare data first.",
+    },
+    "conv.research_which_symbols": {
+        "zh": "可用的交易品种: {syms}。你想在哪些上面跑？（逗号分隔，回车用默认）",
+        "en": "Available symbols: {syms}. Which ones to analyze? (comma-separated, Enter for default)",
+    },
+    "conv.research_using_only": {
+        "zh": "只有 {sym} 有数据，那我就分析这个。",
+        "en": "Only {sym} has data, analyzing that.",
+    },
+    "conv.research_goal": {
+        "zh": "你有什么特别想研究的吗？（回车跳过）",
+        "en": "Anything specific you want to research? (Enter to skip)",
+    },
+    "conv.research_goal_default": {
+        "zh": "看看哪些策略值得继续关注",
+        "en": "Find which strategies are worth following up",
+    },
+    "conv.research_running": {
+        "zh": "开始分析…",
+        "en": "Starting analysis…",
+    },
+    "conv.loading_data": {
+        "zh": "  加载数据…",
+        "en": "  Loading data…",
+    },
+    "conv.computing": {
+        "zh": "  计算信号…",
+        "en": "  Computing signals…",
+    },
+    "conv.validating": {
+        "zh": "  验证结果…",
+        "en": "  Validating results…",
+    },
+    "conv.research_done": {
+        "zh": "分析完成！",
+        "en": "Analysis complete!",
+    },
+    "conv.strategies_evaluated": {
+        "zh": "个策略已评估",
+        "en": " strategies evaluated",
+    },
+    "conv.strategies_promoted": {
+        "zh": "个通过验证",
+        "en": " passed validation",
+    },
+    "conv.report_at": {
+        "zh": "完整报告",
+        "en": "Full report",
+    },
+    "conv.research_next": {
+        "zh": "当前的 12 个旧策略在 crypto 上表现都不够好——这很正常。好的策略需要反复迭代。下一步建议关注 liquidation 数据和市场状态过滤，而不是继续调参数。",
+        "en": "The 12 legacy strategies all underperform in crypto — that's normal. Good strategies need iteration. Next: focus on liquidation data and market regime filters rather than parameter tuning.",
+    },
+    "conv.open_web": {
+        "zh": "打开 Web 工作台看完整报告",
+        "en": "Open Web workbench for full report",
+    },
+    "conv.another_run": {
+        "zh": "换个币种再跑一次",
+        "en": "Run again with different symbols",
+    },
+    "conv.done": {
+        "zh": "今天就到这",
+        "en": "That's enough for today",
+    },
+    "conv.explore_title": {
+        "zh": "好的，先看看有什么。",
+        "en": "OK, let's see what's here.",
+    },
+    "conv.explore_line1": {
+        "zh": "系统里有 {n} 个策略模板，是从传统市场迁移过来的。",
+        "en": "The system has {n} strategy templates, migrated from traditional markets.",
+    },
+    "conv.explore_line2": {
+        "zh": "数据: {syms}",
+        "en": "Data: {syms}",
+    },
+    "conv.explore_line3": {
+        "zh": "AI 模型: {model}",
+        "en": "AI model: {model}",
+    },
+    "conv.yes": {"zh": "已配置", "en": "configured"},
+    "conv.no": {"zh": "未配置", "en": "not configured"},
+    "conv.explore_prompt": {
+        "zh": "准备好开始了吗？",
+        "en": "Ready to get started?",
+    },
+    "conv.ready_try": {
+        "zh": "准备好了，帮我准备数据开始吧",
+        "en": "Ready, help me get data and start",
+    },
+    "conv.not_now": {
+        "zh": "下次再说",
+        "en": "Maybe next time",
+    },
+    "conv.model_config_title": {
+        "zh": "要使用 AI 驱动的策略分析，需要 DeepSeek API Key。",
+        "en": "AI-driven strategy analysis requires a DeepSeek API Key.",
+    },
+    "conv.model_config_how": {
+        "zh": "获取方式: 访问 platform.deepseek.com → API Keys → 创建 → 复制 Key",
+        "en": "Get one: visit platform.deepseek.com → API Keys → Create → Copy key",
+    },
+    "conv.model_config_or": {
+        "zh": "然后通过 Web 工作台的设置页面保存，或者运行: kronos agent configure --provider deepseek --api-key YOUR_KEY",
+        "en": "Then save via Web workbench Settings, or run: kronos agent configure --provider deepseek --api-key YOUR_KEY",
+    },
+    "conv.continue_anyway": {
+        "zh": "先不管，继续用确定性分析",
+        "en": "Continue with deterministic analysis only",
+    },
+    "conv.research_failed": {
+        "zh": "分析过程中出错了: {err}。请检查数据和配置，然后重试。",
+        "en": "Analysis failed: {err}. Check your data and config, then retry.",
+    },
+    "conv.goodbye": {
+        "zh": "再见！需要分析策略的时候随时回来。",
+        "en": "Goodbye! Come back anytime you want to analyze strategies.",
+    },
 }
 
 
