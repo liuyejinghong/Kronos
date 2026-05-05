@@ -8,6 +8,17 @@ services:
     environment:
       - KRONOS_LANG=zh
 
+  # Web 工作台需要 Node.js。
+  # 不在 Docker 里运行：在宿主机上 cd web && npm install && npm run dev
+  # web:
+  #   build:
+  #     context: ./web
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NEXT_PUBLIC_KRONOS_API_BASE_URL=http://localhost:8000/api
+
 volumes:
   kronos_data:
   kronos_reports:

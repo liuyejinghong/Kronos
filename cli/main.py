@@ -932,6 +932,12 @@ def _print_benchmark(symbol: str, base_path: Path, _result: object | None = None
             typer.echo(f"  📊 {t('quickstart.benchmark')}: {t('quickstart.no_benchmark_data')}")
             return
 
+        # Skip benchmark for synthetic data — random walks are meaningless
+        venue = str(df.iloc[0].get("venue", "")) if "venue" in df.columns else ""
+        if venue == "synthetic":
+            typer.echo(f"  📊 {t('quickstart.benchmark')}: {t('quickstart.benchmark_synthetic')}")
+            return
+
         prices = df.sort_values("event_time")["close"]
         buyhold_ret = (prices.iloc[-1] / prices.iloc[0] - 1) * 100
         n_days = (df["event_time"].max() - df["event_time"].min()) / (1000 * 86400)
@@ -1135,4 +1141,5 @@ def quickstart(
     typer.echo(f"  {t('quickstart.what_next_title')}")
     typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     typer.echo()
-    typer.echo(t("quickstart.next_steps"))
+    import os as _os
+    typer.echo(t("quickstart.next_steps_docker") if _os.path.exists("/.dockerenv") else t("quickstart.next_steps"))

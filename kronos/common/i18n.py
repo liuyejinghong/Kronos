@@ -106,6 +106,24 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "（策略收益需扣除手续费后才能与此对比）",
         "en": "(strategy returns must deduct fees before comparison)",
     },
+    "quickstart.benchmark_synthetic": {
+        "zh": "使用模拟数据，无法提供可信基准对比。同步真实行情后可查看。",
+        "en": "Using synthetic data — no reliable benchmark available. Sync real market data to compare.",
+    },
+    "quickstart.next_steps_docker": {
+        "zh": (
+            "Docker 环境下，下一步：\n"
+            "  · 查看报告: docker compose run --rm kronos ls /kronos/reports/research/experiments/\n"
+            "  · 交互式 Agent: docker compose run --rm kronos uv run kronos agent start\n"
+            "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT"
+        ),
+        "en": (
+            "In Docker, next steps:\n"
+            "  · View reports: docker compose run --rm kronos ls /kronos/reports/research/experiments/\n"
+            "  · Interactive Agent: docker compose run --rm kronos uv run kronos agent start\n"
+            "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT"
+        ),
+    },
     "quickstart.no_benchmark_data": {
         "zh": "无法计算（数据不足）",
         "en": "Cannot compute (insufficient data)",
