@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Git
+.git/
+.gitignore
+
+# Data (huge)
+data/
+reports/
+logs/
+
+# IDE / tools
+.claude/
+.deepseek/
+.opencode/
+.omx/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (web frontend, not needed for CLI quickstart)
+web/node_modules/
+web/.next/
+
+# Test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.uv-cache/
+.coverage
+
+# Docs (not needed at runtime)
+docs/
+*.md
+!README.md
+!README.en.md
+
+# Temp files
+*.tmp
+*.swp
+*.swo
