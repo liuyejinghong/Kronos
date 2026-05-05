@@ -5,11 +5,16 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — 2026-05-05
+
+### Fixed
+
+- **候选注册持久化**：quickstart 注册的 R-breaker 写入 `~/.kronos/candidates.json`，agent start 启动时自动加载。不再出现"quickstart 评估完 R-breaker，Agent 却说还没有定义任何策略"的 P0 断裂
+
 ## [0.3.1] — 2026-05-05
 
 ### Fixed
 
-- **候选注册持久化**：quickstart 注册的 R-breaker 现在会写入 `~/.kronos/candidates.json`，agent start 启动时自动加载。不再出现"quickstart 刚评估完 R-breaker，Agent 却说还没有定义任何策略"的断裂
 - benchmark 对比不再对 synthetic 数据展示虚假数字（随机游走收益无参考价值）
 - quickstart 在 Docker 环境下自动切换输出指引（不再建议 `npm run dev`）
 - `docker compose run` 不再重复下载 dev 依赖（`ENV UV_NO_SYNC=1`）
