@@ -5,6 +5,30 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-05-05
+
+### Added
+
+- **对话式 Agent**（`kronos agent start`）：上下文感知、主动引导、分阶段交互（首次用户/回访用户不同路径）
+- **策略翻译层**：内部因子概念自动翻译为交易者可理解的策略描述
+- **Agent 环境感知**：自动检测数据/模型/历史状态，主动提议修复缺失
+- **i18n 完整翻译**：80+ 对话字符串中英双语，`--lang zh/en` 全局切换
+- **策略列表优化**：按活跃/已验证分组，"趋势回踩" 替代 "trend_pullback_entry"
+
+### Changed
+
+- README 中英分离（`README.md` + `README.en.md`，顶部互相索引）
+- README clone URL 改为 HTTPS（新用户无需配 SSH key）
+- 前置条件补全（Python 3.12+、uv、git）
+- 文档目录精简：30 个内部开发文档从公开仓库移除，仅保留 ROADMAP 和 PROJECT_STATUS
+
+### Fixed
+
+- 候选状态从英文 enum 值修正为中文标签（"已验证" 替代 "retired"）
+- Web 工作台首页新增候选生命周期分布图表
+- "开始下一轮研究"按钮根据 DeepSeek 配置动态启用/禁用
+- 审批中心空状态补充说明文案
+
 ## [0.1.0] — 2026-05-04
 
 ### Added
