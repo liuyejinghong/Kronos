@@ -1,20 +1,32 @@
 # Kronos Project Status
 
-更新时间：2026-05-05
+更新时间：2026-05-05 | 版本：0.2.0
 
 ## 一句话判断
 
-2026-05-05 外部交易者视角全新试用已完成，记录见 `docs/EXTERNAL_TRADER_ONBOARDING_REVIEW_20260505.md`。结论是：当前 Agent/Web 对内部验收可理解，但全新用户还不能从 README 路径直接完成“跑一个 BTC 策略看看”。最高优先级需要从内部交付批次验收转向首次使用闭环修复：`quickstart` 必须跑出一个内置示例策略结果，README 主路径应改为 quickstart，Web 全新 clone 不应默认指向不存在的交付批次，Web 启动说明要覆盖前后端、依赖安装、API 地址和 localhost / 127.0.0.1 差异，并补齐本地 Docker 部署资产。
+v0.2.0：首次使用闭环已修复。全新 clone → `uv sync` → `kronos quickstart` 可完成：数据生成 → R-breaker 注册 → 策略评估 → 报告输出。Docker 路径 `docker compose up` 可用（6 项根因问题已修复）。
 
-Kronos 已经从“让系统能跑”切换到 **Agent MVP** 阶段。架构借鉴、OpenSpec 准入、开发批次拆分、执行级任务拆分和旧资产盘点都已完成，Agent MVP Batch 1 到 Batch 8 已完成。
+v0.3.0 目标：让一个非开发交易者在 10 分钟内判断 R-breaker 是否值得进入模拟盘观察。
 
-当前产品目标不是每天自动运行，也不是继续让单个研究模块变强，而是让 Kronos 成为能主动推进研究的加密货币策略研究 Agent：读上一轮结果，选下一轮方向，提出假设，生成实验，调用确定性工具，读结果，写记忆，并保留人工闸门。
+## 当前版本 (v0.2.0) 能力
 
-最新产品架构共识：Kronos 应是本地优先、未来可远程化的常驻 Agent 软件。后端 Agent Supervisor 负责持续运行、研究队列、idle 巡检、候选生命周期状态机、Agent 角色版本、材料池、审批闸门、失败收敛和事件时间线；Web 是产品控制台，第一屏应展示候选资产看板、Agent 工作流时间线、候选详情页、状态变更记录、模型设置、材料导入、审批中心和候选评分维度。
+| 模块 | 状态 | 关键能力 |
+|------|------|----------|
+| 数据管线 | ✅ | Binance USDM 拉取、Parquet 存储、PIT-safe 查询、sample 数据生成 |
+| 因子平台 | ✅ | 17 个种子因子 + R-breaker、Factor 协议、FactorRegistry |
+| 内置策略 | ✅ | R-breaker 日内突破（trend_momentum）、`register_builtin_strategies()` |
+| Agent | ✅ | DeepSeek V4-Pro/Flash 双模型、对话式 REPL、真实 LLM 研究闭环 |
+| Web 工作台 | ✅ | FastAPI + Next.js 16、候选池/时间线/报告/设置 |
+| Onboarding | ✅ | quickstart 一键完成、README 中英双语、`--lang zh/en` |
+| Docker | ✅ | Dockerfile + compose + .dockerignore、6 项问题已修复 |
+| 安全 | ✅ | 路径穿越/SQL 注入/Secret 脱敏/8 项 MAJOR bug 已修复 |
+| 测试 | ✅ | 499 passed, 91% coverage |
 
-产品边界确认到当前版本收敛。实现前置门槛已经补齐：架构借鉴评审、OpenSpec 约束、开发任务拆分和资产盘点都已落地。Batch 1 已固定 Agent 的基础契约、事件记录和报告产物；Batch 2 已补上本地 Agent Supervisor、单主任务队列、idle scanner、候选生命周期状态机、失败收敛和 CLI 状态查询；Batch 3 已补上角色注册、Prompt 版本、SecretStore、DeepSeek provider 和 LLM 调用事件；Batch 4 已补上确定性工具白名单、工具执行记录、选择性知识库写入规则和 `kronos agent run-once` 单轮闭环；Batch 5 已补上本地 FastAPI 后端、Web API schema、候选/Agent/事件/设置/材料/审批接口和 SSE；Batch 6 已补上本地 Next.js 研究工作台前端；Batch 7 已用真实本地材料跑通 Agent loop 集成验收，并让 Web 第一屏读取同一轮 Agent 摘要、事件和报告；Batch 8 已完成错误分类、时间线恢复、DeepSeek 配置状态检查、secret 脱敏复查、Web QA 和交付验收文档。当前进入产品验收。
+## v0.3.0 重点
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。完整开发规划见 `docs/AGENT_MVP_DEVELOPMENT_PLAN.md`，执行级任务拆分见 `docs/AGENT_MVP_EXECUTION_PLAN.md`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md` 与 `docs/ARCHIVE_INDEX.md`。
+见 `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` 和 `TODO.md`。
+
+核心：R-breaker 可信度报告（含手续费扣除 + vs 基准 + 最大连续亏损 + 明确结论）、参数调整即时重跑、关键交易复盘。
 
 ## 当前阶段
 
