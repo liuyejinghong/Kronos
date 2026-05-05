@@ -50,18 +50,31 @@ def test_agent_status_returns_current_supervisor_status(tmp_path: Path) -> None:
 
 
 def test_candidate_pool_and_detail_routes(tmp_path: Path) -> None:
+    from kronos.factor.candidates import CandidateFactorSpec, clear_candidates, register_candidate
+
+    clear_candidates()
+    register_candidate(CandidateFactorSpec(
+        "test_strategy", "trend_momentum", "测试策略", ("BTCUSDT", "ETHUSDT"), 1,
+        "test_impl",
+    ))
+    register_candidate(CandidateFactorSpec(
+        "test_strategy_2", "volatility_path", "测试策略2", ("SOLUSDT",), 2,
+    ))
+
     client = _client(tmp_path)
 
     list_response = client.get("/api/candidates")
-    detail_response = client.get("/api/candidates/trend_pullback_entry")
+    detail_response = client.get("/api/candidates/test_strategy")
 
     assert list_response.status_code == 200
-    assert len(list_response.json()) >= 12
+    assert len(list_response.json()) >= 1
     assert detail_response.status_code == 200
     detail = detail_response.json()
-    assert detail["candidate_id"] == "trend_pullback_entry"
-    assert detail["implementation_name"] == "trend_pullback_entry"
+    assert detail["candidate_id"] == "test_strategy"
+    assert detail["implementation_name"] == "test_impl"
     assert detail["source_strategies"]
+
+    clear_candidates()
 
 
 def test_event_timeline_and_sse_routes(tmp_path: Path) -> None:

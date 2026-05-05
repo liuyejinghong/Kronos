@@ -1,38 +1,66 @@
-"""Unit tests for structured candidate factor hypotheses."""
+"""Unit tests for candidate factor registry."""
 
 from __future__ import annotations
 
-from kronos.factor.candidates import list_candidate_factors
+from kronos.factor.candidates import (
+    CandidateFactorSpec,
+    clear_candidates,
+    list_candidate_factors,
+    register_candidate,
+)
 
 
-class TestCandidateFactors:
-    def test_legacy_candidates_are_structured(self) -> None:
-        candidates = list_candidate_factors()
-        assert len(candidates) == 12
-        assert candidates[0].initial_status == "candidate"
+def _sample_candidate(candidate_id: str, rank: int, impl: str | None = None) -> CandidateFactorSpec:
+    return CandidateFactorSpec(
+        candidate_id=candidate_id,
+        family="trend_momentum",
+        title=f"测试策略 {candidate_id}",
+        source_strategies=("BTCUSDT",),
+        migration_rank=rank,
+        implementation_name=impl,
+    )
 
-    def test_candidate_ids_are_unique(self) -> None:
-        candidates = list_candidate_factors()
-        ids = [candidate.candidate_id for candidate in candidates]
+
+class TestCandidateRegistry:
+    def setup_method(self) -> None:
+        clear_candidates()
+
+    def teardown_method(self) -> None:
+        clear_candidates()
+
+    def test_empty_by_default(self) -> None:
+        assert list_candidate_factors() == []
+
+    def test_register_and_list(self) -> None:
+        register_candidate(_sample_candidate("strat_a", 1))
+        register_candidate(_sample_candidate("strat_b", 2))
+        result = list_candidate_factors()
+        assert len(result) == 2
+        assert result[0].candidate_id == "strat_a"
+        assert result[1].candidate_id == "strat_b"
+
+    def test_sorted_by_migration_rank(self) -> None:
+        register_candidate(_sample_candidate("b", 10))
+        register_candidate(_sample_candidate("a", 1))
+        result = list_candidate_factors()
+        assert result[0].migration_rank == 1
+        assert result[1].migration_rank == 10
+
+    def test_candidate_ids_unique(self) -> None:
+        register_candidate(_sample_candidate("a", 1))
+        register_candidate(_sample_candidate("b", 2))
+        ids = [c.candidate_id for c in list_candidate_factors()]
         assert len(ids) == len(set(ids))
 
-    def test_candidates_cover_expected_families(self) -> None:
-        families = {candidate.family for candidate in list_candidate_factors()}
-        assert {"trend_momentum", "volatility_path", "volume_liquidity", "mean_reversion"} <= families
+    def test_default_origin_is_user(self) -> None:
+        spec = CandidateFactorSpec("test", "trend_momentum", "Test", ("BTCUSDT",), 1)
+        assert spec.origin == "user"
 
-    def test_some_candidates_are_now_backed_by_implementations(self) -> None:
-        mapped = {
-            candidate.candidate_id: candidate.implementation_name
-            for candidate in list_candidate_factors()
-            if candidate.implementation_name is not None
-        }
-        assert len(mapped) == 12
-        assert mapped["body_energy"] == "body_energy"
-        assert mapped["signal_persistence_density"] == "signal_persistence_density"
-        assert mapped["range_chop_filter"] == "range_chop_filter"
-        assert mapped["band_position_conditioning"] == "band_position_conditioning"
-        assert mapped["trend_pullback_tolerance"] == "trend_pullback_tolerance"
-        assert mapped["trend_pullback_entry"] == "trend_pullback_entry"
-        assert mapped["multi_timeframe_confirmation"] == "multi_timeframe_confirmation"
-        assert mapped["volume_drought"] == "volume_drought"
-        assert mapped["move_density"] == "move_density"
+    def test_lifecycle_state_defaults_to_none(self) -> None:
+        spec = CandidateFactorSpec("test", "trend_momentum", "Test", ("BTCUSDT",), 1)
+        assert spec.lifecycle_state is None
+
+    def test_clear_candidates(self) -> None:
+        register_candidate(_sample_candidate("a", 1))
+        clear_candidates()
+        assert list_candidate_factors() == []

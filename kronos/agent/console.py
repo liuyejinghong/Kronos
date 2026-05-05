@@ -222,7 +222,21 @@ class AgentConsole:
 
         candidates = list_candidate_factors()
         if not candidates:
+            self._say("")
             self._say(self._T("conv.no_strategies"))
+            self._say("")
+            self._say(self._T("conv.no_strategies_how"))
+            self._say("")
+            self._say(self._T("conv.no_strategies_example"))
+            self._say("")
+            self._say("  [1] " + self._T("conv.create_first"))
+            self._say("  [2] " + self._T("conv.back"))
+            self._say("")
+            c = self._ask()
+            if c == "1":
+                self._show_strategy_example()
+            else:
+                self._first_time_flow()
             return
 
         # Group by lifecycle for trader-friendly display
@@ -263,6 +277,30 @@ class AgentConsole:
             self._research_flow()
         else:
             self._returning_flow()
+
+    def _show_strategy_example(self) -> None:
+        """Show the user how to create their first strategy."""
+        self._say("")
+        self._say("# 在你的 Python 脚本或 Jupyter Notebook 中:")
+        self._say("")
+        self._say("from kronos.factor.candidates import CandidateFactorSpec, register_candidate")
+        self._say("")
+        self._say("register_candidate(CandidateFactorSpec(")
+        self._say('    candidate_id="my_first_strategy",')
+        self._say('    family="trend_momentum",')
+        self._say('    title="我的第一个策略",')
+        self._say('    source_strategies=("BTCUSDT",),')
+        self._say("    migration_rank=1,")
+        self._say('    implementation_name="my_strategy_impl",')
+        self._say("))")
+        self._say("")
+        self._say(self._T("conv.example_note"))
+        self._say("")
+        self._say("  [1] " + self._T("conv.got_it"))
+        self._say("")
+        c = self._ask()
+        self._say(self._T("conv.strategies_empty_done"))
+        self._say("")
 
     def _describe_strategy(self, title: str, family: str) -> str:
         """Translate internal factor names to trader-friendly descriptions."""
@@ -336,6 +374,10 @@ class AgentConsole:
             from kronos.research import PromotionCriteria, run_auto_research_cycle
 
             candidates = list_candidate_factors()
+            if not candidates:
+                self._say(self._T("conv.research_no_candidates"))
+                self._browse_strategies()
+                return
             watchlist = [c for c in candidates if c.lifecycle_state and c.lifecycle_state.value in ("observe", "redesign")]
             # Use 3 candidates max for interactive speed
             active = watchlist if watchlist else candidates[:3]

@@ -400,8 +400,36 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "conv.synthetic": {"zh": "模拟数据", "en": "synthetic"},
     "conv.no_strategies": {
-        "zh": "当前没有可用的策略。",
-        "en": "No strategies available right now.",
+        "zh": "你还没有定义任何策略。Kronos 不会预装别人的策略——你的研究你做主。",
+        "en": "You haven't defined any strategies yet. Kronos doesn't come with pre-loaded strategies — your research, your rules.",
+    },
+    "conv.no_strategies_how": {
+        "zh": "定义策略的方式：写几行 Python 代码，告诉 Kronos 你关注什么品种、什么逻辑。",
+        "en": "Define a strategy with a few lines of Python — tell Kronos what symbols and logic you care about.",
+    },
+    "conv.no_strategies_example": {
+        "zh": "想看一个完整的示例吗？",
+        "en": "Want to see a complete example?",
+    },
+    "conv.create_first": {
+        "zh": "好的，给我看示例代码",
+        "en": "Yes, show me example code",
+    },
+    "conv.example_note": {
+        "zh": "把这段代码放到启动脚本里，每次 Kronos 启动时自动注册。实现因子逻辑后，Kronos 就能帮你验证这个策略了。",
+        "en": "Put this in your startup script. Once you implement the factor logic, Kronos can validate your strategy.",
+    },
+    "conv.got_it": {
+        "zh": "明白了，我回去写策略",
+        "en": "Got it, I'll write my strategy",
+    },
+    "conv.strategies_empty_done": {
+        "zh": "好的！定义好策略后，重新启动 Kronos，它们就会出现在策略池里。需要帮助的话随时回来看示例。",
+        "en": "Great! Once you define your strategies and restart Kronos, they'll appear in the pool. Come back anytime for help.",
+    },
+    "conv.research_no_candidates": {
+        "zh": "你还没有定义任何策略。让我先告诉你怎么创建一个。",
+        "en": "You haven't defined any strategies yet. Let me show you how to create one.",
     },
     "conv.strategies_title": {
         "zh": "这里有 {n} 个策略，按关注度排列：",

@@ -8,13 +8,36 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pyarrow as pa
+import pytest
 from cli.main import app
 from typer.testing import CliRunner
+
+from kronos.factor.candidates import (
+    CandidateFactorSpec,
+    clear_candidates,
+    register_candidate,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 runner = CliRunner()
+
+
+def _register_test_candidates() -> None:
+    clear_candidates()
+    for i, (cid, family, title, impl) in enumerate([
+        ("indicator_spread_regime", "trend_momentum", "指标 spread regime", "asi_spread"),
+        ("signal_persistence_density", "trend_momentum", "信号持续性密度", "signal_persistence_density"),
+        ("trend_pullback_tolerance", "trend_momentum", "趋势回撤容忍度", "trend_pullback_tolerance"),
+        ("bar_close_pressure", "volatility_path", "bar 内收盘位置压力", "bar_close_pressure"),
+        ("body_energy", "volatility_path", "body-energy 累积", "body_energy"),
+        ("trend_pullback_entry", "mean_reversion", "趋势内回踩入场", "trend_pullback_entry"),
+        ("range_chop_filter", "volatility_path", "range-chop 过滤器", "range_chop_filter"),
+    ]):
+        register_candidate(CandidateFactorSpec(
+            cid, family, title, ("BTCUSDT",), i + 1, impl,
+        ))
 
 
 def _make_kline_table(symbol: str = "BTCUSDT", n: int = 10) -> pa.Table:
@@ -208,6 +231,12 @@ class TestDataSyncCLI:
 
 class TestResearchPromotionCLI:
     """Integration tests for 'kronos research promote-candidates' command."""
+
+    def setup_method(self) -> None:
+        _register_test_candidates()
+
+    def teardown_method(self) -> None:
+        clear_candidates()
 
     def test_promote_candidates_requires_local_data(self, tmp_path: Path) -> None:
         config = _write_test_config(tmp_path)
