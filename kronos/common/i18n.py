@@ -1,3 +1,4 @@
+# ruff: noqa: RUF001
 """Minimal bilingual i18n support for CLI and quickstart output.
 
 Language is resolved from, in priority order:
@@ -78,6 +79,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "研究报告",
         "en": "Report",
     },
+    "quickstart.report_latest_hint": {
+        "zh": "直接查看最新报告",
+        "en": "Read the latest report directly",
+    },
     "quickstart.research_skipped": {
         "zh": "跳过研究（{exc}）",
         "en": "Research skipped ({exc})",
@@ -113,15 +118,17 @@ STRINGS: dict[str, dict[str, str]] = {
     "quickstart.next_steps_docker": {
         "zh": (
             "Docker 环境下，下一步：\n"
-            "  · 查看报告: docker compose run --rm kronos ls /kronos/reports/research/experiments/\n"
+            "  · 查看最新报告: docker compose run --rm kronos uv run kronos report latest\n"
             "  · 交互式 Agent: docker compose run --rm kronos uv run kronos agent start\n"
-            "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT"
+            "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
+            "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
         ),
         "en": (
             "In Docker, next steps:\n"
-            "  · View reports: docker compose run --rm kronos ls /kronos/reports/research/experiments/\n"
+            "  · Read latest report: docker compose run --rm kronos uv run kronos report latest\n"
             "  · Interactive Agent: docker compose run --rm kronos uv run kronos agent start\n"
-            "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT"
+            "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
+            "  · This version only writes research reports; it does not start paper trading or live orders."
         ),
     },
     "quickstart.no_benchmark_data": {
@@ -159,19 +166,19 @@ STRINGS: dict[str, dict[str, str]] = {
     "quickstart.next_steps": {
         "zh": (
             "下一步：\n"
-            "  1. 启动 Web 工作台：cd web && npm run dev\n"
-            "  2. 打开浏览器：http://127.0.0.1:3000\n"
-            "  3. 配置 DeepSeek API Key 以启用 Agent 研究\n"
-            "  4. 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT\n"
-            "  5. 运行完整研究：kronos run today"
+            "  1. 直接查看最新报告：kronos report latest\n"
+            "  2. 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
+            "  3. 运行完整研究：kronos run today\n"
+            "  4. 启动 Web 工作台：cd web && npm run dev\n"
+            "  5. 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
         ),
         "en": (
             "Next steps:\n"
-            "  1. Start Web workbench: cd web && npm run dev\n"
-            "  2. Open browser: http://127.0.0.1:3000\n"
-            "  3. Configure DeepSeek API Key to enable Agent research\n"
-            "  4. Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT\n"
-            "  5. Run full research: kronos run today"
+            "  1. Read the latest report directly: kronos report latest\n"
+            "  2. Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
+            "  3. Run full research: kronos run today\n"
+            "  4. Start Web workbench: cd web && npm run dev\n"
+            "  5. This version only writes research reports; it does not start paper trading or live orders."
         ),
     },
     "quickstart.report_ready": {
@@ -431,8 +438,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Just look around for now",
     },
     "conv.exchange_hint": {
-        "zh": "运行 kronos data sync --symbols BTCUSDT 从 Binance 拉取数据。需要网络连接。",
-        "en": "Run kronos data sync --symbols BTCUSDT to pull data from Binance. Requires network access.",
+        "zh": "运行 kronos data sync --symbols BTCUSDT --since 2026-01-01 从 Binance 拉取公开行情。需要网络连接，不需要 API Key。",
+        "en": "Run kronos data sync --symbols BTCUSDT --since 2026-01-01 to pull public Binance market data. Requires network access, no API key.",
     },
     "conv.first_time_has_data": {
         "zh": "你已经有一些数据了（{syms} 等），可以直接开始。",

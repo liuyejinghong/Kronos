@@ -17,7 +17,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  quickstart 完成！"
 echo ""
 echo "  报告保存在 Docker volume 中："
-echo "  docker compose run --rm kronos ls /kronos/reports/research/experiments/"
+echo "  docker compose run --rm kronos uv run kronos report latest"
 echo ""
 echo "  下次启动交互式 Agent："
 echo "  docker compose run --rm kronos uv run kronos agent start"

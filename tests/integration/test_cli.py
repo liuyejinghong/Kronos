@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pyarrow as pa
-import pytest
 from cli.main import app
 from typer.testing import CliRunner
 
@@ -191,8 +190,49 @@ class TestDataSyncCLI:
             "--config", str(config),
         ])
         assert result.exit_code == 0
+        assert "Data Sync Guide" in result.stdout
+        assert "api_key_required: no" in result.stdout
+        assert "Binance USDM public market data" in result.stdout
+        assert "time_range: incremental" in result.stdout
         assert "Sync Summary" in result.stdout
         assert "BTCUSDT" in result.stdout
+
+    @patch("kronos.data.sync.fetch_open_interest")
+    @patch("kronos.data.sync.fetch_funding_rates")
+    @patch("kronos.data.sync.fetch_klines")
+    @patch("kronos.data.loaders.exchange_info.fetch_exchange_info")
+    def test_sync_explains_bounded_since_range(
+        self,
+        mock_exchange: MagicMock,
+        mock_klines: MagicMock,
+        mock_funding: MagicMock,
+        mock_oi: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        config = _write_test_config(tmp_path)
+
+        from kronos.data.loaders.exchange_info import SymbolInfo
+        mock_exchange.return_value = [
+            SymbolInfo(
+                symbol="BTCUSDT", onboard_date=1569398400000,
+                price_precision=2, quantity_precision=3,
+                tick_size=0.01, step_size=0.001,
+                status="TRADING", contract_type="PERPETUAL",
+            ),
+        ]
+        mock_klines.return_value = _make_kline_table(n=10)
+        mock_funding.return_value = _make_funding_table(n=3)
+        mock_oi.return_value = _make_oi_table(n=3)
+
+        result = runner.invoke(app, [
+            "data", "sync",
+            "--symbols", "BTCUSDT",
+            "--since", "2026-01-01",
+            "--config", str(config),
+        ])
+
+        assert result.exit_code == 0
+        assert "time_range: from 2026-01-01 UTC to latest closed records" in result.stdout
 
     @patch("kronos.data.loaders.exchange_info.fetch_exchange_info")
     def test_sync_invalid_symbol(
@@ -227,6 +267,50 @@ class TestDataSyncCLI:
         assert result.exit_code == 1
         output = result.stdout + (result.stderr or "")
         assert "Cannot connect" in output or "Connection refused" in output
+
+
+class TestReportCLI:
+    """Integration tests for 'kronos report' commands."""
+
+    def test_report_latest_prints_latest_summary(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        latest = reports_path / "experiments" / "run-new" / "auto_run_report.md"
+        latest.parent.mkdir(parents=True)
+        latest.write_text(
+            "\n".join([
+                "# Kronos 自动研究日报",
+                "",
+                "## 一句话结论",
+                "",
+                "本轮没有策略进入模拟盘。",
+                "",
+                "## 数据同步",
+                "",
+                "- 使用本地数据",
+            ]),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "report", "latest",
+            "--reports-path", str(reports_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Latest Kronos Report" in result.stdout
+        assert f"report: {latest}" in result.stdout
+        assert "本轮没有策略进入模拟盘。" in result.stdout
+
+    def test_report_latest_fails_clearly_without_reports(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "report", "latest",
+            "--reports-path", str(tmp_path / "reports" / "research"),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No reports found" in output
+        assert "kronos quickstart" in output
 
 
 class TestResearchPromotionCLI:
@@ -439,6 +523,9 @@ class TestResearchPromotionCLI:
         report_text = pm_report.read_text(encoding="utf-8")
         assert "一句话结论" in report_text
         assert "funding" in report_text
+        assert "交易语言解读" in report_text
+        assert "预测方向" in report_text
+        assert "模拟盘边界" in report_text
         assert "失败原因分层" in report_text
         assert "候选处置清单" in report_text
         assert "观察名单二次复盘" in report_text
@@ -578,6 +665,8 @@ class TestResearchPromotionCLI:
         report_text = auto_report.read_text(encoding="utf-8")
         assert "Kronos 自动研究日报" in report_text
         assert "不会自动下单" in report_text
+        assert "kronos report latest" in report_text
+        assert "模拟盘边界" in report_text
 
         summary = json.loads(auto_summary.read_text(encoding="utf-8"))
         assert summary["summary"]["run_id"] == "test-auto-run"

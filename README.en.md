@@ -18,9 +18,10 @@ Kronos is a local-first crypto quantitative research system. It provides a compl
 git clone https://github.com/liuyejinghong/Kronos.git && cd Kronos
 uv sync --dev
 uv run kronos quickstart
+uv run kronos report latest
 ```
 
-One command: generate data → register R-breaker → run backtest → see results. Chinese: `kronos quickstart --lang zh`.
+One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` prints the latest report summary directly, without listing report directories. Chinese: `kronos quickstart --lang zh`.
 
 Advanced: `kronos agent start` (interactive conversational Agent).
 
@@ -43,12 +44,15 @@ Advanced: `kronos agent start` (interactive conversational Agent).
 
 ```bash
 uv run kronos data status                          # Data coverage
-uv run kronos data sync --symbols BTCUSDT,ETHUSDT   # Sync market data
+uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # Sync public market data, no API key
 uv run kronos quickstart                            # One-command bootstrap
+uv run kronos report latest                         # Read latest report summary
 uv run kronos agent run-once                        # Run one Agent research cycle
 uv run kronos agent status                          # Check Agent status
 uv run pytest -m "not e2e"                          # Run tests
 ```
+
+This version only writes research reports and Agent reviews. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.
 
 ---
 

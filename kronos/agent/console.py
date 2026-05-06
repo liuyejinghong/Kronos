@@ -9,13 +9,9 @@ import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
 
 from kronos.common.config import KronosConfig, load_config
 from kronos.common.i18n import get_lang, t
-
-if TYPE_CHECKING:
-    pass
 
 # ------------------------------------------------------------------
 # Conversation context (remembers what happened)
@@ -63,7 +59,7 @@ class AgentConsole:
             self._loop()
         except KeyboardInterrupt:
             self._say("")
-            self._say(self._T("conv.goodbye"))
+            self._say(self._t("conv.goodbye"))
         except EOFError:
             pass
 
@@ -112,10 +108,10 @@ class AgentConsole:
         self._say("")
         self._say("Kronos Agent")
         self._say("")
-        self._say(self._T("conv.greeting"))
-        self._say(self._T("conv.what_i_can_do"))
+        self._say(self._t("conv.greeting"))
+        self._say(self._t("conv.what_i_can_do"))
         self._say("")
-        self._say(self._T("conv.checking_env"))
+        self._say(self._t("conv.checking_env"))
 
     # ------------------------------------------------------------------
     # Main loop — always conversational, never a raw menu
@@ -132,35 +128,35 @@ class AgentConsole:
         """Guide a new user through setup."""
         self._say("")
         if not self.ctx.has_data:
-            self._say(self._T("conv.first_time_no_data"))
+            self._say(self._t("conv.first_time_no_data"))
             self._say("")
-            self._say("  [1] " + self._T("conv.gen_sample"))
-            self._say("  [2] " + self._T("conv.connect_exchange"))
-            self._say("  [3] " + self._T("conv.look_around"))
+            self._say("  [1] " + self._t("conv.gen_sample"))
+            self._say("  [2] " + self._t("conv.connect_exchange"))
+            self._say("  [3] " + self._t("conv.look_around"))
             self._say("")
             c = self._ask()
             if c == "1":
                 self._generate_sample_data()
                 self._research_flow()
             elif c == "2":
-                self._say(self._T("conv.exchange_hint"))
+                self._say(self._t("conv.exchange_hint"))
                 self._say("")
             elif c == "3":
                 self._look_around()
             else:
                 self._research_flow()
         else:
-            self._say(self._T("conv.first_time_has_data", syms=", ".join(self.ctx.data_symbols[:3])))
-            tag = f" [{self._T('conv.synthetic')}]" if self.ctx.synthetic_data else ""
+            self._say(self._t("conv.first_time_has_data", syms=", ".join(self.ctx.data_symbols[:3])))
+            tag = f" [{self._t('conv.synthetic')}]" if self.ctx.synthetic_data else ""
             self._say(f"  [{self.ctx.data_symbols[0]}: synthetic{tag}]" if self.ctx.synthetic_data else f"  [{', '.join(self.ctx.data_symbols[:3])}]")
             if self.ctx.deepseek_configured:
-                self._say(self._T("conv.model_ready_short"))
+                self._say(self._t("conv.model_ready_short"))
             else:
-                self._say(self._T("conv.model_not_ready_short"))
+                self._say(self._t("conv.model_not_ready_short"))
             self._say("")
-            self._say("  [1] " + self._T("conv.start_research"))
-            self._say("  [2] " + self._T("conv.browse_strategies"))
-            self._say("  [3] " + self._T("conv.configure_model"))
+            self._say("  [1] " + self._t("conv.start_research"))
+            self._say("  [2] " + self._t("conv.browse_strategies"))
+            self._say("  [3] " + self._t("conv.configure_model"))
             self._say("")
             c = self._ask()
             if c == "1":
@@ -179,20 +175,18 @@ class AgentConsole:
         self._say("")
         latest = self.ctx._past_runs[-1].name if self.ctx._past_runs else None
         data_str = ", ".join(self.ctx.data_symbols[:3])
-        model_str = self._T("conv.model_ready_short") if self.ctx.deepseek_configured else self._T("conv.model_not_ready_short")
-        self._say(self._T("conv.welcome_back", syms=data_str, model=model_str))
+        model_str = self._t("conv.model_ready_short") if self.ctx.deepseek_configured else self._t("conv.model_not_ready_short")
+        self._say(self._t("conv.welcome_back", syms=data_str, model=model_str))
         if latest:
-            self._say(self._T("conv.last_run", run=latest))
+            self._say(self._t("conv.last_run", run=latest))
         self._say("")
-        self._say("  [1] " + self._T("conv.continue_last"))
-        self._say("  [2] " + self._T("conv.new_research"))
-        self._say("  [3] " + self._T("conv.review_strategies"))
-        self._say("  [4] " + self._T("conv.just_browse"))
+        self._say("  [1] " + self._t("conv.continue_last"))
+        self._say("  [2] " + self._t("conv.new_research"))
+        self._say("  [3] " + self._t("conv.review_strategies"))
+        self._say("  [4] " + self._t("conv.just_browse"))
         self._say("")
         c = self._ask()
-        if c == "1":
-            self._research_flow()
-        elif c == "2":
+        if c in {"1", "2"}:
             self._research_flow()
         elif c == "3":
             self._browse_strategies()
@@ -206,9 +200,9 @@ class AgentConsole:
     def _generate_sample_data(self) -> None:
         from kronos.data.seed import generate_sample_klines
         self._say("")
-        self._say(self._T("conv.generating_data"))
+        self._say(self._t("conv.generating_data"))
         bars = generate_sample_klines("BTCUSDT", base_path=self.data_path, days=7)
-        self._say(self._T("conv.data_generated", bars=bars))
+        self._say(self._t("conv.data_generated", bars=bars))
         self.ctx.has_data = True
         self.ctx.synthetic_data = True
         self.ctx.data_symbols = ["BTCUSDT"]
@@ -224,14 +218,14 @@ class AgentConsole:
         candidates = list_candidate_factors()
         if not candidates:
             self._say("")
-            self._say(self._T("conv.no_strategies"))
+            self._say(self._t("conv.no_strategies"))
             self._say("")
-            self._say(self._T("conv.no_strategies_how"))
+            self._say(self._t("conv.no_strategies_how"))
             self._say("")
-            self._say(self._T("conv.no_strategies_example"))
+            self._say(self._t("conv.no_strategies_example"))
             self._say("")
-            self._say("  [1] " + self._T("conv.create_first"))
-            self._say("  [2] " + self._T("conv.back"))
+            self._say("  [1] " + self._t("conv.create_first"))
+            self._say("  [2] " + self._t("conv.back"))
             self._say("")
             c = self._ask()
             if c == "1":
@@ -245,35 +239,48 @@ class AgentConsole:
         archived = [c for c in candidates if c.lifecycle_state and c.lifecycle_state.value in ("retired",)]
 
         self._say("")
-        self._say(self._T("conv.strategies_title"))
+        self._say(self._t("conv.strategies_title"))
         self._say("")
 
         if active:
-            self._say(self._T("conv.strategies_active"))
-            for c in active:
-                desc = self._describe_strategy(c.title or c.candidate_id, c.family)
-                state = _STATE_LABEL_ZH.get(c.lifecycle_state.value, "—") if c.lifecycle_state else "—"
-                self._say(f"  #{c.migration_rank} {desc}  [{state}]")
+            self._say(self._t("conv.strategies_active"))
+            for candidate in active:
+                desc = self._describe_strategy(
+                    candidate.title or candidate.candidate_id,
+                    candidate.family,
+                )
+                state = (
+                    _STATE_LABEL_ZH.get(candidate.lifecycle_state.value, "—")
+                    if candidate.lifecycle_state else "—"
+                )
+                self._say(f"  #{candidate.migration_rank} {desc}  [{state}]")
             self._say("")
 
         if archived:
             n = len(archived)
-            self._say(self._T("conv.strategies_archived", n=n))
+            self._say(self._t("conv.strategies_archived", n=n))
             self._say("")
             # Show first 3 archived as examples
-            for c in archived[:3]:
-                desc = self._describe_strategy(c.title or c.candidate_id, c.family)
-                self._say(f"  #{c.migration_rank} {desc}  [{_STATE_LABEL_ZH.get(c.lifecycle_state.value, '—')}]")
+            for candidate in archived[:3]:
+                desc = self._describe_strategy(
+                    candidate.title or candidate.candidate_id,
+                    candidate.family,
+                )
+                state = (
+                    _STATE_LABEL_ZH.get(candidate.lifecycle_state.value, "—")
+                    if candidate.lifecycle_state else "—"
+                )
+                self._say(f"  #{candidate.migration_rank} {desc}  [{state}]")
 
         self._say("")
-        self._say(self._T("conv.strategies_prompt"))
+        self._say(self._t("conv.strategies_prompt"))
         self._say("")
-        self._say("  [1] " + self._T("conv.pick_strategy"))
-        self._say("  [2] " + self._T("conv.run_on_all"))
-        self._say("  [3] " + self._T("conv.back"))
+        self._say("  [1] " + self._t("conv.pick_strategy"))
+        self._say("  [2] " + self._t("conv.run_on_all"))
+        self._say("  [3] " + self._t("conv.back"))
         self._say("")
-        c = self._ask()
-        if c == "1" or c == "2":
+        choice = self._ask()
+        if choice in {"1", "2"}:
             self.ctx.selected_strategy = active[0].candidate_id if active else candidates[0].candidate_id
             self._research_flow()
         else:
@@ -295,12 +302,12 @@ class AgentConsole:
         self._say('    implementation_name="my_strategy_impl",')
         self._say("))")
         self._say("")
-        self._say(self._T("conv.example_note"))
+        self._say(self._t("conv.example_note"))
         self._say("")
-        self._say("  [1] " + self._T("conv.got_it"))
+        self._say("  [1] " + self._t("conv.got_it"))
         self._say("")
-        c = self._ask()
-        self._say(self._T("conv.strategies_empty_done"))
+        self._ask()
+        self._say(self._t("conv.strategies_empty_done"))
         self._say("")
 
     def _describe_strategy(self, title: str, family: str) -> str:
@@ -329,12 +336,12 @@ class AgentConsole:
         from kronos.data.seed import generate_sample_klines, has_any_data
 
         self._say("")
-        self._say(self._T("conv.research_start"))
+        self._say(self._t("conv.research_start"))
         self._say("")
 
         # Ensure data
         if not has_any_data(self.data_path):
-            self._say(self._T("conv.no_data_gen"))
+            self._say(self._t("conv.no_data_gen"))
             generate_sample_klines("BTCUSDT", base_path=self.data_path, days=7)
             self.ctx.has_data = True
             self.ctx.synthetic_data = True
@@ -343,29 +350,29 @@ class AgentConsole:
         # Select symbols
         syms = self.ctx.data_symbols or self._list_symbols()
         if not syms:
-            self._say(self._T("conv.research_no_symbols"))
+            self._say(self._t("conv.research_no_symbols"))
             return
         if len(syms) > 1:
-            self._say(self._T("conv.research_which_symbols", syms=", ".join(syms[:5])))
+            self._say(self._t("conv.research_which_symbols", syms=", ".join(syms[:5])))
             choice = self._input(f"[{','.join(syms[:3])}]: ").strip()
             selected = [s.strip() for s in choice.split(",") if s.strip() in syms] if choice else syms[:3]
         else:
             selected = syms[:1]
-            self._say(self._T("conv.research_using_only", sym=selected[0]))
+            self._say(self._t("conv.research_using_only", sym=selected[0]))
         self.ctx.selected_symbols = selected
         self._say(f"  → {', '.join(selected)}")
         self._say("")
 
         # Goal
-        self._say(self._T("conv.research_goal"))
-        goal = self._input(f"  [{self._T('conv.research_goal_default')}]: ").strip()
+        self._say(self._t("conv.research_goal"))
+        self._input(f"  [{self._t('conv.research_goal_default')}]: ").strip()
         self._say("")
 
         # Run
-        self._say(self._T("conv.research_running"))
-        self._say(f"  {self._T('conv.loading_data')}")
-        self._say(f"  {self._T('conv.computing')}")
-        self._say(f"  {self._T('conv.validating')}")
+        self._say(self._t("conv.research_running"))
+        self._say(f"  {self._t('conv.loading_data')}")
+        self._say(f"  {self._t('conv.computing')}")
+        self._say(f"  {self._t('conv.validating')}")
         self._say("")
 
         try:
@@ -376,7 +383,7 @@ class AgentConsole:
 
             candidates = list_candidate_factors()
             if not candidates:
-                self._say(self._T("conv.research_no_candidates"))
+                self._say(self._t("conv.research_no_candidates"))
                 self._browse_strategies()
                 return
             watchlist = [c for c in candidates if c.lifecycle_state and c.lifecycle_state.value in ("observe", "redesign")]
@@ -408,35 +415,33 @@ class AgentConsole:
                 min_history_days=7,
             )
         except Exception as exc:
-            self._say(self._T("conv.research_failed", err=str(exc)))
+            self._say(self._t("conv.research_failed", err=str(exc)))
             return
 
         self.ctx.last_run_id = run_id
-        self._say(self._T("conv.research_done"))
+        self._say(self._t("conv.research_done"))
         summary = result.summary()
         evaluated = summary.get("evaluated", 0)
         promoted = summary.get("promoted", 0)
-        self._say(f"  {evaluated} {self._T('conv.strategies_evaluated')}, {promoted} {self._T('conv.strategies_promoted')}")
+        self._say(f"  {evaluated} {self._t('conv.strategies_evaluated')}, {promoted} {self._t('conv.strategies_promoted')}")
         if result.artifact_paths.get("auto_run_report"):
-            self._say(f"  {self._T('conv.report_at')}: {result.artifact_paths['auto_run_report']}")
+            self._say(f"  {self._t('conv.report_at')}: {result.artifact_paths['auto_run_report']}")
         self._say("")
-        self._say(self._T("conv.research_next"))
+        self._say(self._t("conv.research_next"))
         self._say("")
-        self._say("  [1] " + self._T("conv.tune_params"))
-        self._say("  [2] " + self._T("conv.another_symbol"))
-        self._say("  [3] " + self._T("conv.open_web"))
-        self._say("  [4] " + self._T("conv.done"))
+        self._say("  [1] " + self._t("conv.tune_params"))
+        self._say("  [2] " + self._t("conv.another_symbol"))
+        self._say("  [3] " + self._t("conv.open_web"))
+        self._say("  [4] " + self._t("conv.done"))
         self._say("")
         c = self._ask()
         if c == "1":
             self._show_tuning_guide()
             self._returning_flow()
-        elif c == "2":
-            self._returning_flow()
-        elif c == "3":
+        elif c in {"2", "3"}:
             self._returning_flow()
         else:
-            self._say(self._T("conv.goodbye"))
+            self._say(self._t("conv.goodbye"))
             sys.exit(0)
 
     # ------------------------------------------------------------------
@@ -447,33 +452,33 @@ class AgentConsole:
         from kronos.factor.candidates import list_candidate_factors
         candidates = list_candidate_factors()
         self._say("")
-        self._say(self._T("conv.explore_title"))
+        self._say(self._t("conv.explore_title"))
         self._say("")
-        self._say(self._T("conv.explore_line1", n=len(candidates)))
-        self._say(self._T("conv.explore_line2", syms=", ".join(self.ctx.data_symbols) if self.ctx.data_symbols else "无"))
-        self._say(self._T("conv.explore_line3", model=self._T("conv.yes") if self.ctx.deepseek_configured else self._T("conv.no")))
+        self._say(self._t("conv.explore_line1", n=len(candidates)))
+        self._say(self._t("conv.explore_line2", syms=", ".join(self.ctx.data_symbols) if self.ctx.data_symbols else "无"))
+        self._say(self._t("conv.explore_line3", model=self._t("conv.yes") if self.ctx.deepseek_configured else self._t("conv.no")))
         self._say("")
-        self._say(self._T("conv.explore_prompt"))
+        self._say(self._t("conv.explore_prompt"))
         self._say("")
-        self._say("  [1] " + self._T("conv.ready_try"))
-        self._say("  [2] " + self._T("conv.not_now"))
+        self._say("  [1] " + self._t("conv.ready_try"))
+        self._say("  [2] " + self._t("conv.not_now"))
         self._say("")
         c = self._ask()
         if c == "1":
             self._first_time_flow()
         else:
-            self._say(self._T("conv.goodbye"))
+            self._say(self._t("conv.goodbye"))
             sys.exit(0)
 
     def _configure_model(self) -> None:
         self._say("")
-        self._say(self._T("conv.model_config_title"))
+        self._say(self._t("conv.model_config_title"))
         self._say("")
-        self._say(self._T("conv.model_config_how"))
-        self._say(self._T("conv.model_config_or"))
+        self._say(self._t("conv.model_config_how"))
+        self._say(self._t("conv.model_config_or"))
         self._say("")
-        self._say("  [1] " + self._T("conv.continue_anyway"))
-        self._say("  [2] " + self._T("conv.back"))
+        self._say("  [1] " + self._t("conv.continue_anyway"))
+        self._say("  [2] " + self._t("conv.back"))
         self._say("")
         c = self._ask()
         if c == "1":
@@ -490,7 +495,7 @@ class AgentConsole:
         typer.echo(text)
 
     def _ask(self) -> str:
-        return self._input(f"  > ").strip()
+        return self._input("  > ").strip()
 
     def _input(self, prompt: str) -> str:
         sys.stdout.write(prompt)
@@ -500,13 +505,13 @@ class AgentConsole:
     def _show_tuning_guide(self) -> None:
         """Show the user how to tune R-breaker parameters."""
         self._say("")
-        self._say(self._T("conv.tuning_title"))
+        self._say(self._t("conv.tuning_title"))
         self._say("")
-        self._say(self._T("conv.tuning_params"))
+        self._say(self._t("conv.tuning_params"))
         self._say("")
-        self._say(self._T("conv.tuning_how"))
+        self._say(self._t("conv.tuning_how"))
         self._say("")
-        self._say(self._T("conv.tuning_example"))
+        self._say(self._t("conv.tuning_example"))
         self._say("")
 
     def _mark_first_run_complete(self) -> None:
@@ -519,7 +524,7 @@ class AgentConsole:
             return []
         return sorted(p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
 
-    def _T(self, key: str, **fmt: object) -> str:
+    def _t(self, key: str, **fmt: object) -> str:
         return t(key, **fmt)
 
 

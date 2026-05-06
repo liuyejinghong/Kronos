@@ -31,10 +31,12 @@ data_app = typer.Typer(name="data", help="Data management commands")
 research_app = typer.Typer(name="research", help="Research workflow commands")
 run_app = typer.Typer(name="run", help="System-level Kronos run commands")
 agent_app = typer.Typer(name="agent", help="Kronos Agent MVP commands")
+report_app = typer.Typer(name="report", help="Report reading commands")
 app.add_typer(data_app)
 app.add_typer(research_app)
 app.add_typer(run_app)
 app.add_typer(agent_app)
+app.add_typer(report_app)
 
 
 @app.callback(invoke_without_command=True)
@@ -112,6 +114,8 @@ def data_sync(
     symbol_list = [s.strip() for s in symbols.split(",")]
     since_ms = _parse_since(since)
 
+    _echo_data_sync_guidance(base_path=base_path, symbols=symbol_list, since=since)
+
     # Fetch exchange info first
     typer.echo("Fetching exchange info...")
     try:
@@ -149,6 +153,36 @@ def data_sync(
     for sym, counts in results.items():
         typer.echo(f"  {sym}: klines={counts['klines']}, funding={counts['funding']}, oi={counts['oi']}")
     typer.echo("Done.")
+
+
+@report_app.command("latest")
+def report_latest(
+    reports_path: str = typer.Option(
+        "reports/research",
+        help="Base path for research reports.",
+    ),
+    max_lines: int = typer.Option(
+        18,
+        min=1,
+        max=80,
+        help="Maximum summary lines to print.",
+    ),
+) -> None:
+    """Print the latest product-facing Kronos report summary."""
+    from kronos.reporting import find_latest_report, summarize_report
+
+    latest = find_latest_report(reports_path)
+    if latest is None:
+        typer.echo(f"No reports found under {Path(reports_path) / 'experiments'}.", err=True)
+        typer.echo("Run `kronos quickstart` or `kronos run today` first.", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo("--- Latest Kronos Report ---")
+    typer.echo(f"report: {latest.path}")
+    typer.echo(f"run_dir: {latest.run_dir}")
+    typer.echo()
+    for line in summarize_report(latest.path, max_lines=max_lines):
+        typer.echo(line)
 
 
 @data_app.command("status")
@@ -986,6 +1020,30 @@ def _echo_promotion_preflight(
     return ready
 
 
+def _echo_data_sync_guidance(
+    *,
+    base_path: Path,
+    symbols: list[str],
+    since: str | None,
+) -> None:
+    typer.echo("--- Data Sync Guide ---")
+    typer.echo("source: Binance USDM public market data")
+    typer.echo("datasets: 1m klines, funding rates, open interest")
+    typer.echo("api_key_required: no")
+    typer.echo(f"symbols: {', '.join(symbols) if symbols else '-'}")
+    typer.echo(f"data_path: {base_path}")
+    if since is None:
+        typer.echo(
+            "time_range: incremental if local data exists; otherwise Binance earliest available "
+            "history for the selected symbols"
+        )
+        typer.echo("tip: for a bounded first sync, add `--since 2026-01-01` or another start date")
+    else:
+        typer.echo(f"time_range: from {since} UTC to latest closed records")
+    typer.echo("trading_enabled: no; this command only downloads research data")
+    typer.echo()
+
+
 @agent_app.command("start")
 def agent_start(
     lang: str | None = _LANG_OPTION,
@@ -1133,6 +1191,7 @@ def quickstart(
 
             if result.artifact_paths.get("auto_run_report"):
                 typer.echo(f"  📄 {t('quickstart.report_at')}: {result.artifact_paths['auto_run_report']}")
+                typer.echo(f"  🔎 {t('quickstart.report_latest_hint')}: kronos report latest")
         except Exception as exc:
             typer.echo(f"  ⚠️ {t('quickstart.research_skipped')}: {exc}")
 

@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from kronos.agent.events import REDACTED_SECRET, SECRET_KEY_PARTS, is_secret_like_key, redact_secret_like_values, write_event
+from kronos.agent.events import redact_secret_like_values, write_event
 from kronos.agent.types import (
     AgentArtifactRef,
     AgentErrorCategory,
@@ -23,7 +23,10 @@ from kronos.agent.types import (
     AgentTaskStatus,
     AgentToolInvocationId,
 )
-from kronos.research.agent_planner import run_research_agent_decision, run_research_agent_planner
+from kronos.research.agent_planner import (
+    run_research_agent_decision,
+    run_research_agent_planner,
+)
 
 
 class AgentToolError(RuntimeError):

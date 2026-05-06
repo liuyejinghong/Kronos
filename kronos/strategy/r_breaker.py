@@ -1,3 +1,4 @@
+# ruff: noqa: RUF001
 """R-breaker intraday breakout strategy — Kronos builtin example.
 
 R-breaker uses the previous day's OHLC to compute breakout levels for today.
@@ -9,7 +10,7 @@ Implements the ``Factor`` protocol: ``compute(df) → pd.Series``.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import pandas as pd
 
@@ -36,7 +37,14 @@ class RBreakerFactor(BaseFactor):
     lookback = 254  # ATR(14) + ~240 bars (1 day of 1m)
     warmup_bars = 254
     universe = "crypto_perp"
-    required_columns = ["open", "high", "low", "close", "event_time", "symbol"]
+    required_columns: ClassVar[list[str]] = [
+        "open",
+        "high",
+        "low",
+        "close",
+        "event_time",
+        "symbol",
+    ]
     description = "R-breaker 日内突破策略（基于前一日 OHLC 计算突破价位）"
 
     def __init__(
@@ -54,6 +62,7 @@ class RBreakerFactor(BaseFactor):
             "volatility_multiplier": self.volatility_multiplier,
         }
 
+    @property
     def meta(self) -> FactorMeta:
         return FactorMeta(
             name="r_breaker",

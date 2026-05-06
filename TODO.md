@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-06 | 版本：0.3.2 | 下一版本：0.4.0
+> 更新：2026-05-06 | 版本：0.3.3 | 下一版本：0.4.0
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -55,7 +55,20 @@
 
 ---
 
-## 下一版本 (v0.3.0) — 待办
+## v0.3.3 已完成
+
+### Codex v0.3.2 评测遗留收口
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 32 | `done` `kronos report latest` 命令，直接打印最新报告摘要 | `cli/main.py` + `kronos/reporting/latest.py` |
+| 33 | `done` 报告指标翻译成交易语言 | `kronos/research/workbench.py` |
+| 34 | `done` 数据同步指引补全：数据来源、同步范围、是否需要 API Key | `cli/main.py` + README |
+| 35 | `done` 模拟盘边界说明：当前只到研究报告，模拟盘未接入 | quickstart 提示 + 研究报告 |
+
+---
+
+## 下一版本 (v0.4.0) — 待办
 
 > 产品目标：让一个非开发交易者在 10 分钟内判断 R-breaker 是否值得进入模拟盘观察。
 > 设计文档：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
@@ -76,15 +89,6 @@
 | 28 | Web 全新 clone 空状态：无历史 run 时隐藏批次号 + 更新产品描述 | `done` |
 | 29 | Docker entrypoint 覆盖 quickstart 的通用下一步提示 | `done` |
 | 30 | 策略池空状态引导："你还没有策略" + 示例代码 | `done` |
-
-### P1 — Codex v0.3.2 评测遗留
-
-| # | 事项 | 来源 |
-|---|------|------|
-| 32 | `kronos report latest` 命令（直接打印最新报告摘要，不需要用户 ls 目录） | Codex 评测 #2 |
-| 33 | 报告指标翻译成交易语言（mean_rank_ic → "预测方向不稳定"等） | Codex 评测 #3 |
-| 34 | 数据同步指引补全（默认同步多久、数据来源、是否需要 API key） | Codex 评测 #4 |
-| 35 | 模拟盘边界说明（当前版本只到研究报告，模拟盘尚未接入） | Codex 评测 #5 |
 
 ### P2 — v0.4.0 预留
 

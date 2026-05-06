@@ -529,6 +529,16 @@ def _write_pm_report(
                 f"- 当前结论：{status}",
                 f"- 产品解释：{_decision_product_explanation(decision)}",
                 f"- 主要原因：{reason}",
+                "- 交易语言解读：",
+            ])
+            lines.extend([f"  - {item}" for item in _metric_interpretation_lines(decision.metrics)])
+            paper_text = (
+                "可以进入更深研究，但仍需人工审批后再考虑模拟盘。"
+                if decision.promoted
+                else "不建议进入模拟盘；当前只保留研究报告和复盘。"
+            )
+            lines.extend([
+                f"- 模拟盘判断：{paper_text}",
                 "",
             ])
     else:
@@ -548,8 +558,8 @@ def _write_pm_report(
             mean_rank_ic = decision.metrics.get("mean_rank_ic")
             top_minus_bottom = decision.metrics.get("top_minus_bottom")
             lines.append(
-                f"- {title}：弱信号，mean_rank_ic={_format_metric(mean_rank_ic)}，"
-                f"top_minus_bottom={_format_metric(top_minus_bottom)}"
+                f"- {title}：弱信号，预测方向 {_signal_direction_label(mean_rank_ic)}，"
+                f"分层收益 {_spread_return_label(top_minus_bottom)}"
             )
 
     if batch.skipped:
@@ -620,6 +630,12 @@ def _write_pm_report(
         "- 不应该把本报告直接当作实盘交易结论。",
         "- 不应该让未通过候选进入组合或风控主路径。",
         "- 不应该把旧 A 股 / 期货策略默认视为已经适配 crypto。",
+        "",
+        "## 模拟盘边界",
+        "",
+        "- 当前版本只到研究报告和 Agent 复盘，不会启动实时模拟盘。",
+        "- 实时模拟盘需要 Binance 实时行情和只读 API Key，属于 v0.4.0 预留能力。",
+        "- 未通过基础验证或 walk-forward 的策略，不建议进入 paper trading 观察。",
         "",
         "## 建议下一步",
         "",
@@ -712,8 +728,8 @@ def _write_watchlist_review_report(
             f"- 优先级：{review.priority_label_zh}",
             f"- 复盘依据：{review.rationale_zh}",
             "- 关键指标：",
-            f"  - mean_rank_ic：{_format_metric(review.metrics.get('mean_rank_ic'))}",
-            f"  - top_minus_bottom：{_format_metric(review.metrics.get('top_minus_bottom'))}",
+            f"  - 预测方向：{_signal_direction_label(review.metrics.get('mean_rank_ic'))}",
+            f"  - 分层收益：{_spread_return_label(review.metrics.get('top_minus_bottom'))}",
             "  - walkforward_test_mean："
             f"{_format_metric(review.metrics.get('walkforward_test_mean'))}",
             "  - positive_window_ratio："
@@ -1020,6 +1036,63 @@ def _decision_product_explanation(decision: PromotionDecision) -> str:
     if not decision.walkforward_passed:
         return "基础验证尚可，但跨窗口稳定性不够，暂不适合进入组合层。"
     return "证据不完整，需要补齐后再判断。"
+
+
+def _metric_interpretation_lines(metrics: dict[str, Any]) -> list[str]:
+    mean_rank_ic = metrics.get("mean_rank_ic")
+    top_minus_bottom = metrics.get("top_minus_bottom")
+    positive_ratio = metrics.get("rank_ic_positive_ratio")
+    walkforward_mean = metrics.get("walkforward_test_mean")
+    walkforward_positive_ratio = metrics.get("walkforward_positive_test_window_ratio")
+    return [
+        f"预测方向：{_signal_direction_label(mean_rank_ic)}。",
+        f"多空分层：{_spread_return_label(top_minus_bottom)}。",
+        f"稳定频率：{_positive_ratio_label(positive_ratio)}。",
+        f"样本外稳定性：{_walkforward_label(walkforward_mean, walkforward_positive_ratio)}。",
+    ]
+
+
+def _signal_direction_label(value: Any) -> str:
+    metric = _finite_number(value)
+    if metric >= 0.02:
+        return "相对稳定，信号方向有正向参考"
+    if metric > 0:
+        return "偏弱正向，还不能直接用于交易"
+    if metric < 0:
+        return "不稳定或反向，当前信号方向不可信"
+    return "没有有效正向证据"
+
+
+def _spread_return_label(value: Any) -> str:
+    metric = _finite_number(value)
+    if metric > 0.005:
+        return "高分组明显好于低分组，有初步收益差"
+    if metric > 0:
+        return "有轻微正向差距，但强度不足"
+    if metric < 0:
+        return "高分组没有跑赢低分组，排序可能反了"
+    return "没有拉开收益差"
+
+
+def _positive_ratio_label(value: Any) -> str:
+    metric = _finite_number(value)
+    if metric >= 0.6:
+        return "大多数窗口方向一致"
+    if metric >= 0.5:
+        return "接近一半窗口有效，稳定性不足"
+    if metric > 0:
+        return "多数窗口无效"
+    return "没有足够窗口证据"
+
+
+def _walkforward_label(mean_value: Any, positive_ratio_value: Any) -> str:
+    mean_metric = _finite_number(mean_value)
+    ratio_metric = _finite_number(positive_ratio_value)
+    if mean_metric > 0 and ratio_metric >= 0.5:
+        return "样本外有弱正向表现，但仍需更长历史确认"
+    if mean_metric > 0:
+        return "样本外平均略正，但正向窗口不够稳定"
+    return "样本外表现不足，暂不支持进入模拟盘"
 
 
 def _skipped_product_explanation(reason: str) -> str:

@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
-from kronos.agent.events import is_secret_like_key, redact_secret_like_values
+from kronos.agent.events import redact_secret_like_values
 from kronos.agent.types import (
     AgentArtifactRef,
     AgentErrorRef,

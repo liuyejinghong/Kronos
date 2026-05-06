@@ -5,6 +5,18 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] — 2026-05-06
+
+### Added
+
+- **最新报告入口**：新增 `kronos report latest`，直接打印最新产品报告摘要和路径，不需要用户手动 `ls reports/research/experiments`
+- **交易语言解读**：研究工作台报告在候选结果中追加预测方向、多空分层、稳定频率、样本外稳定性和模拟盘判断
+- **数据同步说明**：`kronos data sync` 执行前明确数据来源、同步范围、公开行情和无需 API Key 的边界
+
+### Changed
+
+- quickstart 下一步提示改为优先使用 `kronos report latest`，并明确当前版本只到研究报告，不会启动模拟盘或真实下单
+
 ## [0.3.2] — 2026-05-05
 
 ### Fixed

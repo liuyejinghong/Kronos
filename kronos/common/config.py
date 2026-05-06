@@ -86,12 +86,7 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
     Raises:
         ConfigError: If a config file exists but contains invalid TOML.
     """
-    config_path: Path | None = None
-
-    if path is not None:
-        config_path = Path(path)
-    else:
-        config_path = _discover_config()
+    config_path = Path(path) if path is not None else _discover_config()
 
     if config_path is None:
         log.info("config.using_defaults")
