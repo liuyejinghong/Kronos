@@ -5,6 +5,16 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-05-06
+
+### Added
+
+- **Docker 多画像体验评测**：新增 `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md`，按 L0/L1/L2/L3/L4/L6 用户画像记录 v0.4.0 Docker 首次使用反馈、信任断点和修复优先级
+
+### Changed
+
+- TODO 产品体验 backlog 增补 Docker 多画像评测暴露的 P0/P1 问题：Agent 事实错误、`report latest` 摘要不足、7 天样本与 90 天文案冲突、Docker 路径误导和 quickstart/TOML 粒度错配
+
 ## [0.4.0] — 2026-05-06
 
 ### Added
