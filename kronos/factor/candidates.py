@@ -113,6 +113,22 @@ def register_candidate(spec: CandidateFactorSpec) -> None:
     _save_to_disk(reg)
 
 
+def upsert_candidate(spec: CandidateFactorSpec) -> None:
+    """Register or replace one candidate by id.
+
+    User-authored strategy configs use this path so re-registering the same TOML
+    file updates the candidate instead of creating duplicate rows in Agent/Web.
+    """
+    reg = _ensure_loaded()
+    for index, current in enumerate(reg):
+        if current.candidate_id == spec.candidate_id:
+            reg[index] = spec
+            _save_to_disk(reg)
+            return
+    reg.append(spec)
+    _save_to_disk(reg)
+
+
 def list_candidate_factors() -> list[CandidateFactorSpec]:
     """Return all registered candidates (from disk cache), sorted by rank."""
     return sorted(_ensure_loaded(), key=lambda s: s.migration_rank)

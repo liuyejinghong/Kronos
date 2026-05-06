@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.4-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-informational.svg)](CHANGELOG.md)
 
 [English](README.en.md)
 
@@ -21,7 +21,7 @@ uv run kronos quickstart
 uv run kronos report latest
 ```
 
-一键完成：生成数据 → 注册 R-breaker 策略 → 跑回测 → 出结果。`kronos report latest` 会直接打印最新报告摘要，不需要手动找目录。英文：`kronos quickstart --lang en`。
+一键完成：生成数据 → 注册 R-breaker 策略 → 跑回测 → 出结果。`kronos report latest` 会直接打印最新报告摘要，不需要手动找目录。v0.4.0 起可以用 `kronos strategy init-r-breaker` 生成 TOML 策略配置，并用 `kronos strategy smoke-test` 做本地逻辑试算。英文：`kronos quickstart --lang en`。
 
 进阶使用：`kronos agent start`（交互式对话 Agent）。
 Docker 用户：`docker compose up`。
@@ -48,12 +48,15 @@ uv run kronos data status                          # 数据覆盖状态
 uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # 同步公开行情，不需要 API Key
 uv run kronos quickstart                            # 一键快速开始
 uv run kronos report latest                         # 直接查看最新报告摘要
+uv run kronos strategy init-r-breaker               # 生成 R-breaker TOML 策略配置
+uv run kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml  # 本地数据烟雾测试
+uv run kronos strategy register ~/.kronos/strategies/r_breaker.toml    # 通过试算后注册到候选池
 uv run kronos agent run-once                        # 运行一轮 Agent 研究
 uv run kronos agent status                          # 查看 Agent 状态
 uv run pytest -m "not e2e"                          # 跑测试
 ```
 
-当前版本只产出研究报告和 Agent 复盘，不会启动模拟盘或真实下单。实时模拟盘将在后续版本接入 Binance 实时行情和只读 API Key。
+当前版本只产出研究报告、Agent 复盘和策略配置试算，不会启动模拟盘或真实下单。实时模拟盘将在后续版本接入 Binance 实时行情和只读 API Key。
 
 ---
 

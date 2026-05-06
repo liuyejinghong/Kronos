@@ -32,11 +32,13 @@ research_app = typer.Typer(name="research", help="Research workflow commands")
 run_app = typer.Typer(name="run", help="System-level Kronos run commands")
 agent_app = typer.Typer(name="agent", help="Kronos Agent MVP commands")
 report_app = typer.Typer(name="report", help="Report reading commands")
+strategy_app = typer.Typer(name="strategy", help="User strategy configuration commands")
 app.add_typer(data_app)
 app.add_typer(research_app)
 app.add_typer(run_app)
 app.add_typer(agent_app)
 app.add_typer(report_app)
+app.add_typer(strategy_app)
 
 
 @app.callback(invoke_without_command=True)
@@ -1042,6 +1044,169 @@ def _echo_data_sync_guidance(
         typer.echo(f"time_range: from {since} UTC to latest closed records")
     typer.echo("trading_enabled: no; this command only downloads research data")
     typer.echo()
+
+
+@strategy_app.command("init-r-breaker")
+def strategy_init_r_breaker(
+    strategy_id: str = typer.Option(
+        "r_breaker",
+        "--id",
+        help="Stable strategy id. Used as the TOML filename and candidate id.",
+    ),
+    name: str = typer.Option(
+        "R-breaker 日内突破",
+        help="Human-facing strategy name.",
+    ),
+    symbols: str = typer.Option(
+        "BTCUSDT,ETHUSDT",
+        help="Comma-separated symbol list.",
+    ),
+    timeframe: str = typer.Option(
+        "15m",
+        help="Research timeframe: 1m, 5m, 15m, 30m, 1h, 4h, 1d.",
+    ),
+    output_dir: str | None = typer.Option(
+        None,
+        "--output-dir",
+        help="Directory for strategy TOML. Defaults to ~/.kronos/strategies.",
+    ),
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Overwrite an existing TOML file.",
+    ),
+) -> None:
+    """Create a validated R-breaker strategy TOML file."""
+    from pydantic import ValidationError
+
+    from kronos.common.errors import ConfigError
+    from kronos.strategy.config import default_r_breaker_config, write_strategy_config
+
+    try:
+        strategy_config = default_r_breaker_config(
+            strategy_id=strategy_id,
+            name=name,
+            symbols=_split_csv(symbols),
+            timeframe=timeframe,
+        )
+        path = write_strategy_config(
+            strategy_config,
+            directory=output_dir,
+            overwrite=overwrite,
+        )
+    except (ConfigError, ValidationError) as exc:
+        typer.echo(f"Cannot create strategy config: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("--- Strategy Config Created ---")
+    typer.echo(f"path: {path}")
+    typer.echo(f"strategy: {strategy_config.strategy.name} ({strategy_config.strategy.id})")
+    typer.echo(f"symbols: {', '.join(strategy_config.universe.symbols)}")
+    typer.echo(f"timeframe: {strategy_config.universe.timeframe}")
+    typer.echo("next: kronos strategy smoke-test " + str(path))
+
+
+@strategy_app.command("validate")
+def strategy_validate(
+    path: str = typer.Argument(..., help="Path to a strategy TOML file."),
+) -> None:
+    """Validate a strategy TOML file without registering it."""
+    from pydantic import ValidationError
+
+    from kronos.common.errors import ConfigError
+    from kronos.strategy.config import load_strategy_config
+
+    try:
+        strategy_config = load_strategy_config(path)
+    except (ConfigError, ValidationError) as exc:
+        typer.echo(f"Strategy config invalid: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("--- Strategy Config Valid ---")
+    typer.echo(f"strategy: {strategy_config.strategy.name} ({strategy_config.strategy.id})")
+    typer.echo(f"kind: {strategy_config.strategy.kind}")
+    typer.echo(f"symbols: {', '.join(strategy_config.universe.symbols)}")
+    typer.echo(f"timeframe: {strategy_config.universe.timeframe}")
+    typer.echo("trading_enabled: no")
+
+
+@strategy_app.command("smoke-test")
+def strategy_smoke_test(
+    path: str = typer.Argument(..., help="Path to a strategy TOML file."),
+    config: str = typer.Option("configs/dev.toml", help="Path to Kronos config file."),
+) -> None:
+    """Run a local data smoke test for a strategy TOML file."""
+    from pydantic import ValidationError
+
+    from kronos.common.errors import ConfigError
+    from kronos.strategy.config import load_strategy_config
+    from kronos.strategy.smoke import run_strategy_smoke_test
+
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    try:
+        strategy_config = load_strategy_config(path)
+    except (ConfigError, ValidationError) as exc:
+        typer.echo(f"Strategy config invalid: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    result = run_strategy_smoke_test(strategy_config, data_base_path=cfg.data.base_path)
+    typer.echo("--- Strategy Smoke Test ---")
+    for line in result.summary_lines():
+        typer.echo(line)
+    if not result.passed:
+        raise typer.Exit(code=1)
+
+
+@strategy_app.command("register")
+def strategy_register(
+    path: str = typer.Argument(..., help="Path to a strategy TOML file."),
+    config: str = typer.Option("configs/dev.toml", help="Path to Kronos config file."),
+    skip_smoke: bool = typer.Option(
+        False,
+        "--skip-smoke",
+        help="Register without local data smoke test. Use only when data is unavailable.",
+    ),
+    migration_rank: int = typer.Option(
+        50,
+        min=1,
+        max=999,
+        help="Candidate ordering rank in Agent/Web surfaces.",
+    ),
+) -> None:
+    """Register a validated strategy TOML into the shared candidate pool."""
+    from pydantic import ValidationError
+
+    from kronos.common.errors import ConfigError
+    from kronos.strategy.config import load_strategy_config, register_strategy_config
+    from kronos.strategy.smoke import run_strategy_smoke_test
+
+    cfg = load_config(config)
+    setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
+
+    try:
+        strategy_config = load_strategy_config(path)
+    except (ConfigError, ValidationError) as exc:
+        typer.echo(f"Strategy config invalid: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    if not skip_smoke:
+        smoke = run_strategy_smoke_test(strategy_config, data_base_path=cfg.data.base_path)
+        if not smoke.passed:
+            typer.echo("--- Strategy Smoke Test ---")
+            for line in smoke.summary_lines():
+                typer.echo(line)
+            typer.echo("registration: blocked", err=True)
+            raise typer.Exit(code=1)
+
+    spec = register_strategy_config(strategy_config, migration_rank=migration_rank)
+    typer.echo("--- Strategy Registered ---")
+    typer.echo(f"candidate_id: {spec.candidate_id}")
+    typer.echo(f"title: {spec.title}")
+    typer.echo(f"symbols: {', '.join(spec.source_strategies)}")
+    typer.echo(f"origin: {spec.origin}")
+    typer.echo("visible_to_agent: yes")
 
 
 @agent_app.command("start")

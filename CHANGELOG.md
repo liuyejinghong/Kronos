@@ -5,6 +5,21 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-06
+
+### Added
+
+- **TOML 策略配置入口**：新增 `kronos strategy init-r-breaker`，生成 `~/.kronos/strategies/r_breaker.toml` 风格的可编辑策略配置
+- **策略配置校验**：新增 `kronos strategy validate`，校验策略 ID、交易品种、时间周期和 R-breaker 参数边界
+- **本地烟雾测试**：新增 `kronos strategy smoke-test`，用本地 K 线试算策略信号，输出是否能进入研究验证的产品结论
+- **配置注册到候选池**：新增 `kronos strategy register`，默认要求烟雾测试通过后才把策略写入共享候选池，Agent/Web 可见
+
+### Changed
+
+- 候选注册支持按 `candidate_id` 更新，重复注册同一个 TOML 策略不会制造重复候选
+- README、quickstart 下一步提示、Agent 参数调整文案同步到 v0.4.0 策略配置主路径
+- 项目状态和策略系统设计文档更新为 v0.4.0 当前能力边界：已支持 TOML 配置/校验/烟雾测试，AI 创建、历史重放和实时模拟盘仍未交付
+
 ## [0.3.4] — 2026-05-06
 
 ### Fixed
@@ -17,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 重写 `docs/PROJECT_STATUS.md` 为 v0.3.4 当前事实源
-- 收敛 `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` 的当前能力边界，明确 AI 创建、历史重放和实时模拟盘属于 v0.4.0
+- 收敛 `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` 的当前能力边界，明确 AI 创建、历史重放和实时模拟盘属于后续 v0.4.x
 - README badge、TODO 和产品控制文档统一到 v0.3.4
 
 ## [0.3.3] — 2026-05-06

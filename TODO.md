@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-06 | 版本：0.3.4 | 下一版本：0.4.0
+> 更新：2026-05-06 | 版本：0.4.0 | 下一版本：0.4.1
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -82,7 +82,21 @@
 
 ---
 
-## 下一版本 (v0.4.0) — 待办
+## v0.4.0 已完成
+
+### 策略配置入口
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 45 | `done` TOML 策略配置文件支持（`~/.kronos/strategies/r_breaker.toml`） | `kronos/strategy/config.py` + `kronos strategy init-r-breaker` |
+| 46 | `done` 策略配置校验：策略 ID、品种、周期、参数边界 | `kronos/strategy/config.py` + `kronos strategy validate` |
+| 47 | `done` 本地烟雾测试：用已有 K 线确认策略逻辑能跑通 | `kronos/strategy/smoke.py` + `kronos strategy smoke-test` |
+| 48 | `done` 通过烟雾测试后注册到候选池，Agent/Web 可见 | `kronos strategy register` |
+| 49 | `done` 重复注册同一 TOML 策略时按 ID 更新，不产生重复候选 | `upsert_candidate()` |
+
+---
+
+## 下一版本 (v0.4.1+) — 待办
 
 > 产品目标：让用户能创建或配置一个策略，并在历史重放 / 模拟盘前看到足够清晰的风险边界和研究证据。
 > 设计文档：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
@@ -104,7 +118,7 @@
 | 29 | Docker entrypoint 覆盖 quickstart 的通用下一步提示 | `done` |
 | 30 | 策略池空状态引导："你还没有策略" + 示例代码 | `done` |
 
-### P2 — v0.4.0 主线
+### P2 — v0.4.x 主线
 
 | # | 事项 |
 |---|------|
@@ -112,7 +126,7 @@
 | 42 | 实时模拟盘（需 Binance 只读 API Key） |
 | 43 | 历史重放（关键交易回放） |
 | 44 | 按市场状态分段评估（牛/熊/震荡） |
-| 45 | TOML 策略配置文件支持（`~/.kronos/strategies/r_breaker.toml`） |
+| 50 | 多品种策略配置逐 symbol smoke-test，避免只验证首个品种 |
 
 ---
 

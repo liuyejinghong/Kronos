@@ -119,6 +119,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": (
             "Docker 环境下，下一步：\n"
             "  · 查看最新报告: docker compose run --rm kronos uv run kronos report latest\n"
+            "  · 生成策略配置: docker compose run --rm kronos uv run kronos strategy init-r-breaker\n"
             "  · 交互式 Agent: docker compose run --rm kronos uv run kronos agent start\n"
             "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
             "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
@@ -126,6 +127,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": (
             "In Docker, next steps:\n"
             "  · Read latest report: docker compose run --rm kronos uv run kronos report latest\n"
+            "  · Create strategy config: docker compose run --rm kronos uv run kronos strategy init-r-breaker\n"
             "  · Interactive Agent: docker compose run --rm kronos uv run kronos agent start\n"
             "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
             "  · This version only writes research reports; it does not start paper trading or live orders."
@@ -168,17 +170,19 @@ STRINGS: dict[str, dict[str, str]] = {
             "下一步：\n"
             "  1. 直接查看最新报告：kronos report latest\n"
             "  2. 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
-            "  3. 运行完整研究：kronos run today\n"
-            "  4. 启动 Web 工作台：cd web && npm run dev\n"
-            "  5. 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
+            "  3. 生成策略配置：kronos strategy init-r-breaker\n"
+            "  4. 运行策略烟雾测试：kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml\n"
+            "  5. 启动 Web 工作台：cd web && npm run dev\n"
+            "  6. 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
         ),
         "en": (
             "Next steps:\n"
             "  1. Read the latest report directly: kronos report latest\n"
             "  2. Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
-            "  3. Run full research: kronos run today\n"
-            "  4. Start Web workbench: cd web && npm run dev\n"
-            "  5. This version only writes research reports; it does not start paper trading or live orders."
+            "  3. Create strategy config: kronos strategy init-r-breaker\n"
+            "  4. Smoke-test strategy config: kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml\n"
+            "  5. Start Web workbench: cd web && npm run dev\n"
+            "  6. This version only writes research reports; it does not start paper trading or live orders."
         ),
     },
     "quickstart.report_ready": {
@@ -638,16 +642,16 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Parameter Tuning Guide",
     },
     "conv.tuning_params": {
-        "zh": "R-breaker 可调参数: volatility_multiplier (突破倍数, 默认1.5), stop_loss_pct (止损%, 默认2.0), atr_period (ATR周期, 默认14)",
-        "en": "R-breaker params: volatility_multiplier (default 1.5), stop_loss_pct (default 2.0), atr_period (default 14)",
+        "zh": "R-breaker 可调参数: volatility_multiplier (突破倍数, 默认1.5), atr_period (ATR周期, 默认14), universe.symbols, universe.timeframe",
+        "en": "R-breaker params: volatility_multiplier (default 1.5), atr_period (default 14), universe.symbols, universe.timeframe",
     },
     "conv.tuning_how": {
-        "zh": "用 kronos quickstart 重新生成数据后重跑（参数通过代码修改，TOML 配置将在 v0.4.0 支持）。",
-        "en": "Re-run kronos quickstart after modifying params in code (TOML config coming in v0.4.0).",
+        "zh": "用 kronos strategy init-r-breaker 生成 TOML, 修改参数后运行 kronos strategy smoke-test, 通过后再 register。",
+        "en": "Create TOML with kronos strategy init-r-breaker, edit params, run kronos strategy smoke-test, then register after it passes.",
     },
     "conv.tuning_example": {
-        "zh": "常见调整: 震荡市 → 降低 volatility_multiplier (1.0-1.2) / 趋势市 → 提高 stop_loss_pct (3-5%)",
-        "en": "Common: reduce volatility_multiplier (1.0-1.2) in range-bound / increase stop_loss_pct (3-5%) in trending",
+        "zh": "常见调整: 震荡市 → 降低 volatility_multiplier (1.0-1.2) / 趋势市 → 提高 volatility_multiplier (1.8-2.5)",
+        "en": "Common: reduce volatility_multiplier (1.0-1.2) in range-bound / increase volatility_multiplier (1.8-2.5) in trending",
     },
     "conv.explore_title": {
         "zh": "好的，先看看有什么。",

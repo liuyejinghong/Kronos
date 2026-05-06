@@ -313,6 +313,99 @@ class TestReportCLI:
         assert "kronos quickstart" in output
 
 
+class TestStrategyCLI:
+    """Integration tests for 'kronos strategy' commands."""
+
+    def setup_method(self) -> None:
+        clear_candidates()
+
+    def teardown_method(self) -> None:
+        clear_candidates()
+
+    def test_init_validate_smoke_and_register_strategy_config(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        strategies_path = tmp_path / "strategies"
+
+        from kronos.data.seed import generate_sample_klines
+        from kronos.factor.candidates import list_candidate_factors
+
+        generate_sample_klines("BTCUSDT", base_path=data_path, days=7)
+
+        init_result = runner.invoke(app, [
+            "strategy", "init-r-breaker",
+            "--id", "my_r_breaker",
+            "--symbols", "BTCUSDT",
+            "--timeframe", "15m",
+            "--output-dir", str(strategies_path),
+        ])
+
+        strategy_path = strategies_path / "my_r_breaker.toml"
+        assert init_result.exit_code == 0, init_result.output
+        assert strategy_path.exists()
+        assert "Strategy Config Created" in init_result.stdout
+
+        validate_result = runner.invoke(app, [
+            "strategy", "validate",
+            str(strategy_path),
+        ])
+
+        assert validate_result.exit_code == 0, validate_result.output
+        assert "Strategy Config Valid" in validate_result.stdout
+        assert "trading_enabled: no" in validate_result.stdout
+
+        smoke_result = runner.invoke(app, [
+            "strategy", "smoke-test",
+            str(strategy_path),
+            "--config", str(config),
+        ])
+
+        assert smoke_result.exit_code == 0, smoke_result.output
+        assert "Strategy Smoke Test" in smoke_result.stdout
+        assert "status: 通过" in smoke_result.stdout
+        assert "trading_enabled: no" in smoke_result.stdout
+
+        register_result = runner.invoke(app, [
+            "strategy", "register",
+            str(strategy_path),
+            "--config", str(config),
+        ])
+
+        assert register_result.exit_code == 0, register_result.output
+        assert "Strategy Registered" in register_result.stdout
+        assert "candidate_id: my_r_breaker" in register_result.stdout
+        assert "visible_to_agent: yes" in register_result.stdout
+
+        candidates = list_candidate_factors()
+        assert len(candidates) == 1
+        assert candidates[0].candidate_id == "my_r_breaker"
+        assert candidates[0].origin == "user_config"
+
+    def test_register_blocks_when_smoke_test_fails(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        strategies_path = tmp_path / "strategies"
+
+        init_result = runner.invoke(app, [
+            "strategy", "init-r-breaker",
+            "--id", "blocked_r_breaker",
+            "--symbols", "BTCUSDT",
+            "--output-dir", str(strategies_path),
+        ])
+        strategy_path = strategies_path / "blocked_r_breaker.toml"
+        assert init_result.exit_code == 0, init_result.output
+
+        register_result = runner.invoke(app, [
+            "strategy", "register",
+            str(strategy_path),
+            "--config", str(config),
+        ])
+
+        output = register_result.stdout + (register_result.stderr or "")
+        assert register_result.exit_code == 1
+        assert "registration: blocked" in output
+        assert "本地没有" in output
+
+
 class TestResearchPromotionCLI:
     """Integration tests for 'kronos research promote-candidates' command."""
 
