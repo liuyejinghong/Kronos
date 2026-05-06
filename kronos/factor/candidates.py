@@ -8,12 +8,14 @@ to ``~/.kronos/candidates.json`` so they survive across process restarts
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from kronos.agent.types import CandidateLifecycleState
 
-_PERSIST_PATH = Path.home() / ".kronos" / "candidates.json"
+_DEFAULT_PERSIST_PATH = Path.home() / ".kronos" / "candidates.json"
+_PERSIST_ENV_VAR = "KRONOS_CANDIDATES_PATH"
 
 
 @dataclass(frozen=True)
@@ -33,13 +35,23 @@ class CandidateFactorSpec:
 
 # Module-level registry — lazy-loaded from disk on first access.
 _registry: list[CandidateFactorSpec] | None = None
+_loaded_path: Path | None = None
+
+
+def candidate_store_path() -> Path:
+    """Return the candidate registry path for this process."""
+    override = os.environ.get(_PERSIST_ENV_VAR)
+    if override and override.strip():
+        return Path(override).expanduser()
+    return _DEFAULT_PERSIST_PATH
 
 
 def _load_from_disk() -> list[CandidateFactorSpec]:
-    if not _PERSIST_PATH.exists():
+    persist_path = candidate_store_path()
+    if not persist_path.exists():
         return []
     try:
-        raw = json.loads(_PERSIST_PATH.read_text(encoding="utf-8"))
+        raw = json.loads(persist_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return []
     specs: list[CandidateFactorSpec] = []
@@ -65,7 +77,8 @@ def _load_from_disk() -> list[CandidateFactorSpec]:
 
 
 def _save_to_disk(specs: list[CandidateFactorSpec]) -> None:
-    _PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    persist_path = candidate_store_path()
+    persist_path.parent.mkdir(parents=True, exist_ok=True)
     payload: list[dict[str, object]] = []
     for s in specs:
         entry: dict[str, object] = {
@@ -81,13 +94,15 @@ def _save_to_disk(specs: list[CandidateFactorSpec]) -> None:
         if s.lifecycle_state is not None:
             entry["lifecycle_state"] = s.lifecycle_state.value
         payload.append(entry)
-    _PERSIST_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    persist_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _ensure_loaded() -> list[CandidateFactorSpec]:
-    global _registry
-    if _registry is None:
+    global _loaded_path, _registry
+    current_path = candidate_store_path()
+    if _registry is None or _loaded_path != current_path:
         _registry = _load_from_disk()
+        _loaded_path = current_path
     return _registry
 
 
@@ -105,8 +120,9 @@ def list_candidate_factors() -> list[CandidateFactorSpec]:
 
 def clear_candidates() -> None:
     """Remove all registered candidates (useful for testing)."""
-    global _registry
+    global _loaded_path, _registry
     _registry = []
+    _loaded_path = candidate_store_path()
     _save_to_disk([])
 
 

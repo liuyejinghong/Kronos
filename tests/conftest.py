@@ -28,3 +28,9 @@ def sample_config_path(tmp_path: Path) -> Path:
         '[runtime]\nmode = "dev"\ndata_path = "./data"\nlog_level = "DEBUG"\nlog_json = false\n'
     )
     return config
+
+
+@pytest.fixture(autouse=True)
+def isolated_candidate_registry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep tests from reading or writing the user's real candidate registry."""
+    monkeypatch.setenv("KRONOS_CANDIDATES_PATH", str(tmp_path / ".kronos" / "candidates.json"))

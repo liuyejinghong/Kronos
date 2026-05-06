@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-06 | 版本：0.3.3 | 下一版本：0.4.0
+> 更新：2026-05-06 | 版本：0.3.4 | 下一版本：0.4.0
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -68,9 +68,23 @@
 
 ---
 
+## v0.3.4 已完成
+
+### 审查问题根因修复
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 36 | `done` 候选池测试隔离，测试不再读写真实 `~/.kronos/candidates.json` | `kronos/factor/candidates.py` + `tests/conftest.py` |
+| 37 | `done` `report latest` 优先使用结构化 run 时间，不再单纯依赖文件 mtime | `kronos/reporting/latest.py` |
+| 38 | `done` Web LLM 设置只接受当前支持的 DeepSeek provider | `kronos/web/routes/settings.py` |
+| 39 | `done` Agent 工具输入缺字段时提前失败并给出可解释错误 | `kronos/agent/tools.py` |
+| 40 | `done` 项目状态和主产品设计文档对齐 current / target / deferred | `docs/PROJECT_STATUS.md` + `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` |
+
+---
+
 ## 下一版本 (v0.4.0) — 待办
 
-> 产品目标：让一个非开发交易者在 10 分钟内判断 R-breaker 是否值得进入模拟盘观察。
+> 产品目标：让用户能创建或配置一个策略，并在历史重放 / 模拟盘前看到足够清晰的风险边界和研究证据。
 > 设计文档：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 
 ### P0 — R-breaker 可信度评估闭环（✅ 完成）
@@ -90,15 +104,15 @@
 | 29 | Docker entrypoint 覆盖 quickstart 的通用下一步提示 | `done` |
 | 30 | 策略池空状态引导："你还没有策略" + 示例代码 | `done` |
 
-### P2 — v0.4.0 预留
+### P2 — v0.4.0 主线
 
 | # | 事项 |
 |---|------|
-| 36 | AI 自然语言策略创建 |
-| 37 | 实时模拟盘（需 Binance 只读 API Key） |
-| 38 | 历史重放（关键交易回放） |
-| 39 | 按市场状态分段评估（牛/熊/震荡） |
-| 40 | TOML 策略配置文件支持（`~/.kronos/strategies/r_breaker.toml`） |
+| 41 | AI 自然语言策略创建 |
+| 42 | 实时模拟盘（需 Binance 只读 API Key） |
+| 43 | 历史重放（关键交易回放） |
+| 44 | 按市场状态分段评估（牛/熊/震荡） |
+| 45 | TOML 策略配置文件支持（`~/.kronos/strategies/r_breaker.toml`） |
 
 ---
 

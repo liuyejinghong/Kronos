@@ -12,6 +12,9 @@ from pathlib import Path
 
 from kronos.common.config import KronosConfig, load_config
 from kronos.common.i18n import get_lang, t
+from kronos.common.log import get_logger
+
+log = get_logger("kronos.agent.console")
 
 # ------------------------------------------------------------------
 # Conversation context (remembers what happened)
@@ -81,14 +84,21 @@ class AgentConsole:
                     df = load(symbols[0], base_path=self.data_path, timeframe="1m")
                     if not df.empty and str(df.iloc[0].get("venue", "")) == "synthetic":
                         self.ctx.synthetic_data = True
-                except Exception:
-                    pass
+                except Exception as exc:
+                    log.warning(
+                        "agent_console.data_scan_failed",
+                        symbol=symbols[0],
+                        error_type=type(exc).__name__,
+                    )
 
         try:
             from kronos.agent.secrets import LocalSecretStore
             self.ctx.deepseek_configured = LocalSecretStore().get_status("deepseek").configured
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning(
+                "agent_console.secret_scan_failed",
+                error_type=type(exc).__name__,
+            )
         self.ctx.has_model = self.ctx.deepseek_configured
 
         exp_root = Path("reports/research/experiments")

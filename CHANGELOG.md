@@ -5,6 +5,21 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] — 2026-05-06
+
+### Fixed
+
+- **候选池测试隔离**：测试默认使用临时 `KRONOS_CANDIDATES_PATH`，不再读写用户真实 `~/.kronos/candidates.json`
+- **最新报告语义**：`kronos report latest` 优先使用 run summary / run_id 时间判断最新报告，文件 mtime 仅作 fallback
+- **LLM provider 边界**：Web 设置写入和状态读取统一只接受当前支持的 DeepSeek provider
+- **Agent 工具输入校验**：确定性工具执行前校验必需字段，缺字段时返回可解释错误且不调用 handler
+
+### Changed
+
+- 重写 `docs/PROJECT_STATUS.md` 为 v0.3.4 当前事实源
+- 收敛 `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` 的当前能力边界，明确 AI 创建、历史重放和实时模拟盘属于 v0.4.0
+- README badge、TODO 和产品控制文档统一到 v0.3.4
+
 ## [0.3.3] — 2026-05-06
 
 ### Added

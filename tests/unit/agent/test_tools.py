@@ -105,13 +105,13 @@ def test_tool_executor_records_success_and_events(tmp_path: Path) -> None:
 
     def handler(payload: dict[str, Any]) -> AgentToolExecutionResult:
         return AgentToolExecutionResult(
-            output_summary={"ok": True, "seen": payload["candidate"]},
+            output_summary={"ok": True, "seen": payload["artifact_paths"]["report"]},
             artifact_paths=[],
         )
 
     record = executor.execute(
         tool_name="watchlist_evidence",
-        payload={"candidate": "trend_pullback_entry", "api_key": "secret"},
+        payload={"artifact_paths": {"report": "evidence.md"}, "api_key": "secret"},
         handler=handler,
     )
     events = read_events(run_dir)
@@ -126,13 +126,35 @@ def test_tool_executor_records_success_and_events(tmp_path: Path) -> None:
     assert "secret" not in (run_dir / "agent_events.jsonl").read_text(encoding="utf-8")
 
 
+def test_tool_executor_rejects_missing_required_payload_without_handler(tmp_path: Path) -> None:
+    executor = AgentToolExecutor(run_dir=tmp_path / "run-1", run_id="run-1", task_id="task-1")
+    called = False
+
+    def handler(_: dict[str, Any]) -> AgentToolExecutionResult:
+        nonlocal called
+        called = True
+        return AgentToolExecutionResult()
+
+    record = executor.execute(tool_name="watchlist_evidence", payload={}, handler=handler)
+
+    assert called is False
+    assert record.status == AgentTaskStatus.FAILED
+    assert record.error_ref is not None
+    assert record.error_ref.error_code == "agent_tool_input_invalid"
+    assert "artifact_paths" in (record.error_ref.user_action_zh or "")
+
+
 def test_tool_executor_records_failure_without_raising(tmp_path: Path) -> None:
     executor = AgentToolExecutor(run_dir=tmp_path / "run-1", run_id="run-1", task_id="task-1")
 
     def handler(_: dict[str, Any]) -> AgentToolExecutionResult:
         raise ValueError("bad input")
 
-    record = executor.execute(tool_name="watchlist_evidence", payload={}, handler=handler)
+    record = executor.execute(
+        tool_name="watchlist_evidence",
+        payload={"artifact_paths": {"report": "evidence.md"}},
+        handler=handler,
+    )
 
     assert record.status == AgentTaskStatus.FAILED
     assert record.error_ref is not None

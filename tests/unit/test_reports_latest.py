@@ -31,6 +31,32 @@ def test_find_latest_report_prefers_newest_product_report(tmp_path: Path) -> Non
     assert report.run_dir == newer.parent
 
 
+def test_find_latest_report_prefers_summary_time_over_touched_file(tmp_path: Path) -> None:
+    reports = tmp_path / "reports" / "research" / "experiments"
+    older = reports / "20260501T000000Z-old" / "agent_run_report.md"
+    newer = reports / "20260502T000000Z-new" / "auto_run_report.md"
+    older.parent.mkdir(parents=True)
+    newer.parent.mkdir(parents=True)
+    older.write_text("# Old\n", encoding="utf-8")
+    newer.write_text("# New\n", encoding="utf-8")
+    (older.parent / "agent_run_summary.json").write_text(
+        '{"run": {"run_id": "20260501T000000Z-old"}, "started_at": "2026-05-01T00:00:00Z"}',
+        encoding="utf-8",
+    )
+    (newer.parent / "auto_run_summary.json").write_text(
+        '{"run_id": "20260502T000000Z-new", "started_at": "2026-05-02T00:00:00Z"}',
+        encoding="utf-8",
+    )
+    now = time.time()
+    os.utime(older, (now, now))
+    os.utime(newer, (now - 60, now - 60))
+
+    report = find_latest_report(tmp_path / "reports" / "research")
+
+    assert report is not None
+    assert report.path == newer
+
+
 def test_find_latest_report_returns_none_without_reports(tmp_path: Path) -> None:
     assert find_latest_report(tmp_path / "reports" / "research") is None
 

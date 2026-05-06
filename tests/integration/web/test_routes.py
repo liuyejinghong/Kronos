@@ -208,6 +208,18 @@ def test_llm_provider_status_is_masked_and_local_only(tmp_path: Path) -> None:
     assert configured_response.json()["model_name"] == "deepseek-v4-pro"
 
 
+def test_llm_secret_rejects_unsupported_provider(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+
+    response = client.put(
+        "/api/settings/llm/providers/unknown-provider/secret",
+        json={"api_key": "sk-should-not-write"},
+    )
+
+    assert response.status_code == 404
+    assert not (tmp_path / ".kronos-secrets" / "agent_secrets.json").exists()
+
+
 def test_material_import_writes_local_append_only_record(tmp_path: Path) -> None:
     client = _client(tmp_path)
 

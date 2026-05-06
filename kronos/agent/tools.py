@@ -33,6 +33,10 @@ class AgentToolError(RuntimeError):
     """Raised when a deterministic tool cannot be executed."""
 
 
+class AgentToolInputError(AgentToolError):
+    """Raised when a deterministic tool payload does not match its schema."""
+
+
 class AgentToolDefinition(BaseModel):
     """Metadata for one whitelisted deterministic tool."""
 
@@ -129,18 +133,32 @@ class AgentToolExecutor:
         self._write_event(started, AgentEventType.TOOL_EXECUTION_STARTED)
 
         try:
+            _validate_tool_input(tool, payload)
             result = handler(dict(payload))
         except Exception as exc:
+            input_error = isinstance(exc, AgentToolInputError)
             failed = started.model_copy(
                 update={
                     "status": AgentTaskStatus.FAILED,
                     "error_ref": AgentErrorRef(
-                        error_code="agent_tool_failed",
-                        message_zh=f"确定性工具执行失败: {tool.name}",
+                        error_code="agent_tool_input_invalid" if input_error else "agent_tool_failed",
+                        message_zh=(
+                            f"确定性工具输入不完整: {tool.name}"
+                            if input_error
+                            else f"确定性工具执行失败: {tool.name}"
+                        ),
                         category=AgentErrorCategory.TOOL_EXECUTION,
-                        impact_zh="本轮 Agent 无法形成可靠结论, 已停止在错误报告.",
+                        impact_zh=(
+                            "本轮 Agent 缺少工具所需输入, 已停止并等待补全。"
+                            if input_error
+                            else "本轮 Agent 无法形成可靠结论, 已停止在错误报告."
+                        ),
                         recoverable=True,
-                        user_action_zh="检查工具输入和对应 artifact 后重试。",
+                        user_action_zh=(
+                            str(exc)
+                            if input_error
+                            else "检查工具输入和对应 artifact 后重试。"
+                        ),
                     ),
                     "metadata": {
                         **started.metadata,
@@ -214,6 +232,19 @@ def default_tool_definitions() -> list[AgentToolDefinition]:
             output_schema=artifact_output,
         ),
     ]
+
+
+def _validate_tool_input(tool: AgentToolDefinition, payload: dict[str, Any]) -> None:
+    required = tool.input_schema.get("required", [])
+    if not isinstance(required, list):
+        return
+    missing = [
+        str(key)
+        for key in required
+        if isinstance(key, str) and key not in payload
+    ]
+    if missing:
+        raise AgentToolInputError("缺少工具输入字段: " + ", ".join(missing))
 
 
 def agent_propose_tool(payload: dict[str, Any]) -> AgentToolExecutionResult:

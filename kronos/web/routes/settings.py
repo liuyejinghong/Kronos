@@ -64,9 +64,7 @@ def get_llm_settings(request: Request) -> LLMSettingsResponse:
 )
 def get_provider_status(provider: str, request: Request) -> ProviderReadinessResponse:
     """Return masked provider readiness without making a model call."""
-    normalized_provider = _normalize_provider(provider)
-    if normalized_provider != DEEPSEEK_PROVIDER_NAME:
-        raise HTTPException(status_code=404, detail="Unsupported provider.")
+    normalized_provider = _supported_provider(provider)
 
     context = get_context(request)
     status = DeepSeekLLMProvider(
@@ -93,9 +91,10 @@ def set_provider_secret(
     request: Request,
 ) -> ProviderSecretStatusResponse:
     """Store a provider API key and return only masked status."""
+    normalized_provider = _supported_provider(provider)
     context = get_context(request)
     status = LocalSecretStore(context.secret_store_path).set_secret(
-        provider=provider,
+        provider=normalized_provider,
         api_key=payload.api_key.get_secret_value(),
     )
     return ProviderSecretStatusResponse(
@@ -120,3 +119,10 @@ def _model_name_for_provider(provider: str) -> str | None:
 
 def _normalize_provider(provider: str) -> str:
     return provider.strip().lower().replace("_", "-")
+
+
+def _supported_provider(provider: str) -> str:
+    normalized_provider = _normalize_provider(provider)
+    if normalized_provider != DEEPSEEK_PROVIDER_NAME:
+        raise HTTPException(status_code=404, detail="Unsupported provider.")
+    return normalized_provider

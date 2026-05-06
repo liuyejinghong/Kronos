@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from kronos.factor.candidates import (
     CandidateFactorSpec,
+    candidate_store_path,
     clear_candidates,
     list_candidate_factors,
     register_candidate,
@@ -64,3 +65,9 @@ class TestCandidateRegistry:
         register_candidate(_sample_candidate("a", 1))
         clear_candidates()
         assert list_candidate_factors() == []
+
+    def test_registry_uses_isolated_test_path(self, tmp_path) -> None:
+        register_candidate(_sample_candidate("isolated", 1))
+
+        assert candidate_store_path() == tmp_path / ".kronos" / "candidates.json"
+        assert candidate_store_path().exists()
