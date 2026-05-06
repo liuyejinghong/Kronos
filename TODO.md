@@ -134,6 +134,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| `docs/USER_PERSONAS.md` | **用户画像**：核心用户、非核心用户、功能排序和文案原则 |
 | `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` | **主设计文档**：策略系统 + 执行链路 + 实现计划 |
 | `docs/PRODUCT_DESIGN_REVIEW_20260505.md` | 设计自审（CC 产品经理 + 交易者视角） |
 | `docs/DOCKER_UX_EVALUATION_20260505.md` | Codex Docker 部署评测 |

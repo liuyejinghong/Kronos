@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 候选注册支持按 `candidate_id` 更新，重复注册同一个 TOML 策略不会制造重复候选
 - README、quickstart 下一步提示、Agent 参数调整文案同步到 v0.4.0 策略配置主路径
 - 项目状态和策略系统设计文档更新为 v0.4.0 当前能力边界：已支持 TOML 配置/校验/烟雾测试，AI 创建、历史重放和实时模拟盘仍未交付
+- 新增并接入 `docs/USER_PERSONAS.md`，明确 Kronos 核心用户不是完全小白，而是有交易经验或研究能力、需要把策略想法变成证据的人
 
 ## [0.3.4] — 2026-05-06
 
