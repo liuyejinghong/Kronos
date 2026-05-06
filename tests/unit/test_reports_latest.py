@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from typing import TYPE_CHECKING
 
+import kronos.reporting.latest as latest
 from kronos.reporting import find_latest_report, summarize_report
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
 
 def test_find_latest_report_prefers_newest_product_report(tmp_path: Path) -> None:
@@ -81,3 +85,95 @@ def test_summarize_report_extracts_first_product_section(tmp_path: Path) -> None
     summary = summarize_report(report)
 
     assert summary == ["本轮没有策略进入模拟盘。"]
+
+
+def test_summarize_report_prefers_auto_run_summary_first_screen(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(latest, "_in_docker", lambda: False)
+    run_dir = tmp_path / "20260506T000000Z-quickstart"
+    run_dir.mkdir()
+    report = run_dir / "auto_run_report.md"
+    report.write_text(
+        "\n".join([
+            "# Kronos 自动研究日报",
+            "",
+            "## 一句话结论",
+            "",
+            "本次自动研究已完成工作台和观察名单补证据。",
+        ]),
+        encoding="utf-8",
+    )
+    (run_dir / "auto_run_summary.json").write_text(
+        json.dumps({
+            "summary": {
+                "run_id": "20260506T000000Z-quickstart",
+                "evaluated": 1,
+                "promoted": 0,
+                "not_promoted": 1,
+                "skipped": 0,
+            },
+            "run_id": "20260506T000000Z-quickstart",
+            "symbols": ["BTCUSDT"],
+            "timeframe": "1m",
+            "data_coverage": [{
+                "symbol": "BTCUSDT",
+                "dataset": "klines_1m",
+                "dataset_label": "1m K线",
+                "span_days": 7.0,
+                "bars": 10080,
+            }],
+            "config_snapshot": {
+                "command": "quickstart",
+                "data_kind": "synthetic",
+            },
+        }, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    summary = summarize_report(report, max_lines=8)
+
+    joined = "\n".join(summary)
+    assert "BTCUSDT / 1m K线 / 约 7.0 天 / sample 数据" in joined
+    assert "1 个已评估" in joined
+    assert "0 个通过" in joined
+    assert "1 个未通过" in joined
+    assert "流程试跑" in joined
+    assert "kronos data sync" in joined
+
+
+def test_summarize_report_uses_docker_command_for_docker_sample(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(latest, "_in_docker", lambda: True)
+    run_dir = tmp_path / "20260506T000000Z-quickstart"
+    run_dir.mkdir()
+    report = run_dir / "auto_run_report.md"
+    report.write_text("# Kronos 自动研究日报\n", encoding="utf-8")
+    (run_dir / "auto_run_summary.json").write_text(
+        json.dumps({
+            "summary": {
+                "evaluated": 1,
+                "promoted": 0,
+                "not_promoted": 1,
+                "skipped": 0,
+            },
+            "run_id": "20260506T000000Z-quickstart",
+            "symbols": ["BTCUSDT"],
+            "timeframe": "1m",
+            "data_coverage": [{
+                "symbol": "BTCUSDT",
+                "dataset": "klines_1m",
+                "span_days": 7.0,
+            }],
+            "config_snapshot": {"data_kind": "synthetic"},
+        }, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    summary = summarize_report(report, max_lines=8)
+
+    assert any(
+        "docker compose run --rm kronos uv run kronos data sync" in line
+        for line in summary
+    )

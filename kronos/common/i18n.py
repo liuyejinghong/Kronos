@@ -541,8 +541,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "📦 {n} more have been validated (less suitable for current market)",
     },
     "conv.strategies_prompt": {
-        "zh": "这些策略在 crypto 上跑了 90 天验证，但没有一个能直接赚钱——这是正常的，好的策略需要反复打磨。",
-        "en": "These strategies were validated on 90 days of crypto data. None is profitable yet — that's normal, good strategies take iteration.",
+        "zh": "先确认数据覆盖，再判断哪些策略值得继续。",
+        "en": "Check data coverage first, then decide which strategies deserve follow-up.",
     },
     "conv.pick_strategy": {
         "zh": "选一个策略，帮我分析",
@@ -614,8 +614,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Full report",
     },
     "conv.research_next": {
-        "zh": "当前的 12 个旧策略在 crypto 上表现都不够好——这很正常。好的策略需要反复迭代。下一步建议关注 liquidation 数据和市场状态过滤，而不是继续调参数。",
-        "en": "The 12 legacy strategies all underperform in crypto — that's normal. Good strategies need iteration. Next: focus on liquidation data and market regime filters rather than parameter tuning.",
+        "zh": "先阅读报告里的失败原因，再决定同步数据、改参数或放弃。",
+        "en": "Read the report's failure reasons before syncing more data, tuning parameters, or retiring the idea.",
     },
     "conv.open_web": {
         "zh": "打开 Web 工作台看完整报告",

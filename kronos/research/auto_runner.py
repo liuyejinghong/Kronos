@@ -41,6 +41,7 @@ class AutoRunCycleResult:
     sync_requested: bool
     sync_results: dict[str, dict[str, int]]
     data_coverage: list[dict[str, Any]]
+    config_snapshot: dict[str, Any]
     workbench: ResearchWorkbenchResult
     evidence_reviews: list[WatchlistEvidenceReviewResult]
     evidence_blockers: list[dict[str, str]]
@@ -72,6 +73,7 @@ class AutoRunCycleResult:
             "sync_requested": self.sync_requested,
             "sync_results": self.sync_results,
             "data_coverage": self.data_coverage,
+            "config_snapshot": self.config_snapshot,
             "workbench": self.workbench.to_dict(),
             "evidence_reviews": [review.to_dict() for review in self.evidence_reviews],
             "evidence_blockers": self.evidence_blockers,
@@ -217,6 +219,7 @@ def run_auto_research_cycle(
         sync_requested=sync_data,
         sync_results=sync_results,
         data_coverage=data_coverage,
+        config_snapshot=config_snapshot,
         workbench=workbench,
         evidence_reviews=evidence_reviews,
         evidence_blockers=evidence_blockers,
@@ -356,6 +359,17 @@ def _next_step(result: AutoRunCycleResult) -> str:
     if result.evidence_blockers:
         return "- 先处理补证据阻塞，再重新运行自动研究循环。"
     if result.evidence_reviews:
+        sample_days = _max_kline_span_days(result)
+        if sample_days < 90:
+            if _is_synthetic_run(result):
+                return (
+                    f"- 当前样本约 {sample_days} 天且为 sample 数据，只能证明流程可跑通；"
+                    "请先同步真实行情，再做 90 天级别验证。"
+                )
+            return (
+                f"- 当前样本约 {sample_days} 天，尚不能称为 90 天复验；"
+                "继续补足更长历史后，再判断观察名单候选是否有稳定弱信号。"
+            )
         all_history_ready = all(
             review.history_status == "enough_history" for review in result.evidence_reviews
         )
@@ -387,6 +401,25 @@ def _next_step(result: AutoRunCycleResult) -> str:
     if summary["watchlist"] > 0:
         return "- 对观察名单候选运行补证据专项报告。"
     return "- 产品评审未通过候选，确认哪些进入退休，哪些需要重新设计。"
+
+
+def _max_kline_span_days(result: AutoRunCycleResult) -> float:
+    spans = [
+        float(row.get("span_days", 0.0))
+        for row in result.data_coverage
+        if str(row.get("dataset", "")).startswith("klines_")
+    ]
+    return round(max(spans), 2) if spans else 0.0
+
+
+def _is_synthetic_run(result: AutoRunCycleResult) -> bool:
+    snapshot = result.config_snapshot
+    if snapshot.get("data_kind") == "synthetic":
+        return True
+    snapshot_id = str(snapshot.get("data_snapshot_id") or "")
+    if "sample" in snapshot_id or "synthetic" in snapshot_id:
+        return True
+    return result.run_id.endswith("-quickstart") or "quickstart" in result.run_id
 
 
 def _sync_result_lines(sync_results: dict[str, dict[str, int]]) -> list[str]:

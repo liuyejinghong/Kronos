@@ -5,6 +5,24 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-05-06
+
+### Added
+
+- **Docker 首次体验根因修复方案**：新增 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md`，把 v0.4.1 多画像评测暴露的问题逐项绑定到用户看到的问题、根因、产品修复和验收标准
+- `report latest` 对自动研究报告优先读取 `auto_run_summary.json`，在第一屏展示数据类型、样本天数、策略数量、验证结果和下一步命令
+
+### Fixed
+
+- Agent 策略列表不再显示未替换的 `{n}`，研究结论不再把 7 天 sample 数据说成 90 天复验，也不再把单个 R-breaker 写成“12 个旧策略”
+- 自动研究报告在样本少于 90 天时不再输出“90 天复验已完成”，sample 数据会明确标注为流程试跑而非策略有效性结论
+- Docker 场景下的策略配置提示改为容器内 `/root/.kronos/...` 路径，并在宿主机路径误传时给出可复制的修正命令
+
+### Changed
+
+- `configs/dev.toml` 默认日志级别从 `DEBUG` 调整为 `WARNING`，避免 quickstart / agent 首屏泄露 `query.loaded`、`partition.written` 等工程日志
+- README / README.en 命令速查拆分本地 uv 和 Docker 路径，明确 quickstart 的 1m sample 试跑与 TOML 默认 15m 策略配置不是同一层结论
+
 ## [0.4.1] — 2026-05-06
 
 ### Added

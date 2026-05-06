@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-06 | 版本：0.4.1 | 下一版本：0.4.2
+> 更新：2026-05-06 | 版本：0.4.2 | 下一版本：0.4.3
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -103,30 +103,42 @@
 | # | 事项 | 证据 |
 |---|------|------|
 | 51 | `done` 基于用户画像模拟 Docker 全新使用流程，记录安装、报告、策略配置、Agent 接力的体验反馈 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md` |
-| 52 | `done` 将 v0.4.0 首次体验问题按 P0/P1/P2 和根因归档，作为 v0.4.2+ 产品体验 backlog 输入 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md` |
+| 52 | `done` 将 v0.4.0 首次体验问题按 P0/P1/P2 和根因归档，作为 v0.4.2 产品体验修复输入 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md` |
 
 ---
 
-## 下一版本 (v0.4.2+) — 待办
+## v0.4.2 已完成
 
-> 产品目标：让用户能创建或配置一个策略，并在历史重放 / 模拟盘前看到足够清晰的风险边界和研究证据。
+### Docker 首次体验信任链修复
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 53 | `done` 修复 Agent 策略列表和研究结论的事实错误：`{n}` 未替换、7 天样本误写 90 天、1 个策略误写 12 个旧策略 | `kronos/agent/console.py` + `kronos/common/i18n.py` |
+| 54 | `done` 重做 `kronos report latest` 第一屏摘要：展示 sample/real 数据边界、策略数量、粒度、验证结果和下一步 | `kronos/reporting/latest.py` |
+| 55 | `done` 修复自动研究报告中 7 天样本与“90 天复验已完成”的文案冲突 | `kronos/research/auto_runner.py` |
+| 56 | `done` Docker 模式下 `strategy init-r-breaker` 输出容器安全的 smoke-test/register 命令，避免宿主机 `~` 路径误导 | `cli/main.py` + README |
+| 57 | `done` 解释 quickstart/Agent 1m sample 试跑与 TOML 默认 15m 配置之间的关系 | `cli/main.py` + README |
+| 58 | `done` quickstart / agent start 默认隐藏工程调试日志 | `configs/dev.toml` |
+| 59 | `done` 将根因、产品逻辑、修复方案和验收标准沉淀为文档 | `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md` |
+
+---
+
+## 下一版本 (v0.4.3+) — 待办
+
+> 产品目标：在首次体验信任链修复后，回到策略资产主线：让用户能创建或配置一个策略，并在历史重放 / 模拟盘前看到足够清晰的风险边界和研究证据。
 > 设计文档：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 
-### P0 — Docker 首次体验信任修复
-
 | # | 事项 |
 |---|------|
-| 53 | 修复 Agent 策略列表和研究结论的事实错误：`{n}` 未替换、7 天样本误写 90 天、1 个策略误写 12 个旧策略 |
-| 54 | 重做 `kronos report latest` 第一屏摘要：必须展示 sample/real 数据边界、策略名、粒度、验证结果、失败原因和下一步 |
-| 55 | 修复自动研究报告中 7 天样本与“90 天复验已完成”的文案冲突 |
+| 60 | AI 自然语言策略创建：把用户策略想法转换成 TOML 草案，再走 validate / smoke-test / register 闸门 |
+| 61 | 历史重放：围绕关键交易、失败时段和样本外窗口解释策略为什么表现好/差 |
+| 62 | 按市场状态分段评估：牛/熊/震荡/高波动独立给出验证结论和晋升门槛 |
+| 63 | 实时模拟盘：只读 Binance API Key 接入前，先明确虚拟订单、延迟、滑点和人工闸门 |
+| 64 | 多品种策略配置逐 symbol smoke-test，避免只验证首个品种 |
 
-### P1 — Docker 策略路径和主路径对齐
+---
 
-| # | 事项 |
-|---|------|
-| 56 | Docker 模式下 `strategy init-r-breaker` 输出容器安全的 smoke-test/register 命令，避免宿主机 `~` 路径误导 |
-| 57 | 解释或统一 quickstart/Agent 1m 研究与 TOML 默认 15m 配置之间的关系 |
-| 58 | quickstart / data status / agent start 默认隐藏工程调试日志，必要时用 `--debug` 展示 |
+## 历史已完成补充
 
 ### P0 — R-breaker 可信度评估闭环（✅ 完成）
 
@@ -145,16 +157,6 @@
 | 29 | Docker entrypoint 覆盖 quickstart 的通用下一步提示 | `done` |
 | 30 | 策略池空状态引导："你还没有策略" + 示例代码 | `done` |
 
-### P2 — v0.4.x 主线
-
-| # | 事项 |
-|---|------|
-| 41 | AI 自然语言策略创建 |
-| 42 | 实时模拟盘（需 Binance 只读 API Key） |
-| 43 | 历史重放（关键交易回放） |
-| 44 | 按市场状态分段评估（牛/熊/震荡） |
-| 50 | 多品种策略配置逐 symbol smoke-test，避免只验证首个品种 |
-
 ---
 
 ## 产品文档索引
@@ -163,6 +165,7 @@
 |------|------|
 | `docs/USER_PERSONAS.md` | **用户画像**：核心用户、非核心用户、功能排序和文案原则 |
 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md` | **Docker 多画像体验评测**：按用户画像记录 v0.4.0 首次体验问题和修复优先级 |
+| `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md` | **Docker 体验修复方案**：P0/P1 问题根因、产品逻辑、修复方案和验收标准 |
 | `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` | **主设计文档**：策略系统 + 执行链路 + 实现计划 |
 | `docs/PRODUCT_DESIGN_REVIEW_20260505.md` | 设计自审（CC 产品经理 + 交易者视角） |
 | `docs/DOCKER_UX_EVALUATION_20260505.md` | Codex Docker 部署评测 |

@@ -73,6 +73,28 @@ def _parse_periods(value: str) -> list[int]:
     return periods
 
 
+def _in_docker() -> bool:
+    return Path("/.dockerenv").exists()
+
+
+def _docker_run_prefix() -> str:
+    return "docker compose run --rm kronos uv run"
+
+
+def _strategy_path_hint(path: str) -> str | None:
+    expanded = Path(path).expanduser()
+    if expanded.exists():
+        return None
+    raw = str(expanded)
+    if _in_docker() and raw.startswith(("/Users/", "/home/", "/private/")):
+        return (
+            "Docker path hint: this looks like a host path. "
+            "Use the container path printed by `kronos strategy init-r-breaker`, "
+            "usually /root/.kronos/strategies/r_breaker.toml."
+        )
+    return None
+
+
 def _resolve_candidate_specs(candidates: str | None) -> tuple[list[CandidateFactorSpec], set[str]]:
     from kronos.factor.candidates import list_candidate_factors
 
@@ -507,15 +529,17 @@ def research_auto_run(
             data_base_path=Path(cfg.data.base_path),
             output_base_path=Path(output_path),
             run_id=resolved_run_id,
-            git_commit=git_commit,
-            data_snapshot_id=data_snapshot_id,
-            config_snapshot={
-                "command": "research auto-run",
-                "timeframe": timeframe,
-                "symbols": symbol_list,
-                "candidates": sorted(candidate_filter),
-                "watchlist_candidates": sorted(watchlist_filter),
-            },
+                git_commit=git_commit,
+                data_snapshot_id=data_snapshot_id,
+                config_snapshot={
+                    "command": "research auto-run",
+                    "timeframe": timeframe,
+                    "symbols": symbol_list,
+                    "candidates": sorted(candidate_filter),
+                    "watchlist_candidates": sorted(watchlist_filter),
+                    "data_snapshot_id": data_snapshot_id,
+                    "data_kind": "synced" if sync_data else "local",
+                },
             candidate_specs=candidate_specs,
             watchlist_candidate_specs=watchlist_specs,
             timeframe=timeframe,
@@ -1103,7 +1127,16 @@ def strategy_init_r_breaker(
     typer.echo(f"strategy: {strategy_config.strategy.name} ({strategy_config.strategy.id})")
     typer.echo(f"symbols: {', '.join(strategy_config.universe.symbols)}")
     typer.echo(f"timeframe: {strategy_config.universe.timeframe}")
-    typer.echo("next: kronos strategy smoke-test " + str(path))
+    typer.echo(
+        "note: quickstart uses 1m sample data for installation smoke testing; "
+        f"this TOML is your editable {strategy_config.universe.timeframe} strategy config."
+    )
+    if _in_docker():
+        typer.echo(f"next: {_docker_run_prefix()} kronos strategy smoke-test {path}")
+        typer.echo(f"then: {_docker_run_prefix()} kronos strategy register {path}")
+    else:
+        typer.echo("next: kronos strategy smoke-test " + str(path))
+        typer.echo("then: kronos strategy register " + str(path))
 
 
 @strategy_app.command("validate")
@@ -1120,6 +1153,9 @@ def strategy_validate(
         strategy_config = load_strategy_config(path)
     except (ConfigError, ValidationError) as exc:
         typer.echo(f"Strategy config invalid: {exc}", err=True)
+        hint = _strategy_path_hint(path)
+        if hint:
+            typer.echo(hint, err=True)
         raise typer.Exit(code=1) from exc
 
     typer.echo("--- Strategy Config Valid ---")
@@ -1149,6 +1185,9 @@ def strategy_smoke_test(
         strategy_config = load_strategy_config(path)
     except (ConfigError, ValidationError) as exc:
         typer.echo(f"Strategy config invalid: {exc}", err=True)
+        hint = _strategy_path_hint(path)
+        if hint:
+            typer.echo(hint, err=True)
         raise typer.Exit(code=1) from exc
 
     result = run_strategy_smoke_test(strategy_config, data_base_path=cfg.data.base_path)
@@ -1189,6 +1228,9 @@ def strategy_register(
         strategy_config = load_strategy_config(path)
     except (ConfigError, ValidationError) as exc:
         typer.echo(f"Strategy config invalid: {exc}", err=True)
+        hint = _strategy_path_hint(path)
+        if hint:
+            typer.echo(hint, err=True)
         raise typer.Exit(code=1) from exc
 
     if not skip_smoke:
@@ -1207,6 +1249,7 @@ def strategy_register(
     typer.echo(f"symbols: {', '.join(spec.source_strategies)}")
     typer.echo(f"origin: {spec.origin}")
     typer.echo("visible_to_agent: yes")
+    typer.echo(f"next: kronos agent start will see {spec.title}")
 
 
 @agent_app.command("start")
@@ -1316,7 +1359,12 @@ def quickstart(
                 run_id=run_id,
                 git_commit="quickstart",
                 data_snapshot_id="quickstart-sample",
-                config_snapshot={"command": "quickstart", "symbols": [symbol]},
+                config_snapshot={
+                    "command": "quickstart",
+                    "symbols": [symbol],
+                    "data_snapshot_id": "quickstart-sample",
+                    "data_kind": "synthetic",
+                },
                 candidate_specs=candidates,
                 watchlist_candidate_specs=candidates,
                 timeframe="1m",

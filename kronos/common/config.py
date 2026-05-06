@@ -10,9 +10,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from kronos.common.errors import ConfigError
-from kronos.common.log import get_logger
-
-log = get_logger("kronos.common.config")
 
 # Directories to search for config files, relative to project root candidates.
 _CONFIG_SEARCH_PATHS = (
@@ -29,7 +26,7 @@ class RuntimeConfig(BaseModel):
 
     mode: str = "dev"
     data_path: str = "./data"
-    log_level: str = "INFO"
+    log_level: str = "WARNING"
     log_json: bool = True
     lang: str = "zh"
 
@@ -89,20 +86,16 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
     config_path = Path(path) if path is not None else _discover_config()
 
     if config_path is None:
-        log.info("config.using_defaults")
         return KronosConfig()
 
     if not config_path.exists():
         if path is not None:
             discovered = _discover_config()
             if discovered is not None:
-                log.info("config.explicit_not_found_using_discovered", requested=str(config_path), used=str(discovered))
                 config_path = discovered
             else:
-                log.info("config.not_found_using_defaults", path=str(config_path))
                 return KronosConfig()
         else:
-            log.info("config.not_found_fallback", path=str(config_path))
             return KronosConfig()
 
     try:
@@ -111,7 +104,6 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"Invalid TOML in {config_path}: {e}") from e
 
-    log.debug("config.loaded", path=str(config_path))
     return KronosConfig.model_validate(raw)
 
 

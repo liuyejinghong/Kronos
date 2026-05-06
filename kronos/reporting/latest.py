@@ -1,8 +1,10 @@
 """Find and summarize the latest product-facing Kronos report."""
+# ruff: noqa: RUF001
 
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -66,6 +68,10 @@ def find_latest_report(base_path: str | Path = "reports/research") -> LatestRepo
 def summarize_report(path: str | Path, *, max_lines: int = 18) -> list[str]:
     """Extract a compact, user-readable summary from a Markdown report."""
     report_path = Path(path)
+    structured = _structured_summary(report_path)
+    if structured:
+        return structured[:max_lines]
+
     lines = report_path.read_text(encoding="utf-8").splitlines()
     section = _first_matching_section(lines, PRODUCT_SECTION_HEADINGS)
     if section:
@@ -89,6 +95,126 @@ def _first_matching_section(lines: list[str], headings: tuple[str, ...]) -> list
         if section:
             return section
     return []
+
+
+def _structured_summary(report_path: Path) -> list[str]:
+    if report_path.name != "auto_run_report.md":
+        return []
+    summary = _read_summary(report_path.parent / "auto_run_summary.json")
+    if summary is None:
+        return []
+
+    quick = _auto_run_quick_summary(summary)
+    return quick if quick else []
+
+
+def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
+    summary = _dict(payload.get("summary"))
+    if not summary:
+        return []
+
+    config = _dict(payload.get("config_snapshot"))
+    symbols = _string_list(payload.get("symbols"))
+    timeframe = str(payload.get("timeframe") or config.get("timeframe") or "未知")
+    coverage = [
+        item for item in _list_of_dicts(payload.get("data_coverage"))
+        if str(item.get("dataset", "")).startswith("klines_")
+    ]
+    max_days = _max_span_days(coverage)
+    data_kind = _data_kind(payload, config)
+    data_label = "sample 数据" if data_kind == "synthetic" else "本地真实/同步数据"
+    evaluated = _int(summary.get("evaluated"))
+    promoted = _int(summary.get("promoted"))
+    not_promoted = _int(summary.get("not_promoted"))
+    skipped = _int(summary.get("skipped"))
+    strategy_line = _strategy_line(evaluated, promoted, not_promoted, skipped)
+    next_step = _latest_next_step(data_kind=data_kind, max_days=max_days, promoted=promoted)
+
+    lines = [
+        "本次结论："
+        + (
+            f"{promoted} 个策略进入深度研究，但仍不是交易或模拟盘结论。"
+            if promoted > 0
+            else "当前没有策略通过验证，不建议进入组合或模拟盘。"
+        ),
+        f"数据：{', '.join(symbols) if symbols else '未记录币种'} / {timeframe} K线 / "
+        f"约 {max_days} 天 / {data_label}。",
+        f"策略：{strategy_line}",
+    ]
+    if data_kind == "synthetic":
+        lines.append("判断：这是安装和流程试跑，不能证明策略有效或无效。")
+    elif max_days < 90:
+        lines.append("判断：样本不足 90 天，只能做短样本观察，不能称为完整复验。")
+    else:
+        lines.append("判断：样本已达到 90 天级别，可以阅读下游报告判断失败切片和改造方向。")
+    lines.append(f"下一步：{next_step}")
+    return lines
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list_of_dicts(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if str(item)]
+
+
+def _int(value: Any) -> int:
+    return value if isinstance(value, int) else 0
+
+
+def _max_span_days(coverage: list[dict[str, Any]]) -> float:
+    spans: list[float] = []
+    for row in coverage:
+        value = row.get("span_days")
+        if isinstance(value, int | float):
+            spans.append(float(value))
+    return round(max(spans), 2) if spans else 0.0
+
+
+def _data_kind(payload: dict[str, Any], config: dict[str, Any]) -> str:
+    explicit = config.get("data_kind")
+    if explicit in {"synthetic", "local", "synced"}:
+        return str(explicit)
+    snapshot = str(config.get("data_snapshot_id") or payload.get("data_snapshot_id") or "")
+    run_id = str(payload.get("run_id") or "")
+    if "sample" in snapshot or "synthetic" in snapshot or "quickstart" in run_id:
+        return "synthetic"
+    return "local"
+
+
+def _strategy_line(evaluated: int, promoted: int, not_promoted: int, skipped: int) -> str:
+    parts = [f"{evaluated} 个已评估", f"{promoted} 个通过"]
+    if not_promoted:
+        parts.append(f"{not_promoted} 个未通过")
+    if skipped:
+        parts.append(f"{skipped} 个跳过")
+    return "，".join(parts) + "。"
+
+
+def _latest_next_step(*, data_kind: str, max_days: float, promoted: int) -> str:
+    if data_kind == "synthetic":
+        command = "kronos data sync --symbols BTCUSDT --since 2026-01-01"
+        if _in_docker():
+            command = f"docker compose run --rm kronos uv run {command}"
+        return f"先运行 `{command}` 同步真实行情，再重新验证。"
+    if promoted > 0:
+        return "打开完整报告查看晋升候选的证据，再决定是否继续深度研究。"
+    if max_days < 90:
+        return "补足更长历史后重跑，不要先基于短样本调参。"
+    return "阅读完整报告中的失败原因，再决定改造策略、保留观察或退休。"
+
+
+def _in_docker() -> bool:
+    return Path("/.dockerenv").exists() or os.environ.get("KRONOS_DOCKER") == "1"
 
 
 def _run_sort_timestamp(run_dir: Path, fallback: float) -> float:

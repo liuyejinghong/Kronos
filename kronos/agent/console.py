@@ -2,6 +2,7 @@
 
 Zero new dependencies. Context-aware, proactive, user-centric dialogue.
 """
+# ruff: noqa: RUF001
 
 from __future__ import annotations
 
@@ -9,10 +10,14 @@ import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from kronos.common.config import KronosConfig, load_config
 from kronos.common.i18n import get_lang, t
 from kronos.common.log import get_logger
+
+if TYPE_CHECKING:
+    from kronos.research.auto_runner import AutoRunCycleResult
 
 log = get_logger("kronos.agent.console")
 
@@ -26,6 +31,7 @@ class ConversationContext:
     has_data: bool = False
     has_model: bool = False
     synthetic_data: bool = False
+    data_span_days: float | None = None
     data_symbols: list[str] = field(default_factory=list)
     selected_symbols: list[str] = field(default_factory=list)
     selected_strategy: str | None = None
@@ -84,6 +90,9 @@ class AgentConsole:
                     df = load(symbols[0], base_path=self.data_path, timeframe="1m")
                     if not df.empty and str(df.iloc[0].get("venue", "")) == "synthetic":
                         self.ctx.synthetic_data = True
+                    if not df.empty:
+                        span_ms = int(df["event_time"].max()) - int(df["event_time"].min())
+                        self.ctx.data_span_days = round(span_ms / 86_400_000, 2)
                 except Exception as exc:
                     log.warning(
                         "agent_console.data_scan_failed",
@@ -158,7 +167,12 @@ class AgentConsole:
         else:
             self._say(self._t("conv.first_time_has_data", syms=", ".join(self.ctx.data_symbols[:3])))
             tag = f" [{self._t('conv.synthetic')}]" if self.ctx.synthetic_data else ""
-            self._say(f"  [{self.ctx.data_symbols[0]}: synthetic{tag}]" if self.ctx.synthetic_data else f"  [{', '.join(self.ctx.data_symbols[:3])}]")
+            span = f", 约 {self.ctx.data_span_days} 天" if self.ctx.data_span_days else ""
+            self._say(
+                f"  [{self.ctx.data_symbols[0]}{tag}{span}]"
+                if self.ctx.synthetic_data
+                else f"  [{', '.join(self.ctx.data_symbols[:3])}{span}]"
+            )
             if self.ctx.deepseek_configured:
                 self._say(self._t("conv.model_ready_short"))
             else:
@@ -249,7 +263,7 @@ class AgentConsole:
         archived = [c for c in candidates if c.lifecycle_state and c.lifecycle_state.value in ("retired",)]
 
         self._say("")
-        self._say(self._t("conv.strategies_title"))
+        self._say(self._t("conv.strategies_title", n=len(candidates)))
         self._say("")
 
         if active:
@@ -283,7 +297,7 @@ class AgentConsole:
                 self._say(f"  #{candidate.migration_rank} {desc}  [{state}]")
 
         self._say("")
-        self._say(self._t("conv.strategies_prompt"))
+        self._say(self._strategy_context_line(len(candidates)))
         self._say("")
         self._say("  [1] " + self._t("conv.pick_strategy"))
         self._say("  [2] " + self._t("conv.run_on_all"))
@@ -409,7 +423,12 @@ class AgentConsole:
                 run_id=run_id,
                 git_commit="agent-console",
                 data_snapshot_id="console",
-                config_snapshot={"command": "agent start", "symbols": selected},
+                config_snapshot={
+                    "command": "agent start",
+                    "symbols": selected,
+                    "data_snapshot_id": "console",
+                    "data_kind": "synthetic" if self.ctx.synthetic_data else "local",
+                },
                 candidate_specs=active,
                 watchlist_candidate_specs=watchlist,
                 timeframe="1m",
@@ -433,11 +452,14 @@ class AgentConsole:
         summary = result.summary()
         evaluated = summary.get("evaluated", 0)
         promoted = summary.get("promoted", 0)
-        self._say(f"  {evaluated} {self._t('conv.strategies_evaluated')}, {promoted} {self._t('conv.strategies_promoted')}")
+        self._say(
+            f"  {evaluated} {self._t('conv.strategies_evaluated')}, "
+            f"{promoted} {self._t('conv.strategies_promoted')}"
+        )
         if result.artifact_paths.get("auto_run_report"):
             self._say(f"  {self._t('conv.report_at')}: {result.artifact_paths['auto_run_report']}")
         self._say("")
-        self._say(self._t("conv.research_next"))
+        self._say(self._research_next_line(result, len(active)))
         self._say("")
         self._say("  [1] " + self._t("conv.tune_params"))
         self._say("  [2] " + self._t("conv.another_symbol"))
@@ -523,6 +545,67 @@ class AgentConsole:
         self._say("")
         self._say(self._t("conv.tuning_example"))
         self._say("")
+
+    def _strategy_context_line(self, candidate_count: int) -> str:
+        span = self.ctx.data_span_days
+        if self.ctx.synthetic_data:
+            days = f"约 {span} 天" if span is not None else "短窗口"
+            return (
+                f"当前有 {candidate_count} 个策略。你现在看到的是 {days} sample 数据，"
+                "只适合确认流程能跑通，不能判断策略是否赚钱。同步真实行情后再做正式验证。"
+            )
+        if span is not None and span < 90:
+            return (
+                f"当前有 {candidate_count} 个策略。本地真实数据约 {span} 天，样本仍偏短；"
+                "可以先做试算，但不要把它当成 90 天验证结论。"
+            )
+        if span is not None:
+            return (
+                f"当前有 {candidate_count} 个策略。本地数据约 {span} 天，"
+                "可以进入较完整的历史验证，但仍不会自动下单。"
+            )
+        return f"当前有 {candidate_count} 个策略。先确认数据覆盖，再判断哪些值得继续。"
+
+    def _research_next_line(
+        self,
+        result: AutoRunCycleResult,
+        candidate_count: int,
+    ) -> str:
+        summary = result.summary()
+        evaluated = int(summary.get("evaluated", 0))
+        promoted = int(summary.get("promoted", 0))
+        span = self._result_span_days(result)
+        timeframe = result.timeframe
+        data_label = "sample 数据" if self.ctx.synthetic_data else "本地数据"
+        if promoted > 0:
+            return (
+                f"本轮用 {data_label}（{timeframe}，约 {span} 天）评估了 {evaluated} 个策略，"
+                f"{promoted} 个进入深度研究；这仍不是模拟盘或实盘结论。"
+            )
+        if self.ctx.synthetic_data:
+            return (
+                f"本轮用 {data_label}（{timeframe}，约 {span} 天）评估了 {evaluated} 个策略，"
+                "0 个通过验证。sample 只证明流程能跑通，下一步应先同步真实行情，再重新验证。"
+            )
+        if span < 90:
+            return (
+                f"本轮用 {data_label}（{timeframe}，约 {span} 天）评估了 {evaluated} 个策略，"
+                "0 个通过验证。样本仍短，建议补足更长历史后再判断是否调参或放弃。"
+            )
+        return (
+            f"本轮用 {data_label}（{timeframe}，约 {span} 天）评估了 {evaluated} 个策略，"
+            f"0 个通过验证。先阅读报告中的失败原因，再决定是否改造这 {candidate_count} 个候选。"
+        )
+
+    def _result_span_days(self, result: AutoRunCycleResult) -> float:
+        spans = [
+            float(row.get("span_days", 0.0))
+            for row in result.data_coverage
+            if row.get("dataset", "").startswith("klines_")
+        ]
+        if spans:
+            return round(max(spans), 2)
+        return self.ctx.data_span_days or 0.0
 
     def _mark_first_run_complete(self) -> None:
         _first_run_marker().parent.mkdir(parents=True, exist_ok=True)

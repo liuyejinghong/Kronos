@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.1-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.2-informational.svg)](CHANGELOG.md)
 
 [中文](README.md)
 
@@ -40,7 +40,7 @@ Advanced: `kronos agent start` (interactive conversational Agent).
 
 ---
 
-## Common Commands
+## Common Commands (local uv)
 
 ```bash
 uv run kronos data status                          # Data coverage
@@ -53,6 +53,19 @@ uv run kronos strategy register ~/.kronos/strategies/r_breaker.toml    # Registe
 uv run kronos agent run-once                        # Run one Agent research cycle
 uv run kronos agent status                          # Check Agent status
 uv run pytest -m "not e2e"                          # Run tests
+```
+
+## Docker Commands
+
+Inside Docker, strategy configs live under `/root/.kronos/...`. Do not paste the local `~/.kronos/...` path into `docker compose run`.
+
+```bash
+docker compose up
+docker compose run --rm kronos uv run kronos report latest
+docker compose run --rm kronos uv run kronos strategy init-r-breaker
+docker compose run --rm kronos uv run kronos strategy smoke-test /root/.kronos/strategies/r_breaker.toml
+docker compose run --rm kronos uv run kronos strategy register /root/.kronos/strategies/r_breaker.toml
+docker compose run --rm kronos uv run kronos agent start
 ```
 
 This version only writes research reports, Agent reviews, and strategy config smoke-test results. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.

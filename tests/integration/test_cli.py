@@ -344,6 +344,8 @@ class TestStrategyCLI:
         assert init_result.exit_code == 0, init_result.output
         assert strategy_path.exists()
         assert "Strategy Config Created" in init_result.stdout
+        assert "quickstart uses 1m sample data" in init_result.stdout
+        assert "then: kronos strategy register" in init_result.stdout
 
         validate_result = runner.invoke(app, [
             "strategy", "validate",
@@ -375,6 +377,7 @@ class TestStrategyCLI:
         assert "Strategy Registered" in register_result.stdout
         assert "candidate_id: my_r_breaker" in register_result.stdout
         assert "visible_to_agent: yes" in register_result.stdout
+        assert "kronos agent start will see" in register_result.stdout
 
         candidates = list_candidate_factors()
         assert len(candidates) == 1
@@ -404,6 +407,23 @@ class TestStrategyCLI:
         assert register_result.exit_code == 1
         assert "registration: blocked" in output
         assert "本地没有" in output
+
+    def test_strategy_missing_host_path_in_docker_shows_path_hint(
+        self,
+        monkeypatch,
+    ) -> None:
+        monkeypatch.setattr("cli.main._in_docker", lambda: True)
+
+        result = runner.invoke(app, [
+            "strategy", "smoke-test",
+            "/Users/ethan/.kronos/strategies/r_breaker.toml",
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "Strategy config invalid" in output
+        assert "Docker path hint" in output
+        assert "/root/.kronos/strategies/r_breaker.toml" in output
 
 
 class TestResearchPromotionCLI:
@@ -760,11 +780,14 @@ class TestResearchPromotionCLI:
         assert "不会自动下单" in report_text
         assert "kronos report latest" in report_text
         assert "模拟盘边界" in report_text
+        assert "90 天复验已完成" not in report_text
+        assert "当前样本约" in report_text
 
         summary = json.loads(auto_summary.read_text(encoding="utf-8"))
         assert summary["summary"]["run_id"] == "test-auto-run"
         assert summary["summary"]["evidence_reviews"] == 2
         assert summary["artifact_paths"]["workbench_report"] == str(workbench_report)
+        assert summary["config_snapshot"]["command"] == "research auto-run"
 
     def test_run_today_writes_system_status_and_wraps_auto_run(self, tmp_path: Path) -> None:
         config = _write_test_config(tmp_path)
