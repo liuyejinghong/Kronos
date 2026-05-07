@@ -1,14 +1,16 @@
 # Kronos Project Status
 
-> 更新时间：2026-05-07 | 当前版本：0.4.3 | 下一版本：0.4.4
+> 更新时间：2026-05-07 | 当前版本：0.4.4 | 下一版本：0.4.5
 
 ## 一句话判断
+
+v0.4.4 没有扩展策略能力，而是把 Docker 首次体验的语义收口：`quickstart` 和 `report latest` 先给结果卡，说明用了什么数据、评估了什么、结论能不能信、下一步做什么；策略起草后的验证链路也先翻译成检查配置、空跑确认、进入候选池。
 
 v0.4.3 把用户的 R-breaker 相关策略想法接到产品主线：用户可以用 `kronos strategy draft --prompt "..."` 生成策略概要、trace 和可编辑 TOML 草案，然后继续走 `validate → smoke-test → register`。这版仍不做任意策略代码生成、历史重放、模拟盘或实盘。
 
 v0.4.2 已经把 v0.4.1 多画像 Docker 评测暴露的首次体验信任断点收口：Agent 不再输出错误事实，`report latest` 第一屏能说明数据、策略、结论和下一步，7 天 sample 数据不再被包装成 90 天复验，Docker 路径和日志噪音也已修正。
 
-2026-05-07 的新一轮 Docker 全新 clone 评测继续确认：`report latest` 和 `strategy draft` 已经把交易者主线接起来，`agent start` 也能把“我有一个策略想法”导向同一条草案链路，但 Docker 首屏对完全小白仍偏工程化，下一步仍应继续缩短报告解释和入口文案。
+2026-05-07 的新一轮 Docker 全新 clone 评测确认：`report latest` 和 `strategy draft` 已经把交易者主线接起来，`agent start` 也能把“我有一个策略想法”导向同一条草案链路；v0.4.4 已按这轮评测把结果解释、策略闸门语言和 Docker 首屏入口继续缩短。
 
 当前产品边界仍是**研究报告、Agent 复盘、策略草案和策略配置试算**。Kronos 不会启动实时模拟盘、不会接入真实交易、不会自动下单。
 
@@ -17,7 +19,7 @@ v0.4.2 已经把 v0.4.1 多画像 Docker 评测暴露的首次体验信任断点
 | 模块 | 状态 | 当前用户能得到什么 |
 |---|---|---|
 | 快速开始 | 已完成 | `kronos quickstart` 一键生成数据、注册 R-breaker、输出研究报告 |
-| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据/样本/策略/结论/下一步 |
+| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据来源、样本范围、评估对象、结论、可信度和下一步 |
 | 内置策略 | 已完成 | R-breaker 日内突破作为示例策略，quickstart 后可被 Agent 看到 |
 | 策略起草 | 已完成 | `kronos strategy draft --prompt "..."` 将 R-breaker 相关想法转成概要、trace 和 TOML 草案；缺字段会澄清，不支持模板会拒绝 |
 | 策略配置 | 已完成 | `kronos strategy init-r-breaker` 生成 TOML，`validate` 校验，`smoke-test` 本地试算 |
@@ -77,9 +79,18 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 | P1 | 缺少品种或周期时容易被系统静默补默认值 | 已修复：返回“需要澄清”，列出未确定项和下一步 |
 | P1 | Docker 用户需要可复制的下一步命令 | 已修复：Docker 环境输出 `docker compose run --rm kronos uv run kronos strategy ...` 链路 |
 
+## v0.4.4 首次体验语义收口
+
+| 优先级 | 问题 | 当前处理 |
+|---|---|---|
+| P0 | Docker 首次运行后仍需要用户从多段输出里自行拼出结果边界和下一步 | 已修复：`quickstart` 和 `report latest` 共用结果卡，固定展示数据来源、样本范围、评估对象、结论、可信度、下一步 |
+| P1 | 策略起草成功后直接暴露 `validate / smoke-test / register`，交易者理解成本偏高 | 已修复：对外先写检查配置、空跑确认、进入候选池，再保留可复制命令 |
+| P1 | Agent 首屏仍偏菜单，不够像研究助手 | 已修复：首屏先说明会判断结果能不能信并给下一步，再进入选项 |
+| P2 | Docker 首次构建输出容易被误读成异常 | 已修复：entrypoint 先说明首次运行会准备环境和生成 sample 流程试跑报告，完成后只强调先读最新报告 |
+
 ## 当前推荐顺序
 
-1. 先进入 v0.4.4：历史重放和关键交易解释，让用户知道策略为什么表现好/差。
+1. 先进入 v0.4.5：历史重放和关键交易解释，让用户知道策略为什么表现好/差。
 2. 同步推进市场状态分段评估，把牛/熊/震荡/高波动下的结论分开呈现。
 3. 模拟盘前先定义只读 API Key、虚拟订单、延迟/滑点、人工闸门和报告入口。
 4. 在没有稳定模拟盘证据前，不推进真实交易执行。
@@ -93,6 +104,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - Docker 多画像体验评测：`docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md`
 - Docker 多画像体验评测（2026-05-07）：`docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md`
 - Docker 体验根因修复方案：`docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md`
+- Docker 体验语义收口方案：`docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md`
+- v0.4.4 OpenSpec：`openspec/changes/p4-docker-first-use-result-card/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`
 - v0.4.3 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`

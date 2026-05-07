@@ -122,7 +122,6 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
     ]
     max_days = _max_span_days(coverage)
     data_kind = _data_kind(payload, config)
-    data_label = "sample 数据" if data_kind == "synthetic" else "本地真实/同步数据"
     evaluated = _int(summary.get("evaluated"))
     promoted = _int(summary.get("promoted"))
     not_promoted = _int(summary.get("not_promoted"))
@@ -131,23 +130,25 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
     next_step = _latest_next_step(data_kind=data_kind, max_days=max_days, promoted=promoted)
 
     lines = [
-        "本次结论："
+        "本次结果",
+        "数据来源: "
+        + ("sample 流程试跑" if data_kind == "synthetic" else "本地真实/同步行情"),
+        f"样本范围: {', '.join(symbols) if symbols else '未记录币种'} / {timeframe} K线 / 约 {max_days} 天",
+        f"评估对象: {strategy_line}",
+        "结论: "
         + (
             f"{promoted} 个策略进入深度研究，但仍不是交易或模拟盘结论。"
             if promoted > 0
             else "当前没有策略通过验证，不建议进入组合或模拟盘。"
         ),
-        f"数据：{', '.join(symbols) if symbols else '未记录币种'} / {timeframe} K线 / "
-        f"约 {max_days} 天 / {data_label}。",
-        f"策略：{strategy_line}",
     ]
     if data_kind == "synthetic":
-        lines.append("判断：这是安装和流程试跑，不能证明策略有效或无效。")
+        lines.append("可信度: 这只是安装和流程试跑, 不能证明策略有效或无效。")
     elif max_days < 90:
-        lines.append("判断：样本不足 90 天，只能做短样本观察，不能称为完整复验。")
+        lines.append("可信度: 样本不足 90 天, 只能做短样本观察, 不能称为完整复验。")
     else:
-        lines.append("判断：样本已达到 90 天级别，可以阅读下游报告判断失败切片和改造方向。")
-    lines.append(f"下一步：{next_step}")
+        lines.append("可信度: 样本已达到 90 天级别, 可以阅读下游报告判断失败切片和改造方向。")
+    lines.append(f"下一步: {next_step}")
     return lines
 
 
@@ -197,7 +198,7 @@ def _strategy_line(evaluated: int, promoted: int, not_promoted: int, skipped: in
         parts.append(f"{not_promoted} 个未通过")
     if skipped:
         parts.append(f"{skipped} 个跳过")
-    return "，".join(parts) + "。"
+    return ", ".join(parts) + "."
 
 
 def _latest_next_step(*, data_kind: str, max_days: float, promoted: int) -> str:

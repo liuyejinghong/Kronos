@@ -143,8 +143,13 @@ class AgentConsole:
         else:
             self._returning_flow()
 
+    def _show_assistant_focus(self) -> None:
+        self._say(self._t("conv.assistant_focus"))
+
     def _first_time_flow(self) -> None:
         """Guide a new user through setup."""
+        self._say("")
+        self._show_assistant_focus()
         self._say("")
         if not self.ctx.has_data:
             self._say(self._t("conv.first_time_no_data"))
@@ -201,6 +206,7 @@ class AgentConsole:
         latest = self.ctx._past_runs[-1].name if self.ctx._past_runs else None
         data_str = ", ".join(self.ctx.data_symbols[:3])
         model_str = self._t("conv.model_ready_short") if self.ctx.deepseek_configured else self._t("conv.model_not_ready_short")
+        self._show_assistant_focus()
         self._say(self._t("conv.welcome_back", syms=data_str, model=model_str))
         if latest:
             self._say(self._t("conv.last_run", run=latest))
@@ -358,13 +364,12 @@ class AgentConsole:
             self._say(line)
         self._say("trading_enabled: no; this only writes a research draft")
         if result.status == StrategyDraftStatus.READY:
-            for index, command in enumerate(result.next_commands("kronos")):
-                label = "next" if index == 0 else "then"
-                self._say(f"{label}: {command}")
+            for line in result.next_step_lines("kronos"):
+                self._say(line)
         elif result.status == StrategyDraftStatus.NEEDS_CLARIFICATION:
-            self._say("next: 补齐未确定项后，再起草一次。")
+            self._say("下一步：补齐上面的品种和周期后，再起草一次。")
         else:
-            self._say("next: 当前版本只支持 R-breaker 日内突破。")
+            self._say("下一步：当前版本只支持 R-breaker 日内突破。")
         self._say("")
         self._say("  [1] " + self._t("conv.got_it"))
         self._say("")

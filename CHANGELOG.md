@@ -5,6 +5,26 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] — 2026-05-07
+
+### Added
+
+- **Docker 首次体验修复方案 + OpenSpec**：新增 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`，把 v0.4.3 fresh clone 评测暴露的问题按用户看到的问题、根因、产品逻辑和验收标准落档
+- `quickstart` 自动研究完成后直接打印与 `report latest` 一致的结果卡，让用户先看到数据来源、样本范围、评估对象、结论、可信度和下一步
+- Agent 首屏新增助手定位文案，先说明“判断结果能不能信，再给下一步”，再进入菜单选择
+
+### Changed
+
+- `kronos report latest` 的第一屏改成固定结果卡结构，并把 sample 数据明确标为“流程试跑，不代表策略有效性”
+- `strategy draft` 和 Agent 策略起草分支把 `validate / smoke-test / register` 翻译成交易者语言：检查配置、空跑确认、进入候选池
+- Docker entrypoint 和 quickstart 下一步提示收敛为“先读最新报告”，再按需要起草策略、同步真实数据或进入 Agent
+- README / README.en / PROJECT_STATUS / TODO / ROADMAP / 策略系统设计文档同步到 v0.4.4 当前边界
+
+### Fixed
+
+- Docker 新用户首次运行后不再需要从多段输出里自行拼接“这次跑了什么、能不能信、下一步做什么”
+- 策略起草成功后的下一步不再只暴露内部命令标签，降低非工程用户理解 `validate / smoke-test / register` 的门槛
+
 ## [0.4.3] — 2026-05-07
 
 ### Added

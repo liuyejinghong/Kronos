@@ -156,6 +156,18 @@ class StrategyDraftResult(BaseModel):
             f"{command_prefix} strategy register {self.draft_path}",
         ]
 
+    def next_step_lines(self, command_prefix: str) -> list[str]:
+        """Return trader-facing next steps with copyable commands."""
+        commands = self.next_commands(command_prefix)
+        if not commands:
+            return []
+        return [
+            "下一步: 先把草案当作研究配置, 不要当成可交易策略.",
+            f"1. 检查配置是否完整: {commands[0]}",
+            f"2. 用本地数据空跑确认信号能算出来: {commands[1]}",
+            f"3. 空跑通过后再进入候选池, 让 Agent 和报告能看到它: {commands[2]}",
+        ]
+
     def _status_label(self) -> str:
         if self.analysis.status == StrategyDraftStatus.READY:
             return "已生成草案"

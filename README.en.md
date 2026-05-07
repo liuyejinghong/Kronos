@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.3-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.4-informational.svg)](CHANGELOG.md)
 
 [中文](README.md)
 
@@ -21,7 +21,7 @@ uv run kronos quickstart
 uv run kronos report latest
 ```
 
-One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` prints the latest report summary directly, without listing report directories. Since v0.4.3, `kronos strategy draft --prompt "..."` can draft R-breaker strategy ideas into TOML, then continue through `validate` / `smoke-test` / `register`. Chinese: `kronos quickstart --lang zh`.
+One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` now starts with a result card: data used, strategy evaluated, whether the conclusion is reliable, and the next step. `kronos strategy draft --prompt "..."` can draft R-breaker ideas into TOML, then guide you through three gates: check config, dry run, and enter the candidate pool. Chinese: `kronos quickstart --lang zh`.
 
 Advanced: `kronos agent start` (interactive conversational Agent).
 
@@ -49,8 +49,8 @@ uv run kronos quickstart                            # One-command bootstrap
 uv run kronos report latest                         # Read latest report summary
 uv run kronos strategy draft --prompt "I want BTCUSDT R-breaker intraday breakout on 15m"  # Draft strategy TOML
 uv run kronos strategy init-r-breaker               # Create R-breaker TOML strategy config
-uv run kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml  # Smoke-test local strategy logic
-uv run kronos strategy register ~/.kronos/strategies/r_breaker.toml    # Register after smoke test passes
+uv run kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml  # Dry-run local strategy logic
+uv run kronos strategy register ~/.kronos/strategies/r_breaker.toml    # Enter candidate pool after dry run passes
 uv run kronos agent run-once                        # Run one Agent research cycle
 uv run kronos agent status                          # Check Agent status
 uv run pytest -m "not e2e"                          # Run tests
@@ -69,6 +69,8 @@ docker compose run --rm kronos uv run kronos strategy smoke-test /root/.kronos/s
 docker compose run --rm kronos uv run kronos strategy register /root/.kronos/strategies/r_breaker.toml
 docker compose run --rm kronos uv run kronos agent start
 ```
+
+The first Docker build may show dependency download and install output. If the run ends with a result card, the flow is normal. On first use, read `report latest` before entering the Agent.
 
 This version only writes research reports, Agent reviews, strategy drafts, and strategy config smoke-test results. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.
 

@@ -16,7 +16,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。
 
 ## 路线图原则
 
@@ -87,6 +87,26 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 - 信息不足时不静默补全，而是输出澄清问题。
 - 不支持模板不生成伪草案。
 - 版本需求、OpenSpec、TODO、PROJECT_STATUS 和 CHANGELOG 口径一致。
+
+### 阶段 A0.4：Docker 首次体验语义收口
+
+目标：不扩展策略能力，只把首次运行后的判断链路收口成用户能立即理解的结果卡和下一步。
+
+状态：已完成。v0.4.4 把 `quickstart`、`report latest`、`strategy draft` 和 `agent start` 的第一屏统一到“先判断能不能信，再给下一步”的产品口径。
+
+约束入口：
+
+- 修复方案：`docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md`
+- 评测来源：`docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md`
+- OpenSpec：`openspec/changes/p4-docker-first-use-result-card/`
+
+已完成：
+
+- `quickstart` 自动研究完成后直接打印结果卡。
+- `report latest` 第一屏固定展示数据来源、样本范围、评估对象、结论、可信度和下一步。
+- `strategy draft` 把校验、空跑、注册闸门翻译成交易语言后再给命令。
+- Agent 首屏先说明助手会判断结果可信度并给下一步。
+- Docker entrypoint 解释首次运行的依赖准备和 sample 流程试跑边界。
 
 ### 阶段 A0：Kronos Agent MVP
 

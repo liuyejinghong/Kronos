@@ -134,11 +134,14 @@ def test_summarize_report_prefers_auto_run_summary_first_screen(
     summary = summarize_report(report, max_lines=8)
 
     joined = "\n".join(summary)
-    assert "BTCUSDT / 1m K线 / 约 7.0 天 / sample 数据" in joined
+    assert "本次结果" in joined
+    assert "数据来源: sample 流程试跑" in joined
+    assert "样本范围: BTCUSDT / 1m K线 / 约 7.0 天" in joined
+    assert "评估对象: 1 个已评估, 0 个通过, 1 个未通过." in joined
+    assert "可信度: 这只是安装和流程试跑, 不能证明策略有效或无效。" in joined
     assert "1 个已评估" in joined
     assert "0 个通过" in joined
     assert "1 个未通过" in joined
-    assert "流程试跑" in joined
     assert "kronos data sync" in joined
 
 

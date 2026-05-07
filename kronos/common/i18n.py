@@ -88,8 +88,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Research skipped ({exc})",
     },
     "quickstart.trust_title": {
-        "zh": "策略评估结果",
-        "en": "Strategy Evaluation",
+        "zh": "本次结果",
+        "en": "Run Result",
     },
     "quickstart.benchmark": {
         "zh": "市场基准",
@@ -117,21 +117,21 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "quickstart.next_steps_docker": {
         "zh": (
-            "Docker 环境下，下一步：\n"
-            "  · 查看最新报告: docker compose run --rm kronos uv run kronos report latest\n"
-            "  · 起草策略配置: docker compose run --rm kronos uv run kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
-            "  · 生成默认配置: docker compose run --rm kronos uv run kronos strategy init-r-breaker\n"
-            "  · 交互式 Agent: docker compose run --rm kronos uv run kronos agent start\n"
+            "Docker 环境下，下一步先做这件事：\n"
+            "  1. 读最新报告: docker compose run --rm kronos uv run kronos report latest\n"
+            "读完结论后再继续：\n"
+            "  · 起草策略想法: docker compose run --rm kronos uv run kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
             "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
+            "  · 进入 Agent: docker compose run --rm kronos uv run kronos agent start\n"
             "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
         ),
         "en": (
-            "In Docker, next steps:\n"
-            "  · Read latest report: docker compose run --rm kronos uv run kronos report latest\n"
-            "  · Draft strategy config: docker compose run --rm kronos uv run kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
-            "  · Create default config: docker compose run --rm kronos uv run kronos strategy init-r-breaker\n"
-            "  · Interactive Agent: docker compose run --rm kronos uv run kronos agent start\n"
+            "In Docker, do this first:\n"
+            "  1. Read latest report: docker compose run --rm kronos uv run kronos report latest\n"
+            "After you understand the conclusion:\n"
+            "  · Draft strategy idea: docker compose run --rm kronos uv run kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
             "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
+            "  · Enter Agent: docker compose run --rm kronos uv run kronos agent start\n"
             "  · This version only writes research reports; it does not start paper trading or live orders."
         ),
     },
@@ -169,24 +169,22 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "quickstart.next_steps": {
         "zh": (
-            "下一步：\n"
+            "下一步先做这件事：\n"
             "  1. 直接查看最新报告：kronos report latest\n"
-            "  2. 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
-            "  3. 起草策略配置：kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
-            "  4. 生成默认配置：kronos strategy init-r-breaker\n"
-            "  5. 运行策略烟雾测试：kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml\n"
-            "  6. 启动 Web 工作台：cd web && npm run dev\n"
-            "  7. 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
+            "读完结论后再继续：\n"
+            "  · 起草策略想法：kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
+            "  · 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
+            "  · 启动 Web 工作台：cd web && npm run dev\n"
+            "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
         ),
         "en": (
-            "Next steps:\n"
+            "Do this first:\n"
             "  1. Read the latest report directly: kronos report latest\n"
-            "  2. Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
-            "  3. Draft strategy config: kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
-            "  4. Create default config: kronos strategy init-r-breaker\n"
-            "  5. Smoke-test strategy config: kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml\n"
-            "  6. Start Web workbench: cd web && npm run dev\n"
-            "  7. This version only writes research reports; it does not start paper trading or live orders."
+            "After you understand the conclusion:\n"
+            "  · Draft strategy idea: kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
+            "  · Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
+            "  · Start Web workbench: cd web && npm run dev\n"
+            "  · This version only writes research reports; it does not start paper trading or live orders."
         ),
     },
     "quickstart.report_ready": {
@@ -425,6 +423,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "zh": "我可以帮你把策略想法起草成配置，分析历史表现，或者继续推进新的研究方向。",
         "en": "I can draft strategy ideas into configs, analyze historical performance, or help you continue research directions.",
     },
+    "conv.assistant_focus": {
+        "zh": "我会先帮你判断当前结果能不能信，再给一个最合适的下一步。",
+        "en": "I'll first help you judge whether the current result is reliable, then suggest one best next step.",
+    },
     "conv.checking_env": {
         "zh": "正在检查你的环境…",
         "en": "Checking your environment…",
@@ -509,8 +511,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "You haven't defined any strategies yet. Kronos doesn't come with pre-loaded strategies — your research, your rules.",
     },
     "conv.no_strategies_how": {
-        "zh": "你可以先用自然语言描述想法。Kronos 会生成概要和 TOML 草案，再让你验证、烟雾测试和注册。",
-        "en": "You can describe an idea in natural language first. Kronos will write a summary and TOML draft, then guide you through validate, smoke-test, and register.",
+        "zh": "你可以先用自然语言描述想法。Kronos 会生成概要和 TOML 草案，然后按三步推进：检查配置、空跑确认、进入候选池。",
+        "en": "You can describe an idea in natural language first. Kronos will write a summary and TOML draft, then guide you through three gates: check config, dry run, and enter the candidate pool.",
     },
     "conv.no_strategies_example": {
         "zh": "要先起草一个 R-breaker 日内突破策略吗？",
@@ -662,8 +664,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "R-breaker params: volatility_multiplier (default 1.5), atr_period (default 14), universe.symbols, universe.timeframe",
     },
     "conv.tuning_how": {
-        "zh": "用 kronos strategy init-r-breaker 生成 TOML, 修改参数后运行 kronos strategy smoke-test, 通过后再 register。",
-        "en": "Create TOML with kronos strategy init-r-breaker, edit params, run kronos strategy smoke-test, then register after it passes.",
+        "zh": "先用 kronos strategy init-r-breaker 生成 TOML；改完参数后，用 smoke-test 空跑确认信号能算出来，通过后再 register 进入候选池。",
+        "en": "Create TOML with kronos strategy init-r-breaker first. After editing params, use smoke-test as a dry run, then register it into the candidate pool after it passes.",
     },
     "conv.tuning_example": {
         "zh": "常见调整: 震荡市 → 降低 volatility_multiplier (1.0-1.2) / 趋势市 → 提高 volatility_multiplier (1.8-2.5)",

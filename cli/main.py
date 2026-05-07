@@ -202,11 +202,11 @@ def report_latest(
         raise typer.Exit(code=1)
 
     typer.echo("--- Latest Kronos Report ---")
-    typer.echo(f"report: {latest.path}")
-    typer.echo(f"run_dir: {latest.run_dir}")
-    typer.echo()
     for line in summarize_report(latest.path, max_lines=max_lines):
         typer.echo(line)
+    typer.echo()
+    typer.echo(f"report: {latest.path}")
+    typer.echo(f"run_dir: {latest.run_dir}")
 
 
 @data_app.command("status")
@@ -1010,6 +1010,14 @@ def _print_benchmark(symbol: str, base_path: Path, _result: object | None = None
         typer.echo(f"  📊 {t('quickstart.benchmark')}: {t('quickstart.no_benchmark_data')}")
 
 
+def _print_quickstart_result_card(report_path: str) -> None:
+    """Print the same first-screen summary as `kronos report latest`."""
+    from kronos.reporting import summarize_report
+
+    for line in summarize_report(report_path, max_lines=8):
+        typer.echo(f"  {line}")
+
+
 def _echo_promotion_preflight(
     *,
     base_path: Path,
@@ -1132,11 +1140,14 @@ def strategy_init_r_breaker(
         f"this TOML is your editable {strategy_config.universe.timeframe} strategy config."
     )
     if _in_docker():
-        typer.echo(f"next: {_docker_run_prefix()} kronos strategy smoke-test {path}")
-        typer.echo(f"then: {_docker_run_prefix()} kronos strategy register {path}")
+        prefix = _docker_run_prefix()
+        typer.echo("下一步: 先把配置当作研究配置, 不要当成可交易策略.")
+        typer.echo(f"1. 用本地数据空跑确认信号能算出来: {prefix} kronos strategy smoke-test {path}")
+        typer.echo(f"2. 空跑通过后再进入候选池, 让 Agent 和报告能看到它: {prefix} kronos strategy register {path}")
     else:
-        typer.echo("next: kronos strategy smoke-test " + str(path))
-        typer.echo("then: kronos strategy register " + str(path))
+        typer.echo("下一步: 先把配置当作研究配置, 不要当成可交易策略.")
+        typer.echo(f"1. 用本地数据空跑确认信号能算出来: kronos strategy smoke-test {path}")
+        typer.echo(f"2. 空跑通过后再进入候选池, 让 Agent 和报告能看到它: kronos strategy register {path}")
 
 
 @strategy_app.command("draft")
@@ -1192,16 +1203,15 @@ def strategy_draft(
 
     if result.status == StrategyDraftStatus.READY:
         prefix = f"{_docker_run_prefix()} kronos" if _in_docker() else "kronos"
-        for index, command in enumerate(result.next_commands(prefix)):
-            label = "next" if index == 0 else "then"
-            typer.echo(f"{label}: {command}")
+        for line in result.next_step_lines(prefix):
+            typer.echo(line)
         return
 
     if result.status == StrategyDraftStatus.NEEDS_CLARIFICATION:
-        typer.echo("next: 补齐 unresolved / clarification_questions 后, 再运行 strategy draft")
+        typer.echo("下一步: 补齐上面的品种和周期后, 再运行 strategy draft.")
         return
 
-    typer.echo("next: 当前版本只支持 R-breaker 日内突破; 换成支持范围内的描述后再起草")
+    typer.echo("下一步: 当前版本只支持 R-breaker 日内突破; 请换成支持范围内的描述后再起草.")
 
 
 @strategy_app.command("validate")
@@ -1314,7 +1324,7 @@ def strategy_register(
     typer.echo(f"symbols: {', '.join(spec.source_strategies)}")
     typer.echo(f"origin: {spec.origin}")
     typer.echo("visible_to_agent: yes")
-    typer.echo(f"next: kronos agent start will see {spec.title}")
+    typer.echo(f"下一步: 打开 Agent 复盘这个候选: kronos agent start (会看到 {spec.title})")
 
 
 @agent_app.command("start")
@@ -1468,6 +1478,8 @@ def quickstart(
             typer.echo()
 
             if result.artifact_paths.get("auto_run_report"):
+                _print_quickstart_result_card(result.artifact_paths["auto_run_report"])
+                typer.echo()
                 typer.echo(f"  📄 {t('quickstart.report_at')}: {result.artifact_paths['auto_run_report']}")
                 typer.echo(f"  🔎 {t('quickstart.report_latest_hint')}: kronos report latest")
         except Exception as exc:

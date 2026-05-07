@@ -345,7 +345,8 @@ class TestStrategyCLI:
         assert strategy_path.exists()
         assert "Strategy Config Created" in init_result.stdout
         assert "quickstart uses 1m sample data" in init_result.stdout
-        assert "then: kronos strategy register" in init_result.stdout
+        assert "空跑确认信号能算出来: kronos strategy smoke-test" in init_result.stdout
+        assert "进入候选池, 让 Agent 和报告能看到它: kronos strategy register" in init_result.stdout
 
         validate_result = runner.invoke(app, [
             "strategy", "validate",
@@ -377,7 +378,7 @@ class TestStrategyCLI:
         assert "Strategy Registered" in register_result.stdout
         assert "candidate_id: my_r_breaker" in register_result.stdout
         assert "visible_to_agent: yes" in register_result.stdout
-        assert "kronos agent start will see" in register_result.stdout
+        assert "打开 Agent 复盘这个候选: kronos agent start" in register_result.stdout
 
         candidates = list_candidate_factors()
         assert len(candidates) == 1
@@ -399,9 +400,10 @@ class TestStrategyCLI:
         assert "status: 已生成草案" in result.stdout
         assert "draft_toml:" in result.stdout
         assert "trading_enabled: no" in result.stdout
-        assert "next: kronos strategy validate" in result.stdout
-        assert "then: kronos strategy smoke-test" in result.stdout
-        assert "then: kronos strategy register" in result.stdout
+        assert "下一步: 先把草案当作研究配置" in result.stdout
+        assert "检查配置是否完整: kronos strategy validate" in result.stdout
+        assert "空跑确认信号能算出来: kronos strategy smoke-test" in result.stdout
+        assert "进入候选池, 让 Agent 和报告能看到它: kronos strategy register" in result.stdout
 
         validate_result = runner.invoke(app, [
             "strategy", "validate",

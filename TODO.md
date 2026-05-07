@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-07 | 版本：0.4.3 | 下一版本：0.4.4
+> 更新：2026-05-07 | 版本：0.4.4 | 下一版本：0.4.5
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -134,16 +134,30 @@
 
 ---
 
-## 下一版本 (v0.4.4+) — 待办
+## v0.4.4 已完成
 
-> 产品目标：在 v0.4.3 的策略起草闸门后，继续补强“为什么表现好/差”和“在什么市场状态下可用”的解释能力。
+### Docker 首次体验语义收口
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 62 | `done` 将 v0.4.3 Docker fresh clone 评测问题沉淀为修复方案，明确用户看到的问题、根因、产品逻辑和验收标准 | `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` |
+| 63 | `done` `quickstart` / `report latest` 共用结果卡口径：数据来源、样本范围、评估对象、结论、可信度、下一步 | `kronos/reporting/latest.py` + `cli/main.py` |
+| 64 | `done` 策略起草后的 `validate / smoke-test / register` 对外翻译成检查配置、空跑确认、进入候选池 | `kronos/strategy/authoring.py` + `kronos/agent/console.py` |
+| 65 | `done` Docker entrypoint 和 quickstart 下一步收敛为先读最新报告，再进入策略起草 / 真实数据 / Agent | `docker-entrypoint.sh` + `kronos/common/i18n.py` |
+| 66 | `done` OpenSpec 约束、README、项目状态、路线图和策略系统设计同步 v0.4.4 边界 | `openspec/changes/p4-docker-first-use-result-card/` + README + `docs/PROJECT_STATUS.md` + `docs/ROADMAP.md` |
+
+---
+
+## 下一版本 (v0.4.5+) — 待办
+
+> 产品目标：在 v0.4.4 的首次体验语义收口后，继续补强“为什么表现好/差”和“在什么市场状态下可用”的解释能力。
 
 | # | 事项 |
 |---|------|
-| 61 | 历史重放：围绕关键交易、失败时段和样本外窗口解释策略为什么表现好/差 |
-| 62 | 按市场状态分段评估：牛/熊/震荡/高波动独立给出验证结论和晋升门槛 |
-| 63 | 实时模拟盘：只读 Binance API Key 接入前，先明确虚拟订单、延迟、滑点和人工闸门 |
-| 64 | 多品种策略配置逐 symbol smoke-test，避免只验证首个品种 |
+| 67 | 历史重放：围绕关键交易、失败时段和样本外窗口解释策略为什么表现好/差 |
+| 68 | 按市场状态分段评估：牛/熊/震荡/高波动独立给出验证结论和晋升门槛 |
+| 69 | 实时模拟盘：只读 Binance API Key 接入前，先明确虚拟订单、延迟、滑点和人工闸门 |
+| 70 | 多品种策略配置逐 symbol smoke-test，避免只验证首个品种 |
 
 ---
 
@@ -175,6 +189,9 @@
 | `docs/USER_PERSONAS.md` | **用户画像**：核心用户、非核心用户、功能排序和文案原则 |
 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260506.md` | **Docker 多画像体验评测**：按用户画像记录 v0.4.0 首次体验问题和修复优先级 |
 | `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md` | **Docker 体验修复方案**：P0/P1 问题根因、产品逻辑、修复方案和验收标准 |
+| `docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md` | **Docker fresh clone 复测**：验证 v0.4.3 的 report latest、strategy draft 和 Agent 接力问题 |
+| `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` | **Docker 体验语义收口方案**：v0.4.4 结果卡、策略闸门翻译和 Docker 首屏修复 |
+| `openspec/changes/p4-docker-first-use-result-card/` | **v0.4.4 OpenSpec**：首次体验结果卡、策略闸门翻译和 Docker 默认入口验收要求 |
 | `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` | **主设计文档**：策略系统 + 执行链路 + 实现计划 |
 | `docs/PRODUCT_DESIGN_REVIEW_20260505.md` | 设计自审（CC 产品经理 + 交易者视角） |
 | `docs/DOCKER_UX_EVALUATION_20260505.md` | Codex Docker 部署评测 |
