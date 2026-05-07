@@ -5,6 +5,24 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] — 2026-05-07
+
+### Added
+
+- **自然语言策略起草**：新增 `kronos strategy draft --prompt "..."`，把 R-breaker 日内突破相关想法转成策略概要、trace 记录和可编辑 TOML 草案
+- Agent console 新增“描述策略想法，先起草配置”分支；策略池为空时不再引导用户写 Python 注册代码，而是先走草案 → 校验 → 烟雾测试 → 注册链路
+- 策略起草产物记录 prompt version、解析来源、模板命中、默认假设、澄清问题、输出路径和下一步命令
+
+### Changed
+
+- README / README.en / Docker 命令速查加入 `strategy draft` 主路径，并继续明确当前版本不会启动模拟盘或真实下单
+- 项目状态、路线图、TODO 和策略系统设计文档同步到 v0.4.3：首版只支持 R-breaker 模板，不支持任意策略代码生成
+
+### Fixed
+
+- 策略想法缺少品种或周期时返回“需要澄清”，不会静默补默认值伪装成完成
+- 均线、RSI、网格、套利等当前未支持模板会被明确拒绝，不会生成看起来可用但系统无法验证的 TOML
+
 ## [0.4.2] — 2026-05-06
 
 ### Added

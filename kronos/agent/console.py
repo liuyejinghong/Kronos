@@ -181,6 +181,7 @@ class AgentConsole:
             self._say("  [1] " + self._t("conv.start_research"))
             self._say("  [2] " + self._t("conv.browse_strategies"))
             self._say("  [3] " + self._t("conv.configure_model"))
+            self._say("  [4] " + self._t("conv.draft_strategy"))
             self._say("")
             c = self._ask()
             if c == "1":
@@ -190,7 +191,7 @@ class AgentConsole:
             elif c == "3":
                 self._configure_model()
             elif c == "4":
-                self._research_flow()
+                self._draft_strategy_flow()
             else:
                 self._browse_strategies()
 
@@ -208,12 +209,15 @@ class AgentConsole:
         self._say("  [2] " + self._t("conv.new_research"))
         self._say("  [3] " + self._t("conv.review_strategies"))
         self._say("  [4] " + self._t("conv.just_browse"))
+        self._say("  [5] " + self._t("conv.draft_strategy"))
         self._say("")
         c = self._ask()
         if c in {"1", "2"}:
             self._research_flow()
         elif c == "3":
             self._browse_strategies()
+        elif c == "5":
+            self._draft_strategy_flow()
         else:
             self._look_around()
 
@@ -253,7 +257,7 @@ class AgentConsole:
             self._say("")
             c = self._ask()
             if c == "1":
-                self._show_strategy_example()
+                self._draft_strategy_flow()
             else:
                 self._first_time_flow()
             return
@@ -310,30 +314,6 @@ class AgentConsole:
         else:
             self._returning_flow()
 
-    def _show_strategy_example(self) -> None:
-        """Show the user how to create their first strategy."""
-        self._say("")
-        self._say("# 在你的 Python 脚本或 Jupyter Notebook 中:")
-        self._say("")
-        self._say("from kronos.factor.candidates import CandidateFactorSpec, register_candidate")
-        self._say("")
-        self._say("register_candidate(CandidateFactorSpec(")
-        self._say('    candidate_id="my_first_strategy",')
-        self._say('    family="trend_momentum",')
-        self._say('    title="我的第一个策略",')
-        self._say('    source_strategies=("BTCUSDT",),')
-        self._say("    migration_rank=1,")
-        self._say('    implementation_name="my_strategy_impl",')
-        self._say("))")
-        self._say("")
-        self._say(self._t("conv.example_note"))
-        self._say("")
-        self._say("  [1] " + self._t("conv.got_it"))
-        self._say("")
-        self._ask()
-        self._say(self._t("conv.strategies_empty_done"))
-        self._say("")
-
     def _describe_strategy(self, title: str, family: str) -> str:
         """Translate internal factor names to trader-friendly descriptions."""
         desc_map: dict[str, str] = {
@@ -355,6 +335,41 @@ class AgentConsole:
     # ------------------------------------------------------------------
     # Flow: Research
     # ------------------------------------------------------------------
+
+    def _draft_strategy_flow(self) -> None:
+        from kronos.strategy.authoring import StrategyDraftStatus, draft_strategy
+
+        self._say("")
+        self._say(self._t("conv.strategy_draft_title"))
+        self._say(self._t("conv.strategy_draft_hint"))
+        prompt = self._input("  > ").strip()
+        if not prompt:
+            self._say(self._t("conv.strategy_draft_empty"))
+            return
+
+        try:
+            result = draft_strategy(prompt)
+        except Exception as exc:
+            self._say(self._t("conv.strategy_draft_failed", err=str(exc)))
+            return
+
+        self._say("")
+        for line in result.summary_lines():
+            self._say(line)
+        self._say("trading_enabled: no; this only writes a research draft")
+        if result.status == StrategyDraftStatus.READY:
+            for index, command in enumerate(result.next_commands("kronos")):
+                label = "next" if index == 0 else "then"
+                self._say(f"{label}: {command}")
+        elif result.status == StrategyDraftStatus.NEEDS_CLARIFICATION:
+            self._say("next: 补齐未确定项后，再起草一次。")
+        else:
+            self._say("next: 当前版本只支持 R-breaker 日内突破。")
+        self._say("")
+        self._say("  [1] " + self._t("conv.got_it"))
+        self._say("")
+        self._ask()
+        self._returning_flow()
 
     def _research_flow(self) -> None:
         from kronos.data.seed import generate_sample_klines, has_any_data

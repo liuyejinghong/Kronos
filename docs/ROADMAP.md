@@ -1,6 +1,6 @@
 # Kronos Roadmap
 
-更新时间：2026-04-30
+更新时间：2026-05-07
 
 ## 目标
 
@@ -16,7 +16,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。
 
 ## 路线图原则
 
@@ -61,12 +61,32 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 - 开发时复用已有数据、因子、验证、回测、实验账本、知识库和测试，不把定时器或 Run MVP 口径拉回产品核心。
 - 新增框架依赖前，再确认触发条件、替代方案和验收证据。
 
+### 阶段 A0.3：AI 自然语言策略起草
+
+目标：把用户的自然语言策略想法转成可验证的策略草案，并沿现有 `validate → smoke-test → register → report` 链路推进。
+
+状态：已完成。v0.4.3 首版只支持 R-breaker 日内突破模板；不支持任意策略代码生成、历史重放、模拟盘或实盘执行。
+
+约束入口：
+
+- 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`
+- OpenSpec：`openspec/changes/p4-strategy-authoring/`
+
+已完成：
+
+- 新增 `kronos strategy draft --prompt "..."`。
+- 草案产出策略概要、trace JSON 和可编辑 TOML。
+- 缺品种/周期时输出澄清问题；模板不支持时明确拒绝。
+- 草案继续进入 `validate → smoke-test → register`，不绕过现有闸门。
+- Agent console 新增“描述策略想法，先起草配置”分支。
+- Docker 场景输出可复制的容器命令。
+
 完成标准：
 
-- 架构借鉴评审能解释“借鉴什么、不借什么、为什么”，并明确不复制或直接接入 Agent 类项目。
-- OpenSpec 覆盖 runtime、workbench、observability、technology governance。
-- TODO 中的实现任务来自 OpenSpec，而不是直接从会话讨论跳到代码。
-- 已有资产有明确复用、适配、延期和主线归档边界。
+- R-breaker 相关自然语言输入能生成可校验 TOML 草案。
+- 信息不足时不静默补全，而是输出澄清问题。
+- 不支持模板不生成伪草案。
+- 版本需求、OpenSpec、TODO、PROJECT_STATUS 和 CHANGELOG 口径一致。
 
 ### 阶段 A0：Kronos Agent MVP
 

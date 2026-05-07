@@ -384,6 +384,77 @@ class TestStrategyCLI:
         assert candidates[0].candidate_id == "my_r_breaker"
         assert candidates[0].origin == "user_config"
 
+    def test_strategy_draft_generates_validate_ready_toml(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "strategy", "draft",
+            "--prompt", "我想做 BTCUSDT 和 ETHUSDT 的 R-breaker 日内突破, 15m 周期",
+            "--id", "drafted_r_breaker",
+            "--output-dir", str(tmp_path),
+        ])
+
+        strategy_path = tmp_path / "drafted_r_breaker.toml"
+        assert result.exit_code == 0, result.output
+        assert strategy_path.exists()
+        assert "Strategy Draft" in result.stdout
+        assert "status: 已生成草案" in result.stdout
+        assert "draft_toml:" in result.stdout
+        assert "trading_enabled: no" in result.stdout
+        assert "next: kronos strategy validate" in result.stdout
+        assert "then: kronos strategy smoke-test" in result.stdout
+        assert "then: kronos strategy register" in result.stdout
+
+        validate_result = runner.invoke(app, [
+            "strategy", "validate",
+            str(strategy_path),
+        ])
+        assert validate_result.exit_code == 0, validate_result.output
+        assert "Strategy Config Valid" in validate_result.stdout
+
+    def test_strategy_draft_clarifies_missing_fields(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "strategy", "draft",
+            "--prompt", "我想做一个日内突破策略",
+            "--output-dir", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "status: 需要澄清" in result.stdout
+        assert "unresolved: 品种; 周期" in result.stdout
+        assert "draft_toml:" not in result.stdout
+        assert not list(tmp_path.glob("*.toml"))
+
+    def test_strategy_draft_rejects_unsupported_template(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "strategy", "draft",
+            "--prompt", "我想做 BTCUSDT 1h 均线金叉策略",
+            "--output-dir", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "status: 当前模板不支持" in result.stdout
+        assert "unsupported_reason:" in result.stdout
+        assert "draft_toml:" not in result.stdout
+        assert not list(tmp_path.glob("*.toml"))
+
+    def test_strategy_draft_in_docker_prints_container_commands(
+        self,
+        monkeypatch,
+        tmp_path: Path,
+    ) -> None:
+        monkeypatch.setattr("cli.main._in_docker", lambda: True)
+
+        result = runner.invoke(app, [
+            "strategy", "draft",
+            "--prompt", "我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期",
+            "--id", "docker_draft",
+            "--output-dir", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "docker compose run --rm kronos uv run kronos strategy validate" in result.stdout
+        assert "docker compose run --rm kronos uv run kronos strategy smoke-test" in result.stdout
+        assert "docker compose run --rm kronos uv run kronos strategy register" in result.stdout
+
     def test_register_blocks_when_smoke_test_fails(self, tmp_path: Path) -> None:
         config = _write_test_config(tmp_path)
         strategies_path = tmp_path / "strategies"

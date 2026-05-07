@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.2-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.3-informational.svg)](CHANGELOG.md)
 
 [中文](README.md)
 
@@ -21,7 +21,7 @@ uv run kronos quickstart
 uv run kronos report latest
 ```
 
-One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` prints the latest report summary directly, without listing report directories. Since v0.4.0, `kronos strategy init-r-breaker` creates a TOML strategy config and `kronos strategy smoke-test` runs a local logic check. Chinese: `kronos quickstart --lang zh`.
+One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` prints the latest report summary directly, without listing report directories. Since v0.4.3, `kronos strategy draft --prompt "..."` can draft R-breaker strategy ideas into TOML, then continue through `validate` / `smoke-test` / `register`. Chinese: `kronos quickstart --lang zh`.
 
 Advanced: `kronos agent start` (interactive conversational Agent).
 
@@ -47,6 +47,7 @@ uv run kronos data status                          # Data coverage
 uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # Sync public market data, no API key
 uv run kronos quickstart                            # One-command bootstrap
 uv run kronos report latest                         # Read latest report summary
+uv run kronos strategy draft --prompt "I want BTCUSDT R-breaker intraday breakout on 15m"  # Draft strategy TOML
 uv run kronos strategy init-r-breaker               # Create R-breaker TOML strategy config
 uv run kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml  # Smoke-test local strategy logic
 uv run kronos strategy register ~/.kronos/strategies/r_breaker.toml    # Register after smoke test passes
@@ -62,13 +63,14 @@ Inside Docker, strategy configs live under `/root/.kronos/...`. Do not paste the
 ```bash
 docker compose up
 docker compose run --rm kronos uv run kronos report latest
+docker compose run --rm kronos uv run kronos strategy draft --prompt "I want BTCUSDT R-breaker intraday breakout on 15m"
 docker compose run --rm kronos uv run kronos strategy init-r-breaker
 docker compose run --rm kronos uv run kronos strategy smoke-test /root/.kronos/strategies/r_breaker.toml
 docker compose run --rm kronos uv run kronos strategy register /root/.kronos/strategies/r_breaker.toml
 docker compose run --rm kronos uv run kronos agent start
 ```
 
-This version only writes research reports, Agent reviews, and strategy config smoke-test results. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.
+This version only writes research reports, Agent reviews, strategy drafts, and strategy config smoke-test results. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.
 
 ---
 

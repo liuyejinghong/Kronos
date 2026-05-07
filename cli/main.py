@@ -1139,6 +1139,71 @@ def strategy_init_r_breaker(
         typer.echo("then: kronos strategy register " + str(path))
 
 
+@strategy_app.command("draft")
+def strategy_draft(
+    prompt: str = typer.Option(
+        ...,
+        "--prompt",
+        "-p",
+        help="Natural-language strategy idea to turn into a TOML draft.",
+    ),
+    strategy_id: str | None = typer.Option(
+        None,
+        "--id",
+        help="Optional stable draft id. Used as the TOML filename when ready.",
+    ),
+    output_dir: str | None = typer.Option(
+        None,
+        "--output-dir",
+        help="Directory for draft artifacts. Defaults to ~/.kronos/strategy_drafts.",
+    ),
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Overwrite an existing draft TOML file.",
+    ),
+    use_ai: bool = typer.Option(
+        False,
+        "--use-ai",
+        help="Use configured DeepSeek to assist parsing. Rules-only drafting is used by default.",
+    ),
+) -> None:
+    """Draft a strategy TOML package from a natural-language idea."""
+    from pydantic import ValidationError
+
+    from kronos.common.errors import ConfigError
+    from kronos.strategy.authoring import StrategyDraftStatus, draft_strategy
+
+    try:
+        result = draft_strategy(
+            prompt,
+            output_dir=output_dir,
+            strategy_id=strategy_id,
+            overwrite=overwrite,
+            use_ai=use_ai,
+        )
+    except (ConfigError, ValidationError, ValueError) as exc:
+        typer.echo(f"Cannot draft strategy: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    for line in result.summary_lines():
+        typer.echo(line)
+    typer.echo("trading_enabled: no; this command only writes a research draft")
+
+    if result.status == StrategyDraftStatus.READY:
+        prefix = f"{_docker_run_prefix()} kronos" if _in_docker() else "kronos"
+        for index, command in enumerate(result.next_commands(prefix)):
+            label = "next" if index == 0 else "then"
+            typer.echo(f"{label}: {command}")
+        return
+
+    if result.status == StrategyDraftStatus.NEEDS_CLARIFICATION:
+        typer.echo("next: 补齐 unresolved / clarification_questions 后, 再运行 strategy draft")
+        return
+
+    typer.echo("next: 当前版本只支持 R-breaker 日内突破; 换成支持范围内的描述后再起草")
+
+
 @strategy_app.command("validate")
 def strategy_validate(
     path: str = typer.Argument(..., help="Path to a strategy TOML file."),
