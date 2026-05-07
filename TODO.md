@@ -130,6 +130,7 @@
 | # | 事项 | 证据 |
 |---|------|------|
 | 60 | `done` AI/自然语言策略创建首版：把 R-breaker 日内突破想法转换成策略概要、trace 和 TOML 草案，再走 validate / smoke-test / register 闸门 | `kronos/strategy/authoring.py` + `kronos strategy draft` + `openspec/changes/p4-strategy-authoring/` |
+| 61 | `done` 再做一轮 GitHub 全新 clone 的 Docker 首次体验评测，确认 `report latest`、`strategy draft` 和 `agent start` 的承接路径 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md` |
 
 ---
 

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **自然语言策略起草**：新增 `kronos strategy draft --prompt "..."`，把 R-breaker 日内突破相关想法转成策略概要、trace 记录和可编辑 TOML 草案
 - Agent console 新增“描述策略想法，先起草配置”分支；策略池为空时不再引导用户写 Python 注册代码，而是先走草案 → 校验 → 烟雾测试 → 注册链路
 - 策略起草产物记录 prompt version、解析来源、模板命中、默认假设、澄清问题、输出路径和下一步命令
+- **Docker 首次体验再评测**：新增 2026-05-07 的 GitHub 全新 clone Docker 体验记录，确认 `report latest`、`strategy draft` 和 `agent start` 的承接效果
 
 ### Changed
 
