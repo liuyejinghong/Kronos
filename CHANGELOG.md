@@ -5,6 +5,30 @@ All notable changes to Kronos will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **v0.4.6 预告**：后续继续深化关键交易重放、市场状态分段和只读观察边界的解释颗粒度
+
+## [0.4.5] — 2026-05-07
+
+### Added
+
+- `kronos report replay`、`kronos report regime`、`kronos report observation` 三个只读下钻入口
+- 关键交易重放、市场状态分段、只读观察边界和逐 symbol smoke-test 的 0.4.5 版本需求与 OpenSpec
+- 多品种 smoke-test 逐 symbol 结果输出，不再只验证首个品种
+
+### Changed
+
+- `report latest` 的产品边界继续往下钻：重放、市场状态分段和只读观察入口从产品报告中显式可读
+- 项目状态、路线图、TODO 和主设计文档同步到 v0.4.5 解释路径边界
+
+### Fixed
+
+- 用户不再需要从研究工作台或报告文件里猜测“市场状态分段”和“只读观察边界”在哪读
+- 多品种策略不会只因第一个品种通过就误导成整体通过
+
 ## [0.4.4] — 2026-05-07
 
 ### Added

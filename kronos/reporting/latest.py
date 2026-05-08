@@ -15,7 +15,6 @@ REPORT_FILENAMES = (
     "agent_run_report.md",
     "auto_run_report.md",
     "research_workbench_report.md",
-    "watchlist_evidence_report.md",
     "agent_research_decision.md",
     "agent_research_plan.md",
     "promotion_batch_report.md",
@@ -81,6 +80,21 @@ def summarize_report(path: str | Path, *, max_lines: int = 18) -> list[str]:
     return compact[:max_lines]
 
 
+def summarize_report_section(
+    path: str | Path,
+    *,
+    headings: tuple[str, ...],
+    max_lines: int = 18,
+) -> list[str]:
+    """Extract a specific section from a Markdown report."""
+    report_path = Path(path)
+    lines = report_path.read_text(encoding="utf-8").splitlines()
+    section = _first_matching_section(lines, headings)
+    if section:
+        return section[:max_lines]
+    return summarize_report(report_path, max_lines=max_lines)
+
+
 def _first_matching_section(lines: list[str], headings: tuple[str, ...]) -> list[str]:
     for idx, line in enumerate(lines):
         if line.strip() not in headings:
@@ -99,6 +113,8 @@ def _first_matching_section(lines: list[str], headings: tuple[str, ...]) -> list
 
 def _structured_summary(report_path: Path) -> list[str]:
     if report_path.name != "auto_run_report.md":
+        if report_path.name == "backtest_replay_report.md":
+            return _replay_summary(report_path)
         return []
     summary = _read_summary(report_path.parent / "auto_run_summary.json")
     if summary is None:
@@ -106,6 +122,15 @@ def _structured_summary(report_path: Path) -> list[str]:
 
     quick = _auto_run_quick_summary(summary)
     return quick if quick else []
+
+
+def _replay_summary(report_path: Path) -> list[str]:
+    lines = report_path.read_text(encoding="utf-8").splitlines()
+    section = _first_matching_section(lines, ("## 一句话结论", "## 结果概览"))
+    if section:
+        return section
+    compact = [line for line in lines if line.strip()]
+    return compact[:18]
 
 
 def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
@@ -127,6 +152,7 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
     not_promoted = _int(summary.get("not_promoted"))
     skipped = _int(summary.get("skipped"))
     strategy_line = _strategy_line(evaluated, promoted, not_promoted, skipped)
+    regime_line = _market_regime_line(payload)
     next_step = _latest_next_step(data_kind=data_kind, max_days=max_days, promoted=promoted)
 
     lines = [
@@ -135,6 +161,7 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
         + ("sample 流程试跑" if data_kind == "synthetic" else "本地真实/同步行情"),
         f"样本范围: {', '.join(symbols) if symbols else '未记录币种'} / {timeframe} K线 / 约 {max_days} 天",
         f"评估对象: {strategy_line}",
+        f"市场状态分段: {regime_line}",
         "结论: "
         + (
             f"{promoted} 个策略进入深度研究，但仍不是交易或模拟盘结论。"
@@ -143,13 +170,47 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
         ),
     ]
     if data_kind == "synthetic":
-        lines.append("可信度: 这只是安装和流程试跑, 不能证明策略有效或无效。")
+        confidence = "这只是安装和流程试跑, 不能证明策略有效或无效。"
     elif max_days < 90:
-        lines.append("可信度: 样本不足 90 天, 只能做短样本观察, 不能称为完整复验。")
+        confidence = "样本不足 90 天, 只能做短样本观察, 不能称为完整复验。"
     else:
-        lines.append("可信度: 样本已达到 90 天级别, 可以阅读下游报告判断失败切片和改造方向。")
+        confidence = "样本已达到 90 天级别, 可以阅读下游报告判断失败切片和改造方向。"
+    lines.append(f"可信度/只读观察边界: {confidence}{_read_only_observation_boundary()}")
     lines.append(f"下一步: {next_step}")
     return lines
+
+
+def _market_regime_line(payload: dict[str, Any]) -> str:
+    regime_summaries: list[str] = []
+    for review in _list_of_dicts(payload.get("evidence_reviews")):
+        for slice_ in _list_of_dicts(review.get("regime_slices")):
+            label = str(slice_.get("label_zh") or slice_.get("slice_id") or "").strip()
+            interpretation = str(slice_.get("interpretation_zh") or "").strip()
+            if not label:
+                continue
+            outcome = _regime_outcome_zh(str(slice_.get("outcome") or ""))
+            detail = interpretation if interpretation else outcome
+            regime_summaries.append(f"{label}: {detail}")
+
+    if regime_summaries:
+        return "；".join(regime_summaries[:4])
+    return "本轮没有生成分市场状态证据，不能把汇总结论外推到牛市、熊市、震荡市或高波动环境。"
+
+
+def _regime_outcome_zh(outcome: str) -> str:
+    return {
+        "supportive": "支持继续补证据，但还不能直接进入组合层",
+        "weak_positive": "只有局部弱信号，只适合保留观察或状态过滤评估",
+        "insufficient": "样本或有效分组不足，不能形成判断",
+        "unsupported": "当前切片不支持继续升级",
+    }.get(outcome, "需要打开分段报告确认")
+
+
+def _read_only_observation_boundary() -> str:
+    return (
+        "当前只是研究报告，不会启动模拟盘、实盘或真实订单；进入只读观察前仍需定义"
+        "虚拟订单、延迟、滑点和人工闸门。"
+    )
 
 
 def _dict(value: Any) -> dict[str, Any]:

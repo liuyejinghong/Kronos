@@ -11,6 +11,7 @@ import tomli_w
 
 from kronos.factor.diagnostics.reporting import persist_signal_diagnostics_result
 from kronos.factor.validation.reporting import persist_validation_result
+from kronos.research.backtest.reporting import write_replay_report
 from kronos.research.walkforward.reporting import persist_walkforward_result
 
 if TYPE_CHECKING:
@@ -30,6 +31,7 @@ def write_backtest_artifacts(result: BacktestResult, *, base_path: str | Path) -
     config_snapshot_path = run_root / "config_snapshot.toml"
     equity_path = run_root / "equity.parquet"
     trades_path = run_root / "trades.parquet"
+    replay_report_path = run_root / "backtest_replay_report.md"
 
     metrics_payload = {
         "run_id": result.run_id,
@@ -42,12 +44,14 @@ def write_backtest_artifacts(result: BacktestResult, *, base_path: str | Path) -
     config_snapshot_path.write_text(tomli_w.dumps(result.config_snapshot), encoding="utf-8")
     result.equity_curve.to_parquet(equity_path, index=False)
     result.trades.to_parquet(trades_path, index=False)
+    write_replay_report(result, replay_report_path)
 
     return {
         "metrics": str(metrics_path),
         "config_snapshot": str(config_snapshot_path),
         "equity": str(equity_path),
         "trades": str(trades_path),
+        "replay_report": str(replay_report_path),
     }
 
 

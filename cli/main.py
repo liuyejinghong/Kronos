@@ -15,6 +15,7 @@ from kronos.common.log import setup_logging
 
 if TYPE_CHECKING:
     from kronos.factor.candidates import CandidateFactorSpec
+    from kronos.reporting.latest import LatestReport
 
 _LANG_OPTION = typer.Option(
     None,
@@ -207,6 +208,193 @@ def report_latest(
     typer.echo()
     typer.echo(f"report: {latest.path}")
     typer.echo(f"run_dir: {latest.run_dir}")
+
+
+@report_app.command("replay")
+def report_replay(
+    report_path: str | None = typer.Argument(
+        None,
+        help="Path to a backtest replay report. Defaults to the latest replay report.",
+    ),
+    reports_path: str = typer.Option(
+        "reports/research",
+        help="Base path for research reports.",
+    ),
+    max_lines: int = typer.Option(
+        24,
+        min=1,
+        max=120,
+        help="Maximum summary lines to print.",
+    ),
+) -> None:
+    """Print a key-trade replay report summary."""
+    from kronos.reporting import summarize_report
+
+    if report_path is None:
+        latest = _find_latest_replay_report(reports_path)
+        if latest is None:
+            typer.echo(f"No backtest replay reports found under {Path(reports_path) / 'experiments'}.", err=True)
+            typer.echo("Run a backtest workflow first, then try `kronos report replay` again.", err=True)
+            raise typer.Exit(code=1)
+        report = latest.path
+    else:
+        report = Path(report_path)
+
+    typer.echo("--- Backtest Replay Report ---")
+    for line in summarize_report(report, max_lines=max_lines):
+        typer.echo(line)
+    typer.echo()
+    typer.echo(f"report: {report}")
+
+
+@report_app.command("regime")
+def report_regime(
+    report_path: str | None = typer.Argument(
+        None,
+        help="Path to a market-regime report. Defaults to the latest watchlist evidence report.",
+    ),
+    reports_path: str = typer.Option(
+        "reports/research",
+        help="Base path for research reports.",
+    ),
+    max_lines: int = typer.Option(
+        24,
+        min=1,
+        max=120,
+        help="Maximum summary lines to print.",
+    ),
+) -> None:
+    """Print the latest market-regime evidence summary."""
+    from kronos.reporting import summarize_report_section
+
+    if report_path is None:
+        report = _find_latest_report_path(
+            reports_path,
+            ("watchlist_evidence_report.md",),
+            headings=("## 分市场状态证据",),
+        )
+        if report is None:
+            typer.echo(f"No market-regime reports found under {Path(reports_path) / 'experiments'}.", err=True)
+            typer.echo("Run `kronos research watchlist-evidence` or `kronos research auto-run` first.", err=True)
+            raise typer.Exit(code=1)
+    else:
+        report = Path(report_path)
+
+    typer.echo("--- Market Regime Evidence ---")
+    typer.echo("## 分市场状态证据")
+    for line in summarize_report_section(report, headings=("## 分市场状态证据",), max_lines=max_lines):
+        typer.echo(line)
+    typer.echo()
+    typer.echo(f"report: {report}")
+
+
+@report_app.command("observation")
+def report_observation(
+    report_path: str | None = typer.Argument(
+        None,
+        help="Path to a read-only observation report. Defaults to the latest observation-related report.",
+    ),
+    reports_path: str = typer.Option(
+        "reports/research",
+        help="Base path for research reports.",
+    ),
+    max_lines: int = typer.Option(
+        24,
+        min=1,
+        max=120,
+        help="Maximum summary lines to print.",
+    ),
+) -> None:
+    """Print the latest read-only observation boundary summary."""
+    from kronos.reporting import summarize_report_section
+
+    if report_path is None:
+        report = _find_latest_report_path(
+            reports_path,
+            ("research_workbench_report.md", "backtest_replay_report.md"),
+            headings=("## 只读观察边界", "## 模拟盘边界"),
+        )
+        if report is None:
+            typer.echo(
+                f"No read-only observation reports found under {Path(reports_path) / 'experiments'}.",
+                err=True,
+            )
+            typer.echo(
+                "Run `kronos research workbench` or `kronos report replay` first.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+    else:
+        report = Path(report_path)
+
+    typer.echo("--- Read-Only Observation Boundary ---")
+    selected_heading = _detect_report_heading(report, ("## 只读观察边界", "## 模拟盘边界"))
+    typer.echo(selected_heading)
+    for line in summarize_report_section(
+        report,
+        headings=("## 只读观察边界", "## 模拟盘边界"),
+        max_lines=max_lines,
+    ):
+        typer.echo(line)
+    typer.echo()
+    typer.echo(f"report: {report}")
+
+
+def _find_latest_replay_report(reports_path: str) -> LatestReport | None:
+    from kronos.reporting.latest import LatestReport
+
+    base = Path(reports_path) / "experiments"
+    if not base.exists():
+        return None
+
+    candidates: list[LatestReport] = []
+    for path in base.glob("*/backtest_replay_report.md"):
+        if path.is_file():
+            stat = path.stat()
+            candidates.append(
+                LatestReport(
+                    path=path,
+                    run_dir=path.parent,
+                    modified_at=stat.st_mtime,
+                    sort_timestamp=stat.st_mtime,
+                )
+            )
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item.sort_timestamp, str(item.path)))
+
+
+def _find_latest_report_path(
+    reports_path: str,
+    filenames: tuple[str, ...],
+    *,
+    headings: tuple[str, ...] | None = None,
+) -> Path | None:
+    base = Path(reports_path) / "experiments"
+    if not base.exists():
+        return None
+
+    candidates: list[tuple[float, Path]] = []
+    for filename in filenames:
+        for path in base.glob(f"*/{filename}"):
+            if path.is_file():
+                if headings is not None:
+                    text = path.read_text(encoding="utf-8")
+                    if not any(heading in text for heading in headings):
+                        continue
+                candidates.append((path.stat().st_mtime, path))
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item[0], str(item[1])))[1]
+
+
+def _detect_report_heading(path: Path, headings: tuple[str, ...]) -> str:
+    text = path.read_text(encoding="utf-8")
+    for heading in headings:
+        if heading in text:
+            return heading
+    return headings[0]
 
 
 @data_app.command("status")
@@ -1314,6 +1502,8 @@ def strategy_register(
             typer.echo("--- Strategy Smoke Test ---")
             for line in smoke.summary_lines():
                 typer.echo(line)
+            if smoke.failed_symbols:
+                typer.echo(f"failed_symbols: {', '.join(smoke.failed_symbols)}", err=True)
             typer.echo("registration: blocked", err=True)
             raise typer.Exit(code=1)
 

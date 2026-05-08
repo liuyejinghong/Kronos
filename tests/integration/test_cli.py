@@ -1,3 +1,4 @@
+# ruff: noqa: RUF001
 """Integration tests for CLI commands."""
 
 from __future__ import annotations
@@ -19,6 +20,8 @@ from kronos.factor.candidates import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
 runner = CliRunner()
 
@@ -312,6 +315,123 @@ class TestReportCLI:
         assert "No reports found" in output
         assert "kronos quickstart" in output
 
+    def test_report_replay_prints_latest_replay_summary(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        replay = reports_path / "experiments" / "run-replay" / "backtest_replay_report.md"
+        replay.parent.mkdir(parents=True)
+        replay.write_text(
+            "\n".join([
+                "# 关键交易重放：run-replay",
+                "",
+                "## 一句话结论",
+                "",
+                "- 本报告只解释关键交易过程，不构成收益证明或实盘建议。",
+                "- 涉及币种：BTCUSDT",
+            ]),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "report", "replay",
+            "--reports-path", str(reports_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Backtest Replay Report" in result.stdout
+        assert f"report: {replay}" in result.stdout
+        assert "本报告只解释关键交易过程" in result.stdout
+
+    def test_report_replay_fails_when_no_replay_exists(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        latest = reports_path / "experiments" / "run-new" / "auto_run_report.md"
+        latest.parent.mkdir(parents=True)
+        latest.write_text("## 一句话结论\n\n本轮没有策略进入模拟盘。\n", encoding="utf-8")
+
+        result = runner.invoke(app, [
+            "report", "replay",
+            "--reports-path", str(reports_path),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No backtest replay reports found" in output
+        assert "kronos report replay" in output
+
+    def test_report_regime_prints_latest_regime_summary(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        report = reports_path / "experiments" / "run-regime" / "watchlist_evidence_report.md"
+        report.parent.mkdir(parents=True)
+        report.write_text(
+            "\n".join([
+                "# 观察名单补证据专项报告：range_chop_filter",
+                "",
+                "## 分市场状态证据",
+                "",
+                "| 切片 | 样本 | 结论 | mean_rank_ic | top_minus_bottom | 解释 |",
+                "|---|---:|---|---:|---:|---|",
+                "| 高波动 | 42 | 支持继续补证据 | 0.12 | 0.08 | 该切片支持继续补证据，但还不能直接进入组合层。 |",
+            ]),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "report", "regime",
+            "--reports-path", str(reports_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Market Regime Evidence" in result.stdout
+        assert "分市场状态证据" in result.stdout
+        assert f"report: {report}" in result.stdout
+
+    def test_report_observation_prints_latest_boundary_summary(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        report = reports_path / "experiments" / "run-observation" / "research_workbench_report.md"
+        report.parent.mkdir(parents=True)
+        report.write_text(
+            "\n".join([
+                "# 研究工作台报告",
+                "",
+                "## 模拟盘边界",
+                "",
+                "- 当前版本只到研究报告和 Agent 复盘，不会启动实时模拟盘。",
+                "- 实时模拟盘需要 Binance 实时行情和只读 API Key，属于 v0.4.0 预留能力。",
+            ]),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "report", "observation",
+            "--reports-path", str(reports_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Read-Only Observation Boundary" in result.stdout
+        assert "模拟盘边界" in result.stdout
+        assert f"report: {report}" in result.stdout
+
+    def test_report_regime_fails_without_regime_report(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "report", "regime",
+            "--reports-path", str(tmp_path / "reports" / "research"),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No market-regime reports found" in output
+        assert "watchlist-evidence" in output
+
+    def test_report_observation_fails_without_observation_report(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "report", "observation",
+            "--reports-path", str(tmp_path / "reports" / "research"),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No read-only observation reports found" in output
+        assert "research workbench" in output
+
 
 class TestStrategyCLI:
     """Integration tests for 'kronos strategy' commands."""
@@ -366,6 +486,7 @@ class TestStrategyCLI:
         assert smoke_result.exit_code == 0, smoke_result.output
         assert "Strategy Smoke Test" in smoke_result.stdout
         assert "status: 通过" in smoke_result.stdout
+        assert "symbols_checked: 1" in smoke_result.stdout
         assert "trading_enabled: no" in smoke_result.stdout
 
         register_result = runner.invoke(app, [
@@ -440,7 +561,7 @@ class TestStrategyCLI:
 
     def test_strategy_draft_in_docker_prints_container_commands(
         self,
-        monkeypatch,
+        monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
         monkeypatch.setattr("cli.main._in_docker", lambda: True)
@@ -456,6 +577,48 @@ class TestStrategyCLI:
         assert "docker compose run --rm kronos uv run kronos strategy validate" in result.stdout
         assert "docker compose run --rm kronos uv run kronos strategy smoke-test" in result.stdout
         assert "docker compose run --rm kronos uv run kronos strategy register" in result.stdout
+
+    def test_strategy_smoke_test_reports_each_symbol(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        strategies_path = tmp_path / "strategies"
+
+        from kronos.data.seed import generate_sample_klines
+
+        generate_sample_klines("BTCUSDT", base_path=data_path, days=7)
+        strategy_path = strategies_path / "multi_symbol.toml"
+        strategies_path.mkdir(parents=True, exist_ok=True)
+        strategy_path.write_text(
+            """
+[strategy]
+id = "multi_symbol"
+name = "Multi Symbol"
+kind = "r_breaker"
+
+[universe]
+symbols = ["BTCUSDT", "ETHUSDT"]
+timeframe = "15m"
+
+[params]
+atr_period = 14
+volatility_multiplier = 1.5
+""".strip(),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "strategy", "smoke-test",
+            str(strategy_path),
+            "--config", str(config),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "status: 未通过" in output
+        assert "symbols_checked: 2" in output
+        assert "failed_symbols: ETHUSDT" in output
+        assert "--- symbol: BTCUSDT ---" in output
+        assert "--- symbol: ETHUSDT ---" in output
 
     def test_register_blocks_when_smoke_test_fails(self, tmp_path: Path) -> None:
         config = _write_test_config(tmp_path)
@@ -483,7 +646,7 @@ class TestStrategyCLI:
 
     def test_strategy_missing_host_path_in_docker_shows_path_hint(
         self,
-        monkeypatch,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr("cli.main._in_docker", lambda: True)
 

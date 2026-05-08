@@ -1,25 +1,31 @@
 # Kronos Project Status
 
-> 更新时间：2026-05-07 | 当前版本：0.4.4 | 下一版本：0.4.5
+> 更新时间：2026-05-07 | 当前版本：0.4.5 | 下一版本：0.4.6
 
 ## 一句话判断
 
-v0.4.4 没有扩展策略能力，而是把 Docker 首次体验的语义收口：`quickstart` 和 `report latest` 先给结果卡，说明用了什么数据、评估了什么、结论能不能信、下一步做什么；策略起草后的验证链路也先翻译成检查配置、空跑确认、进入候选池。
+v0.4.5 没有扩展实盘能力，而是把结果卡往前推成解释卡：`quickstart` 和 `report latest` 先给结果卡，`report replay` / `report regime` / `report observation` 再把关键交易、市场状态分段和只读观察边界接出来；策略起草后的验证链路也继续翻译成检查配置、空跑确认、进入候选池。
 
-v0.4.3 把用户的 R-breaker 相关策略想法接到产品主线：用户可以用 `kronos strategy draft --prompt "..."` 生成策略概要、trace 和可编辑 TOML 草案，然后继续走 `validate → smoke-test → register`。这版仍不做任意策略代码生成、历史重放、模拟盘或实盘。
+v0.4.4 把 Docker 首次体验语义收口成结果卡，`quickstart` 和 `report latest` 先给结果卡，说明用了什么数据、评估了什么、结论能不能信、下一步做什么；策略起草后的验证链路也先翻译成检查配置、空跑确认、进入候选池。
 
 v0.4.2 已经把 v0.4.1 多画像 Docker 评测暴露的首次体验信任断点收口：Agent 不再输出错误事实，`report latest` 第一屏能说明数据、策略、结论和下一步，7 天 sample 数据不再被包装成 90 天复验，Docker 路径和日志噪音也已修正。
 
-2026-05-07 的新一轮 Docker 全新 clone 评测确认：`report latest` 和 `strategy draft` 已经把交易者主线接起来，`agent start` 也能把“我有一个策略想法”导向同一条草案链路；v0.4.4 已按这轮评测把结果解释、策略闸门语言和 Docker 首屏入口继续缩短。
+2026-05-07 的新一轮 Docker 全新 clone 评测确认：`report latest` 和 `strategy draft` 已经把交易者主线接起来，`agent start` 也能把“我有一个策略想法”导向同一条草案链路；v0.4.5 在此基础上把解释路径和只读观察入口补齐。
 
 当前产品边界仍是**研究报告、Agent 复盘、策略草案和策略配置试算**。Kronos 不会启动实时模拟盘、不会接入真实交易、不会自动下单。
+
+## v0.4.5 立项方向
+
+v0.4.5 不再扩展新的研究入口，而是把 v0.4.4 的结果卡往前推一层：用户能从最新报告跳到关键交易重放，按市场状态看差异，并在只读观察前先看清虚拟订单、延迟、滑点和人工闸门。
+
+当前已立项的开发指引见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。
 
 ## 当前能力
 
 | 模块 | 状态 | 当前用户能得到什么 |
 |---|---|---|
 | 快速开始 | 已完成 | `kronos quickstart` 一键生成数据、注册 R-breaker、输出研究报告 |
-| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据来源、样本范围、评估对象、结论、可信度和下一步 |
+| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据来源、样本范围、评估对象、结论、可信度和下一步；关键交易重放可用 `kronos report replay` 查看，市场状态分段可用 `kronos report regime` 查看，只读观察边界可用 `kronos report observation` 查看 |
 | 内置策略 | 已完成 | R-breaker 日内突破作为示例策略，quickstart 后可被 Agent 看到 |
 | 策略起草 | 已完成 | `kronos strategy draft --prompt "..."` 将 R-breaker 相关想法转成概要、trace 和 TOML 草案；缺字段会澄清，不支持模板会拒绝 |
 | 策略配置 | 已完成 | `kronos strategy init-r-breaker` 生成 TOML，`validate` 校验，`smoke-test` 本地试算 |
@@ -44,8 +50,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 | 能力 | 当前状态 | 产品边界 |
 |---|---|---|
 | AI 自然语言创建策略 | 已交付首版 | 当前只支持 R-breaker 相关想法起草成 TOML；不能把任意自然语言自动变成新策略代码 |
-| 历史重放 | v0.4.x 目标 | 当前有报告、指标和烟雾测试摘要，不做逐笔/逐分钟交易回放 |
-| 市场状态分段评估 | v0.4.x 目标 | 当前可信度报告已有基础解释，但没有牛/熊/震荡的独立晋升门禁 |
+| 历史重放 | 已完成起步 | 当前提供关键交易重放报告，不做逐笔/逐分钟交易回放 |
+| 市场状态分段评估 | 已完成起步 | 当前可用 `kronos report regime` 查看市场状态切片，不把整体均值当作全部答案 |
 | 实时模拟盘 | v0.4.x 目标 | 当前不会连接实时虚拟订单引擎 |
 | 实盘执行 | v0.5.0+ 以后 | 必须等研究闭环、模拟盘和人工闸门稳定后再考虑 |
 
@@ -90,8 +96,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 
 ## 当前推荐顺序
 
-1. 先进入 v0.4.5：历史重放和关键交易解释，让用户知道策略为什么表现好/差。
-2. 同步推进市场状态分段评估，把牛/熊/震荡/高波动下的结论分开呈现。
+1. 继续推进 v0.4.6：关键交易解释继续深化，补足更细的失败窗口和样本外分析。
+2. 保持市场状态分段和只读观察边界的入口稳定，继续打磨文案和门禁。
 3. 模拟盘前先定义只读 API Key、虚拟订单、延迟/滑点、人工闸门和报告入口。
 4. 在没有稳定模拟盘证据前，不推进真实交易执行。
 
@@ -106,6 +112,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - Docker 体验根因修复方案：`docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md`
 - Docker 体验语义收口方案：`docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md`
 - v0.4.4 OpenSpec：`openspec/changes/p4-docker-first-use-result-card/`
+- v0.4.5 版本需求：`docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md`
+- v0.4.5 OpenSpec：`openspec/changes/p4-research-interpretation-path/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`
 - v0.4.3 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`

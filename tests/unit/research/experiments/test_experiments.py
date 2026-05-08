@@ -233,6 +233,7 @@ class TestArtifacts:
         assert paths["config_snapshot"].endswith("/config_snapshot.toml")
         assert paths["equity"].endswith("/equity.parquet")
         assert paths["trades"].endswith("/trades.parquet")
+        assert paths["replay_report"].endswith("/backtest_replay_report.md")
 
     def test_write_validation_artifacts_uses_standard_paths(self, tmp_path) -> None:
         paths = write_validation_artifacts(
