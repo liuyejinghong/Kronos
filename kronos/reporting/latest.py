@@ -158,10 +158,10 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
     lines = [
         "本次结果",
         "数据来源: "
-        + ("sample 流程试跑" if data_kind == "synthetic" else "本地真实/同步行情"),
-        f"样本范围: {', '.join(symbols) if symbols else '未记录币种'} / {timeframe} K线 / 约 {max_days} 天",
+        + ("sample 试跑" if data_kind == "synthetic" else "本地真实/同步行情"),
+        f"样本范围: {', '.join(symbols) if symbols else '未记录币种'} / {timeframe} / 约 {max_days} 天",
         f"评估对象: {strategy_line}",
-        f"市场状态分段: {regime_line}",
+        f"市场状态: {regime_line}",
         "结论: "
         + (
             f"{promoted} 个策略进入深度研究，但仍不是交易或模拟盘结论。"
@@ -170,12 +170,12 @@ def _auto_run_quick_summary(payload: dict[str, Any]) -> list[str]:
         ),
     ]
     if data_kind == "synthetic":
-        confidence = "这只是安装和流程试跑, 不能证明策略有效或无效。"
+        confidence = "这是安装和流程试跑, 不能证明策略有效或无效。"
     elif max_days < 90:
         confidence = "样本不足 90 天, 只能做短样本观察, 不能称为完整复验。"
     else:
         confidence = "样本已达到 90 天级别, 可以阅读下游报告判断失败切片和改造方向。"
-    lines.append(f"可信度/只读观察边界: {confidence}{_read_only_observation_boundary()}")
+    lines.append(f"可信度/只读边界: {confidence}{_read_only_observation_boundary()}")
     lines.append(f"下一步: {next_step}")
     return lines
 
@@ -208,7 +208,7 @@ def _regime_outcome_zh(outcome: str) -> str:
 
 def _read_only_observation_boundary() -> str:
     return (
-        "当前只是研究报告，不会启动模拟盘、实盘或真实订单；进入只读观察前仍需定义"
+        "当前只到研究报告，不会启动模拟盘、实盘或真实订单；进入只读观察前仍需定义"
         "虚拟订单、延迟、滑点和人工闸门。"
     )
 
@@ -269,10 +269,10 @@ def _latest_next_step(*, data_kind: str, max_days: float, promoted: int) -> str:
             command = f"docker compose run --rm kronos uv run {command}"
         return f"先运行 `{command}` 同步真实行情，再重新验证。"
     if promoted > 0:
-        return "打开完整报告查看晋升候选的证据，再决定是否继续深度研究。"
+        return "打开完整报告查看晋升证据，再决定是否继续深度研究。"
     if max_days < 90:
         return "补足更长历史后重跑，不要先基于短样本调参。"
-    return "阅读完整报告中的失败原因，再决定改造策略、保留观察或退休。"
+    return "阅读完整报告中的失败原因，再决定改造、保留观察或退休。"
 
 
 def _in_docker() -> bool:

@@ -48,8 +48,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Kronos Quickstart",
     },
     "quickstart.checking_data": {
-        "zh": "正在检查本地数据…",
-        "en": "Checking local data…",
+        "zh": "第 1 步 / 检查本地数据…",
+        "en": "Step 1 / Checking local data…",
     },
     "quickstart.generating_sample": {
         "zh": "未找到本地数据，正在生成 7 天 BTCUSDT sample 数据（标记为 synthetic）…",
@@ -64,12 +64,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Local data found, skipping generation.",
     },
     "quickstart.running_research": {
-        "zh": "正在运行最小研究循环（R-breaker × BTCUSDT）…",
-        "en": "Running minimal research cycle (R-breaker × BTCUSDT)…",
+        "zh": "第 3 步 / 正在运行最小研究循环（R-breaker × BTCUSDT）…",
+        "en": "Step 3 / Running minimal research cycle (R-breaker × BTCUSDT)…",
     },
     "quickstart.registering_strategies": {
-        "zh": "正在注册内置策略…",
-        "en": "Registering built-in strategies…",
+        "zh": "第 2 步 / 正在注册内置策略…",
+        "en": "Step 2 / Registering built-in strategies…",
     },
     "quickstart.strategies_evaluated": {
         "zh": "个策略已评估",
@@ -88,8 +88,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Research skipped ({exc})",
     },
     "quickstart.trust_title": {
-        "zh": "本次结果",
-        "en": "Run Result",
+        "zh": "快速开始结果",
+        "en": "Quickstart Result",
     },
     "quickstart.benchmark": {
         "zh": "市场基准",
@@ -424,16 +424,16 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "I can draft strategy ideas into configs, analyze historical performance, or help you continue research directions.",
     },
     "conv.assistant_focus": {
-        "zh": "我会先帮你判断当前结果能不能信，再给一个最合适的下一步。",
-        "en": "I'll first help you judge whether the current result is reliable, then suggest one best next step.",
+        "zh": "我先判断当前结果能不能信，再给你最短的下一步。",
+        "en": "I'll first judge whether the current result is reliable, then give you the shortest next step.",
     },
     "conv.checking_env": {
         "zh": "正在检查你的环境…",
         "en": "Checking your environment…",
     },
     "conv.first_time_no_data": {
-        "zh": "你还没有行情数据。让我帮你准备一下：",
-        "en": "You don't have market data yet. Let me help you get started:",
+        "zh": "你还没有行情数据。先选一条最短路径：",
+        "en": "You don't have market data yet. Pick the shortest path:",
     },
     "conv.gen_sample": {
         "zh": "生成 7 天 BTC 模拟数据，先体验一下",
@@ -453,70 +453,70 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     "conv.first_time_has_data": {
         "zh": "你已经有一些数据了（{syms} 等），可以直接开始。",
-        "en": "You already have some data ({syms} and more). Ready to go.",
+        "en": "You already have some data ({syms} and more). Ready to start.",
     },
     "conv.model_ready_short": {"zh": "AI 模型已就绪", "en": "AI model ready"},
     "conv.model_not_ready_short": {"zh": "AI 模型未配置", "en": "AI model not configured"},
     "conv.start_research": {
-        "zh": "帮我分析一下这些策略的表现",
-        "en": "Analyze how these strategies are performing",
+        "zh": "直接看当前结果",
+        "en": "View current results",
     },
     "conv.browse_strategies": {
-        "zh": "先看看有什么策略",
-        "en": "Browse available strategies",
+        "zh": "看看策略池",
+        "en": "Browse the strategy pool",
     },
     "conv.draft_strategy": {
-        "zh": "描述一个策略想法，先起草配置",
-        "en": "Describe a strategy idea and draft a config",
+        "zh": "描述想法，先起草配置",
+        "en": "Describe an idea and draft a config",
     },
     "conv.configure_model": {
         "zh": "怎么配置 AI 模型？",
         "en": "How do I configure the AI model?",
     },
     "conv.welcome_back": {
-        "zh": "欢迎回来！当前环境: {syms} | {model}。",
-        "en": "Welcome back! Environment: {syms} | {model}.",
+        "zh": "欢迎回来。当前环境: {syms} | {model}。",
+        "en": "Welcome back. Environment: {syms} | {model}.",
     },
     "conv.last_run": {
         "zh": "上次运行: {run}",
         "en": "Last run: {run}",
     },
     "conv.continue_last": {
-        "zh": "继续上次的研究",
-        "en": "Continue last research",
+        "zh": "继续上次",
+        "en": "Continue last run",
     },
     "conv.new_research": {
-        "zh": "开始一个新研究方向",
-        "en": "Start a new research direction",
+        "zh": "开新一轮",
+        "en": "Start a new run",
     },
     "conv.review_strategies": {
-        "zh": "看看目前的策略池",
-        "en": "Review the strategy pool",
+        "zh": "看策略池",
+        "en": "Review the pool",
     },
     "conv.just_browse": {
-        "zh": "随便看看",
-        "en": "Just browse",
+        "zh": "先看看",
+        "en": "Browse first",
     },
     "conv.generating_data": {
-        "zh": "好的，正在生成 7 天的 BTC 模拟数据…",
-        "en": "OK, generating 7 days of BTC sample data…",
+        "zh": "好的，先生成 7 天 BTC sample 数据…",
+        "en": "OK, generating 7 days of BTC sample data first…",
     },
     "conv.data_generated": {
-        "zh": "数据已就绪 — {bars} 根 K 线。虽然是模拟数据，但足够让你了解系统怎么用。",
-        "en": "Data ready — {bars} bars. It's synthetic, but enough to explore the system.",
+        "zh": "数据已就绪 — {bars} 根 K 线。先看结果，再决定下一步。",
+        "en": "Data ready — {bars} bars. View the result first, then choose the next step.",
     },
     "conv.synthetic": {"zh": "模拟数据", "en": "synthetic"},
     "conv.no_strategies": {
-        "zh": "你还没有定义任何策略。Kronos 不会预装别人的策略——你的研究你做主。",
-        "en": "You haven't defined any strategies yet. Kronos doesn't come with pre-loaded strategies — your research, your rules.",
+        "zh": "你还没有定义任何策略。Kronos 不会预装别人的策略。",
+        "en": "You haven't defined any strategies yet. Kronos doesn't ship pre-loaded strategies.",
     },
     "conv.no_strategies_how": {
-        "zh": "你可以先用自然语言描述想法。Kronos 会生成概要和 TOML 草案，然后按三步推进：检查配置、空跑确认、进入候选池。",
-        "en": "You can describe an idea in natural language first. Kronos will write a summary and TOML draft, then guide you through three gates: check config, dry run, and enter the candidate pool.",
+        "zh": "你可以先用自然语言描述想法。Kronos 会生成概要和 TOML 草案，然后按三步推进。",
+        "en": "You can describe an idea in natural language first. Kronos will write a summary and TOML draft, then guide you through three gates.",
     },
     "conv.no_strategies_example": {
-        "zh": "要先起草一个 R-breaker 日内突破策略吗？",
-        "en": "Want to draft an R-breaker intraday breakout strategy first?",
+        "zh": "要先起草一个 R-breaker 策略吗？",
+        "en": "Want to draft an R-breaker strategy first?",
     },
     "conv.create_first": {
         "zh": "好的，我来描述策略想法",

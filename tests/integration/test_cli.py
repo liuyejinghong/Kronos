@@ -355,7 +355,7 @@ class TestReportCLI:
         output = result.stdout + (result.stderr or "")
         assert result.exit_code == 1
         assert "No backtest replay reports found" in output
-        assert "kronos report replay" in output
+        assert "先跑一次回放或研究工作台" in output
 
     def test_report_regime_prints_latest_regime_summary(self, tmp_path: Path) -> None:
         reports_path = tmp_path / "reports" / "research"
@@ -410,6 +410,17 @@ class TestReportCLI:
         assert "模拟盘边界" in result.stdout
         assert f"report: {report}" in result.stdout
 
+    def test_report_observation_fails_with_next_step_hint(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "report", "observation",
+            "--reports-path", str(tmp_path / "reports" / "research"),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No read-only observation reports found" in output
+        assert "先跑 `kronos research workbench` 或 `kronos report replay`" in output
+
     def test_report_regime_fails_without_regime_report(self, tmp_path: Path) -> None:
         result = runner.invoke(app, [
             "report", "regime",
@@ -431,6 +442,26 @@ class TestReportCLI:
         assert result.exit_code == 1
         assert "No read-only observation reports found" in output
         assert "research workbench" in output
+
+
+class TestQuickstartCLI:
+    """Integration tests for 'kronos quickstart' command."""
+
+    def test_quickstart_uses_step_labels_in_output(self, tmp_path: Path) -> None:
+        config = _write_test_config(tmp_path)
+
+        result = runner.invoke(app, [
+            "quickstart",
+            "--config", str(config),
+            "--skip-data-gen",
+            "--symbols", "BTCUSDT",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "第 1 步 / 检查本地数据" in result.stdout
+        assert "第 2 步 / 正在注册内置策略" in result.stdout
+        assert "第 3 步 / 正在运行最小研究循环" in result.stdout
+        assert "接下来可以做什么" in result.stdout
 
 
 class TestStrategyCLI:

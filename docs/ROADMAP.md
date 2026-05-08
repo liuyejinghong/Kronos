@@ -1,6 +1,6 @@
 # Kronos Roadmap
 
-更新时间：2026-05-07
+更新时间：2026-05-08
 
 ## 目标
 
@@ -65,7 +65,7 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 
 目标：把用户的自然语言策略想法转成可验证的策略草案，并沿现有 `validate → smoke-test → register → report` 链路推进。
 
-状态：已完成。v0.4.3 首版只支持 R-breaker 日内突破模板；不支持任意策略代码生成、历史重放、模拟盘或实盘执行。
+状态：已完成。v0.4.3 首版只支持 R-breaker 日内突破策略模板；不支持任意策略代码生成、历史重放、模拟盘或实盘执行。
 
 约束入口：
 

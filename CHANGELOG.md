@@ -9,7 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **v0.4.6 预告**：后续继续深化关键交易重放、市场状态分段和只读观察边界的解释颗粒度
+- 后续继续深化关键交易重放、市场状态分段和只读观察边界的解释颗粒度
+
+## [0.4.6] — 2026-05-08
+
+### Added
+
+- **Docker 模拟用户测试与修复方案**：新增 2026-05-08 fresh Docker 多画像测试记录和根因修复方案，按用户看到的问题、根因、产品逻辑、验收证据落档
+- Dockerfile 回归测试，防止 `uv sync --no-cache` 重新引入导致 fresh build 依赖准备被放大
+
+### Changed
+
+- `quickstart` 首次输出继续压缩为更短的结果卡和阶段提示，减少 entrypoint 末尾重复收尾
+- `agent start` 的 sample 数据语义更直接：先判断当前结果能不能信，再给最短下一步
+- `report latest` 结果卡压缩数据来源、市场状态和只读边界表达，让新用户更快判断“这是试跑还是结论”
+- `report replay` / `report observation` 缺内容时改为产品化下一步提示，不再只像工具报错
+- 项目状态、路线图和 TODO 同步到 v0.4.6 fresh Docker 复测结论
+
+### Fixed
+
+- Docker fresh build 不再因 `uv sync --no-cache` 禁用依赖缓存而把首次依赖准备放大到 15 分钟级；修复后复测依赖准备约 12 秒
 
 ## [0.4.5] — 2026-05-07
 

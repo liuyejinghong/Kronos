@@ -572,12 +572,12 @@ class AgentConsole:
             days = f"约 {span} 天" if span is not None else "短窗口"
             return (
                 f"当前有 {candidate_count} 个策略。你现在看到的是 {days} sample 数据，"
-                "只适合确认流程能跑通，不能判断策略是否赚钱。同步真实行情后再做正式验证。"
+                "只适合确认流程能跑通，不足以判断策略是否赚钱。先同步真实行情, 再做正式验证。"
             )
         if span is not None and span < 90:
             return (
                 f"当前有 {candidate_count} 个策略。本地真实数据约 {span} 天，样本仍偏短；"
-                "可以先做试算，但不要把它当成 90 天验证结论。"
+                "可以先做试算，但不要把它当成完整验证。"
             )
         if span is not None:
             return (
@@ -605,7 +605,7 @@ class AgentConsole:
         if self.ctx.synthetic_data:
             return (
                 f"本轮用 {data_label}（{timeframe}，约 {span} 天）评估了 {evaluated} 个策略，"
-                "0 个通过验证。sample 只证明流程能跑通，下一步应先同步真实行情，再重新验证。"
+                "0 个通过验证。sample 只证明流程能跑通，先同步真实行情，再重新验证。"
             )
         if span < 90:
             return (

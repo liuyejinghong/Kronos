@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-07 | 版本：0.4.5 | 下一版本：0.4.6
+> 更新：2026-05-08 | 版本：0.4.5 | 下一版本：0.4.6
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -129,7 +129,7 @@
 
 | # | 事项 | 证据 |
 |---|------|------|
-| 60 | `done` AI/自然语言策略创建首版：把 R-breaker 日内突破想法转换成策略概要、trace 和 TOML 草案，再走 validate / smoke-test / register 闸门 | `kronos/strategy/authoring.py` + `kronos strategy draft` + `openspec/changes/p4-strategy-authoring/` |
+| 60 | `done` AI/自然语言策略创建首版：把 R-breaker 日内突破策略想法转换成策略概要、trace 和 TOML 草案，再走 validate / smoke-test / register 闸门 | `kronos/strategy/authoring.py` + `kronos strategy draft` + `openspec/changes/p4-strategy-authoring/` |
 | 61 | `done` 再做一轮 GitHub 全新 clone 的 Docker 首次体验评测，确认 `report latest`、`strategy draft` 和 `agent start` 的承接路径 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md` |
 
 ---
@@ -168,6 +168,8 @@
 | 73 | 实时模拟盘：只读 Binance API Key 接入前，先明确虚拟订单、延迟、滑点和人工闸门 |
 | 74 | 更细粒度的多品种策略诊断，继续减少局部失效被整体均值掩盖 |
 | 75 | v0.4.6 版本需求 / OpenSpec 立项：在 v0.4.5 基础上继续深化解释路径与观察路径 |
+| 76 | fresh Docker 模拟用户测试收敛：继续压缩首次入口叙事，让 L0/L6 更快知道结论和下一步 |
+| 77 | `done` fresh Docker 复测补记：定位 `uv sync --no-cache` 导致依赖下载被放大，已移除并复测 quickstart、report 和 agent 路径 |
 
 ---
 
@@ -201,6 +203,8 @@
 | `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260506.md` | **Docker 体验修复方案**：P0/P1 问题根因、产品逻辑、修复方案和验收标准 |
 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260507.md` | **Docker fresh clone 复测**：验证 v0.4.3 的 report latest、strategy draft 和 Agent 接力问题 |
 | `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` | **Docker 体验语义收口方案**：v0.4.4 结果卡、策略闸门翻译和 Docker 首屏修复 |
+| `docs/DOCKER_PERSONA_UX_EVALUATION_20260508.md` | **Docker 模拟用户测试**：fresh Docker 新装路径、L0-L4 画像和首轮产品结论 |
+| `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260508.md` | **Docker 模拟用户测试修复方案**：针对首次入口再压缩的一轮产品修复指引 |
 | `openspec/changes/p4-docker-first-use-result-card/` | **v0.4.4 OpenSpec**：首次体验结果卡、策略闸门翻译和 Docker 默认入口验收要求 |
 | `docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md` | **主设计文档**：策略系统 + 执行链路 + 实现计划 |
 | `docs/PRODUCT_DESIGN_REVIEW_20260505.md` | 设计自审（CC 产品经理 + 交易者视角） |

@@ -11,7 +11,7 @@ COPY pyproject.toml uv.lock ./
 COPY kronos/ kronos/
 
 # Layer 3: install (layer cached when pyproject.toml + uv.lock + kronos/ unchanged)
-RUN uv sync --frozen --no-dev --no-cache
+RUN uv sync --frozen --no-dev
 
 # Prevent uv run from auto-installing missing packages at runtime
 ENV UV_NO_SYNC=1

@@ -136,12 +136,12 @@ def test_summarize_report_prefers_auto_run_summary_first_screen(
 
     joined = "\n".join(summary)
     assert "本次结果" in joined
-    assert "数据来源: sample 流程试跑" in joined
-    assert "样本范围: BTCUSDT / 1m K线 / 约 7.0 天" in joined
+    assert "数据来源: sample 试跑" in joined
+    assert "样本范围: BTCUSDT / 1m / 约 7.0 天" in joined
     assert "评估对象: 1 个已评估, 0 个通过, 1 个未通过." in joined
-    assert "市场状态分段: 本轮没有生成分市场状态证据" in joined
-    assert "可信度/只读观察边界: 这只是安装和流程试跑" in joined
-    assert "当前只是研究报告，不会启动模拟盘、实盘或真实订单" in joined
+    assert "市场状态: 本轮没有生成分市场状态证据" in joined
+    assert "可信度/只读边界: 这是安装和流程试跑" in joined
+    assert "当前只到研究报告，不会启动模拟盘、实盘或真实订单" in joined
     assert "1 个已评估" in joined
     assert "0 个通过" in joined
     assert "1 个未通过" in joined
@@ -230,10 +230,10 @@ def test_summarize_report_exposes_market_regime_slices(tmp_path: Path) -> None:
     summary = summarize_report(report, max_lines=10)
 
     joined = "\n".join(summary)
-    assert "市场状态分段: 趋势状态: 只有局部弱信号" in joined
+    assert "市场状态: 趋势状态: 只有局部弱信号" in joined
     assert "震荡状态: 该切片不支持升级。" in joined
-    assert "可信度/只读观察边界:" in joined
-    assert "当前只是研究报告" in joined
+    assert "可信度/只读边界:" in joined
+    assert "当前只到研究报告" in joined
 
 
 def test_summarize_report_uses_replay_headline(tmp_path: Path) -> None:

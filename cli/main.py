@@ -234,7 +234,7 @@ def report_replay(
         latest = _find_latest_replay_report(reports_path)
         if latest is None:
             typer.echo(f"No backtest replay reports found under {Path(reports_path) / 'experiments'}.", err=True)
-            typer.echo("Run a backtest workflow first, then try `kronos report replay` again.", err=True)
+            typer.echo("先跑一次回放或研究工作台, 再看 `kronos report replay`。", err=True)
             raise typer.Exit(code=1)
         report = latest.path
     else:
@@ -320,7 +320,7 @@ def report_observation(
                 err=True,
             )
             typer.echo(
-                "Run `kronos research workbench` or `kronos report replay` first.",
+                "先跑 `kronos research workbench` 或 `kronos report replay`, 再看只读观察边界。",
                 err=True,
             )
             raise typer.Exit(code=1)
@@ -1640,8 +1640,6 @@ def quickstart(
                 sync_data=False, min_history_days=1,
             )
             summary = result.summary()
-            evaluated = summary.get("evaluated", 0)
-            promoted = summary.get("promoted", 0)
 
             typer.echo()
             typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -1649,23 +1647,8 @@ def quickstart(
             typer.echo("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             typer.echo()
 
-            # Benchmark: buy-and-hold
-            _print_benchmark(symbol, base_path, result)
-            typer.echo()
-
-            # Strategy evaluation
-            if evaluated > 0:
-                typer.echo(f"  {evaluated} {t('quickstart.strategies_evaluated')}")
-                typer.echo(f"  {promoted} {t('quickstart.strategies_promoted_label')}")
-                typer.echo()
-                if promoted == 0:
-                    typer.echo(f"  💡 {t('quickstart.verdict_none_promoted')}")
-                    typer.echo(f"     {t('quickstart.verdict_none_reason')}")
-                else:
-                    typer.echo(f"  🎯 {t('quickstart.verdict_promoted')}")
-            else:
+            if summary.get("evaluated", 0) <= 0:
                 typer.echo(f"  {t('quickstart.no_evaluation')}")
-            typer.echo()
 
             if result.artifact_paths.get("auto_run_report"):
                 _print_quickstart_result_card(result.artifact_paths["auto_run_report"])
