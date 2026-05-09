@@ -131,20 +131,25 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 
 目标：从只读观察计划进入 Binance 模拟盘 / 测试网真实成交，验证下单链路，但不影响真实资金。
 
-状态：已完成版本需求和 OpenSpec 立项，待实现。
+状态：已完成首版。v0.4.8 已提供测试网凭证、preflight、受限 testnet 下单、状态、停止和模拟盘报告；真实 Binance testnet 端到端仍需要用户提供测试网凭证后手动验证。
 
 约束入口：
 
 - 版本需求：`docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md`
 - OpenSpec：`openspec/changes/p4-testnet-paper-trading/`
 
-待完成：
+已完成：
 
-- 测试网凭证配置和脱敏状态。
+- 测试网凭证配置、移除 argv secret、环境变量 / 隐藏输入和脱敏状态。
 - testnet endpoint 门禁，`paper` 命令拒绝 mainnet/live。
-- `paper preflight` 检查观察计划、凭证、测试网连接和风控限额。
-- `paper start/status/stop` 最小闭环。
-- Binance 测试网订单 ID、成交状态和模拟盘报告。
+- `paper preflight` 检查观察计划 metadata、来源报告 hash、凭证、测试网连接和风控限额。
+- `paper start/status/stop` 最小闭环，停止后再次启动必须显式 `--reset-stopped`。
+- Binance 测试网订单 ID、成交状态、错误 ledger 和模拟盘报告。
+
+下一步：
+
+- 用用户提供的 Binance testnet API Key 跑一次手动真实 testnet 端到端证据。
+- 在 Web 工作台展示模拟盘状态和报告入口。
 
 ### 阶段 A0：Kronos Agent MVP
 

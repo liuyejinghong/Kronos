@@ -208,8 +208,8 @@ def _regime_outcome_zh(outcome: str) -> str:
 
 def _read_only_observation_boundary() -> str:
     return (
-        "当前只到研究报告，不会启动模拟盘、实盘或真实订单；进入只读观察前仍需定义"
-        "虚拟订单、延迟、滑点和人工闸门。"
+        "本报告不会自动启动模拟盘、主网实盘或真实资金订单；通过验证并生成只读观察候选后，"
+        "可以手动进入 Binance testnet paper。"
     )
 
 

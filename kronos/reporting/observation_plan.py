@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,10 +46,12 @@ def generate_observation_plan(
 
     run_dir = source_report.parent
     summary = _read_summary(run_dir / "auto_run_summary.json")
+    summary_path = run_dir / "auto_run_summary.json" if summary is not None else None
     context = _extract_context(source_report, summary)
     verdict = _eligibility_verdict(context)
     plan_path = Path(output_path) if output_path is not None else run_dir / "paper_observation_plan.md"
     plan_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path = plan_path.with_suffix(".json")
     plan_path.write_text(
         _render_plan(
             source_report=source_report,
@@ -58,6 +61,15 @@ def generate_observation_plan(
             slippage_bps=slippage_bps,
         ),
         encoding="utf-8",
+    )
+    _write_plan_metadata(
+        metadata_path,
+        source_report=source_report,
+        summary_path=summary_path,
+        context=context,
+        verdict=verdict,
+        latency_bars=latency_bars,
+        slippage_bps=slippage_bps,
     )
     return ObservationPlan(
         path=plan_path,
@@ -198,6 +210,47 @@ def _render_plan(
         "- 不要把只读观察计划理解成已经启动模拟盘。",
     ]
     return "\n".join(lines) + "\n"
+
+
+def _write_plan_metadata(
+    path: Path,
+    *,
+    source_report: Path,
+    summary_path: Path | None,
+    context: dict[str, Any],
+    verdict: dict[str, str],
+    latency_bars: int,
+    slippage_bps: float,
+) -> None:
+    payload = {
+        "artifact_type": "kronos.paper_observation_plan",
+        "schema_version": 1,
+        "status": verdict["status"],
+        "verdict": verdict["verdict"],
+        "next_step": verdict["next_step"],
+        "eligible_for_testnet_paper": verdict["status"] == "只读观察候选",
+        "source_report": str(source_report),
+        "source_report_sha256": _sha256_file(source_report),
+        "summary_path": str(summary_path) if summary_path is not None else None,
+        "summary_sha256": _sha256_file(summary_path) if summary_path is not None else None,
+        "data_kind": context["data_kind"],
+        "symbols": context["symbols"],
+        "timeframe": context["timeframe"],
+        "span_days": context["span_days"],
+        "evaluated": context["evaluated"],
+        "promoted": context["promoted"],
+        "not_promoted": context["not_promoted"],
+        "skipped": context["skipped"],
+        "latency_bars": latency_bars,
+        "slippage_bps": slippage_bps,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _sha256_file(path: Path | None) -> str | None:
+    if path is None or not path.is_file():
+        return None
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _data_kind_label(value: str) -> str:

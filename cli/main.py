@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -34,12 +35,14 @@ run_app = typer.Typer(name="run", help="System-level Kronos run commands")
 agent_app = typer.Typer(name="agent", help="Kronos Agent MVP commands")
 report_app = typer.Typer(name="report", help="Report reading commands")
 strategy_app = typer.Typer(name="strategy", help="User strategy configuration commands")
+paper_app = typer.Typer(name="paper", help="Binance testnet paper trading commands")
 app.add_typer(data_app)
 app.add_typer(research_app)
 app.add_typer(run_app)
 app.add_typer(agent_app)
 app.add_typer(report_app)
 app.add_typer(strategy_app)
+app.add_typer(paper_app)
 
 
 @app.callback(invoke_without_command=True)
@@ -396,6 +399,168 @@ def report_observation_plan(
     typer.echo("--- Paper Observation Plan ---")
     for line in plan.summary_lines():
         typer.echo(line)
+
+
+@paper_app.command("credentials")
+def paper_credentials(
+    action: str = typer.Argument(..., help="status, set, or delete."),
+    api_key: str | None = typer.Option(
+        None,
+        help="Binance testnet API Key for `set`; falls back to BINANCE_TESTNET_API_KEY.",
+    ),
+) -> None:
+    """Manage local Binance testnet credentials for paper trading."""
+    from kronos.execution import (
+        PaperTradingError,
+        delete_testnet_credentials,
+        get_testnet_credential_status,
+        set_testnet_credentials,
+    )
+
+    normalized = action.strip().lower()
+    try:
+        if normalized == "status":
+            status = get_testnet_credential_status()
+        elif normalized == "set":
+            resolved_key = api_key or os.getenv("BINANCE_TESTNET_API_KEY")
+            resolved_secret = os.getenv("BINANCE_TESTNET_API_SECRET")
+            if resolved_key is None:
+                typer.echo("需要提供 --api-key 或设置 BINANCE_TESTNET_API_KEY。", err=True)
+                raise typer.Exit(code=1)
+            if resolved_secret is None:
+                resolved_secret = typer.prompt(
+                    "Binance testnet API Secret",
+                    hide_input=True,
+                    confirmation_prompt=False,
+                )
+            status = set_testnet_credentials(api_key=resolved_key, api_secret=resolved_secret)
+        elif normalized == "delete":
+            status = delete_testnet_credentials()
+        else:
+            typer.echo("action must be one of: status, set, delete.", err=True)
+            raise typer.Exit(code=1)
+    except (PaperTradingError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("--- Binance Testnet Credentials ---")
+    typer.echo(f"configured: {'yes' if status.configured else 'no'}")
+    typer.echo(f"api_key: {status.masked_value or '-'}")
+    typer.echo(f"api_secret: {status.masked_secret or '-'}")
+    typer.echo(f"storage: {status.storage_path}")
+
+
+@paper_app.command("preflight")
+def paper_preflight(
+    plan_path: str | None = typer.Option(None, "--plan", help="Path to paper_observation_plan.md."),
+    reports_path: str = typer.Option("reports/research", help="Base path for research reports."),
+    output_path: str = typer.Option("reports/paper", help="Base path for paper trading reports."),
+    mock_testnet: bool = typer.Option(
+        False,
+        "--mock-testnet",
+        help="Use the deterministic local testnet adapter for safe verification.",
+    ),
+) -> None:
+    """Check Binance testnet paper-trading readiness before any order."""
+    from kronos.execution import BinanceUSDMMockTestnetClient, run_paper_preflight
+
+    result = run_paper_preflight(
+        plan_path=plan_path,
+        reports_path=reports_path,
+        output_base_path=output_path,
+        client=BinanceUSDMMockTestnetClient() if mock_testnet else None,
+    )
+    for line in result.summary_lines():
+        typer.echo(line)
+    if result.blockers:
+        typer.echo("阻塞项:")
+        for blocker in result.blockers:
+            typer.echo(f"- {blocker}")
+    if not result.ok:
+        raise typer.Exit(code=1)
+
+
+@paper_app.command("start")
+def paper_start(
+    plan_path: str | None = typer.Option(None, "--plan", help="Path to paper_observation_plan.md."),
+    reports_path: str = typer.Option("reports/research", help="Base path for research reports."),
+    output_path: str = typer.Option("reports/paper", help="Base path for paper trading reports."),
+    symbol: str = typer.Option("BTCUSDT", help="Single testnet symbol for v0.4.8."),
+    side: str = typer.Option("BUY", help="BUY or SELL."),
+    quantity: float = typer.Option(0.001, min=0.0, help="Testnet order quantity."),
+    max_notional_usdt: float = typer.Option(100.0, min=0.0, help="Maximum testnet order notional."),
+    mock_testnet: bool = typer.Option(
+        False,
+        "--mock-testnet",
+        help="Use the deterministic local testnet adapter for safe verification.",
+    ),
+    reset_stopped: bool = typer.Option(
+        False,
+        "--reset-stopped",
+        help="Explicitly start a new run after `paper stop` wrote a stopped state.",
+    ),
+) -> None:
+    """Start one bounded Binance testnet paper run."""
+    from kronos.execution import BinanceUSDMMockTestnetClient, PaperTradingError, start_paper_run
+
+    try:
+        result = start_paper_run(
+            plan_path=plan_path,
+            reports_path=reports_path,
+            output_base_path=output_path,
+            client=BinanceUSDMMockTestnetClient() if mock_testnet else None,
+            symbol=symbol,
+            side=side,
+            quantity=quantity,
+            max_notional_usdt=max_notional_usdt,
+            reset_stopped=reset_stopped,
+        )
+    except PaperTradingError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
+
+    for line in result.summary_lines():
+        typer.echo(line)
+
+
+@paper_app.command("status")
+def paper_status(
+    output_path: str = typer.Option("reports/paper", help="Base path for paper trading reports."),
+) -> None:
+    """Show the latest local paper-trading status."""
+    from kronos.execution import read_paper_status
+
+    status = read_paper_status(output_path)
+    if status is None:
+        typer.echo("No paper trading status found.", err=True)
+        typer.echo("先运行 `kronos paper preflight` 或 `kronos paper start`。", err=True)
+        raise typer.Exit(code=1)
+    typer.echo("--- Testnet Paper Status ---")
+    typer.echo(f"run_id: {status.get('run_id', '-')}")
+    typer.echo(f"status: {status.get('status', '-')}")
+    typer.echo(f"environment: {status.get('environment', 'testnet')}")
+    if status.get("order"):
+        order = status["order"]
+        typer.echo(f"testnet_order_id: {order.get('order_id', '-')}")
+        typer.echo(f"order_status: {order.get('status', '-')}")
+    if status.get("report_path"):
+        typer.echo(f"report: {status['report_path']}")
+    if status.get("message"):
+        typer.echo(str(status["message"]))
+
+
+@paper_app.command("stop")
+def paper_stop(
+    output_path: str = typer.Option("reports/paper", help="Base path for paper trading reports."),
+) -> None:
+    """Stop the local testnet paper-trading loop."""
+    from kronos.execution import stop_paper_run
+
+    status_path = stop_paper_run(output_path)
+    typer.echo("--- Testnet Paper Stop ---")
+    typer.echo("状态: stopped")
+    typer.echo("本地循环不会再提交新订单。")
+    typer.echo(f"status: {status_path}")
 
 
 def _find_latest_replay_report(reports_path: str) -> LatestReport | None:

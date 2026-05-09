@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-09 | 版本：0.4.7 | 下一版本：0.4.8
+> 更新：2026-05-09 | 版本：0.4.8 | 下一版本：0.4.9
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -173,19 +173,27 @@
 | 75 | `done` 从研究报告生成只读观察计划 | `kronos report observation-plan` + `kronos/reporting/observation_plan.py` |
 | 76 | `done` 观察计划明确虚拟订单、延迟、滑点和人工闸门，不启动模拟盘或真实订单 | `paper_observation_plan.md` |
 
-## 下一版本 (v0.4.8) — 待办
+## v0.4.8 已完成
 
 > 产品目标：在只读观察计划之后，推进 Binance 模拟盘 / 测试网真实成交最小闭环。允许使用模拟盘 API Key 在测试网提交真实测试订单，但必须隔离真实资金、拒绝主网、保留人工闸门。
 
 | # | 事项 |
 |---|------|
 | 77 | `done` v0.4.8 Binance 模拟盘真实成交版本需求与 OpenSpec 立项 |
-| 78 | Binance 测试网凭证配置：本地保存 API Key / Secret，全程脱敏 |
-| 79 | `paper preflight`：确认测试网环境、观察计划、凭证、账户和风控限额 |
-| 80 | `paper start/status/stop`：从合格观察计划启动受限测试网模拟盘，可查看状态和停止 |
-| 81 | 测试网订单 / 成交 ledger：记录 Binance testnet order id、成交状态、失败原因和停止动作 |
-| 82 | 模拟盘报告：明确测试网成交不等于实盘收益，不能自动升级实盘 |
-| 83 | Docker fresh 验证：无凭证时给清晰下一步，有测试网凭证时走安全 preflight |
+| 78 | `done` Binance 测试网凭证配置：本地保存 API Key / Secret，全程脱敏 |
+| 79 | `done` `paper preflight`：确认测试网环境、观察计划 metadata、凭证、账户和风控限额 |
+| 80 | `done` `paper start/status/stop`：从合格观察计划启动受限测试网模拟盘，停止后必须显式 reset 才能重启 |
+| 81 | `done` 测试网订单 / 成交 / 错误 ledger：记录 Binance testnet order id、trade 明细、成交时间、手续费、失败原因和停止动作 |
+| 82 | `done` 模拟盘报告：明确测试网成交不等于实盘收益，不能自动升级实盘 |
+| 83 | `done` Docker fresh 验证：无凭证时给清晰下一步，mock testnet 安全路径可用 |
+| 84 | `done` `paper credentials set` 移除 argv secret，支持环境变量和隐藏输入，减少 shell history 暴露 |
+
+## 下一版本 (v0.4.9+) — 待办
+
+| # | 事项 |
+|---|------|
+| 85 | 用用户提供的 Binance testnet API Key 跑一次人工授权的端到端真实测试网下单验证 |
+| 86 | Web 工作台展示测试网模拟盘状态和报告 |
 
 ---
 

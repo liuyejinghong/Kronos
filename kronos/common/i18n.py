@@ -123,7 +123,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "  · 起草策略想法: docker compose run --rm kronos uv run kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
             "  · 同步真实数据: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
             "  · 进入 Agent: docker compose run --rm kronos uv run kronos agent start\n"
-            "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
+            "  · 通过验证并生成只读观察候选后，可手动配置 Binance testnet: docker compose run --rm kronos uv run kronos paper credentials status\n"
+            "  · Kronos 不会自动启动模拟盘，也不会连接主网或真实资金。"
         ),
         "en": (
             "In Docker, do this first:\n"
@@ -132,7 +133,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "  · Draft strategy idea: docker compose run --rm kronos uv run kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
             "  · Sync real data: docker compose run --rm kronos uv run kronos data sync --symbols BTCUSDT --since 2026-01-01\n"
             "  · Enter Agent: docker compose run --rm kronos uv run kronos agent start\n"
-            "  · This version only writes research reports; it does not start paper trading or live orders."
+            "  · After validation and a read-only observation candidate, manually check Binance testnet setup: docker compose run --rm kronos uv run kronos paper credentials status\n"
+            "  · Kronos does not auto-start paper trading, connect to mainnet, or touch real funds."
         ),
     },
     "quickstart.no_benchmark_data": {
@@ -175,7 +177,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "  · 起草策略想法：kronos strategy draft --prompt \"我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期\"\n"
             "  · 同步真实数据：kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
             "  · 启动 Web 工作台：cd web && npm run dev\n"
-            "  · 当前版本只输出研究报告，不会启动模拟盘或真实下单。"
+            "  · 通过验证并生成只读观察候选后，可手动配置 Binance testnet：kronos paper credentials status\n"
+            "  · Kronos 不会自动启动模拟盘，也不会连接主网或真实资金。"
         ),
         "en": (
             "Do this first:\n"
@@ -184,7 +187,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "  · Draft strategy idea: kronos strategy draft --prompt \"I want BTCUSDT R-breaker intraday breakout on 15m\"\n"
             "  · Sync real data: kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01\n"
             "  · Start Web workbench: cd web && npm run dev\n"
-            "  · This version only writes research reports; it does not start paper trading or live orders."
+            "  · After validation and a read-only observation candidate, manually check Binance testnet setup: kronos paper credentials status\n"
+            "  · Kronos does not auto-start paper trading, connect to mainnet, or touch real funds."
         ),
     },
     "quickstart.report_ready": {

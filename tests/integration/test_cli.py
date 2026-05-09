@@ -17,6 +17,7 @@ from kronos.factor.candidates import (
     clear_candidates,
     register_candidate,
 )
+from kronos.reporting.observation_plan import generate_observation_plan
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -394,8 +395,8 @@ class TestReportCLI:
                 "",
                 "## 模拟盘边界",
                 "",
-                "- 当前版本只到研究报告和 Agent 复盘，不会启动实时模拟盘。",
-                "- 实时模拟盘需要 Binance 实时行情和只读 API Key，属于 v0.4.0 预留能力。",
+                "- 本入口只产生研究证据和报告，不会自动启动模拟盘。",
+                "- 通过基础验证、walk-forward 和只读观察候选后，可手动进入 Binance testnet 模拟盘。",
             ]),
             encoding="utf-8",
         )
@@ -536,6 +537,140 @@ class TestReportCLI:
         assert result.exit_code == 1
         assert "No reports found" in output
         assert "只读观察计划" in output
+
+
+class TestPaperCLI:
+    """Integration tests for 'kronos paper' commands."""
+
+    def _plan(self, tmp_path: Path) -> Path:
+        run_dir = tmp_path / "reports" / "research" / "experiments" / "run-1"
+        run_dir.mkdir(parents=True)
+        report = run_dir / "auto_run_report.md"
+        report.write_text("# Kronos 自动研究日报\n", encoding="utf-8")
+        (run_dir / "auto_run_summary.json").write_text(
+            json.dumps({
+                "summary": {
+                    "evaluated": 1,
+                    "promoted": 1,
+                    "not_promoted": 0,
+                    "skipped": 0,
+                },
+                "run_id": "run-1",
+                "symbols": ["BTCUSDT"],
+                "timeframe": "15m",
+                "data_coverage": [{
+                    "symbol": "BTCUSDT",
+                    "dataset": "klines_15m",
+                    "span_days": 120.0,
+                }],
+                "config_snapshot": {"data_kind": "local"},
+            }, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        return generate_observation_plan(report).path
+
+    def test_paper_credentials_status_set_and_delete_are_masked(self, tmp_path: Path) -> None:
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            status = runner.invoke(app, ["paper", "credentials", "status"])
+            assert status.exit_code == 0
+            assert "configured: no" in status.stdout
+
+            set_result = runner.invoke(
+                app,
+                ["paper", "credentials", "set", "--api-key", "testnet-api-key-123456"],
+                input="testnet-secret-abcdef\n",
+            )
+            assert set_result.exit_code == 0, set_result.output
+            assert "configured: yes" in set_result.stdout
+            assert "testnet-api-key-123456" not in set_result.stdout
+            assert "testnet-secret-abcdef" not in set_result.stdout
+
+            delete_result = runner.invoke(app, ["paper", "credentials", "delete"])
+            assert delete_result.exit_code == 0
+            assert "configured: no" in delete_result.stdout
+
+    def test_paper_preflight_fails_without_credentials(self, tmp_path: Path) -> None:
+        plan = self._plan(tmp_path)
+
+        result = runner.invoke(app, [
+            "paper", "preflight",
+            "--plan", str(plan),
+            "--output-path", str(tmp_path / "reports" / "paper"),
+            "--mock-testnet",
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "未通过" in output
+        assert "尚未配置" in output
+
+    def test_paper_credentials_set_can_read_env_without_echoing_secret(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        monkeypatch.setenv("BINANCE_TESTNET_API_KEY", "env-testnet-api-key")
+        monkeypatch.setenv("BINANCE_TESTNET_API_SECRET", "env-testnet-secret")
+
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            set_result = runner.invoke(app, ["paper", "credentials", "set"])
+
+            assert set_result.exit_code == 0, set_result.output
+            assert "configured: yes" in set_result.stdout
+            assert "env-testnet-api-key" not in set_result.stdout
+            assert "env-testnet-secret" not in set_result.stdout
+
+    def test_paper_mock_start_status_and_stop(self, tmp_path: Path) -> None:
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            plan = self._plan(tmp_path)
+            set_result = runner.invoke(
+                app,
+                ["paper", "credentials", "set", "--api-key", "testnet-api-key-123456"],
+                input="testnet-secret-abcdef\n",
+            )
+            assert set_result.exit_code == 0, set_result.output
+
+            start_result = runner.invoke(app, [
+                "paper", "start",
+                "--plan", str(plan),
+                "--output-path", str(tmp_path / "reports" / "paper"),
+                "--mock-testnet",
+            ])
+            assert start_result.exit_code == 0, start_result.output
+            assert "testnet_order_id: mock-testnet-order-1" in start_result.stdout
+            assert "testnet-api-key-123456" not in start_result.stdout
+
+            status_result = runner.invoke(app, [
+                "paper", "status",
+                "--output-path", str(tmp_path / "reports" / "paper"),
+            ])
+            assert status_result.exit_code == 0, status_result.output
+            assert "environment: testnet" in status_result.stdout
+            assert "testnet_order_id: mock-testnet-order-1" in status_result.stdout
+            assert "report:" in status_result.stdout
+
+            stop_result = runner.invoke(app, [
+                "paper", "stop",
+                "--output-path", str(tmp_path / "reports" / "paper"),
+            ])
+            assert stop_result.exit_code == 0, stop_result.output
+            assert "stopped" in stop_result.stdout
+
+            stopped_status = runner.invoke(app, [
+                "paper", "status",
+                "--output-path", str(tmp_path / "reports" / "paper"),
+            ])
+            assert stopped_status.exit_code == 0
+            assert "status: stopped" in stopped_status.stdout
+
+            blocked_restart = runner.invoke(app, [
+                "paper", "start",
+                "--plan", str(plan),
+                "--output-path", str(tmp_path / "reports" / "paper"),
+                "--mock-testnet",
+            ])
+            assert blocked_restart.exit_code == 1
+            assert "reset-stopped" in (blocked_restart.stdout + (blocked_restart.stderr or ""))
 
 
 class TestQuickstartCLI:

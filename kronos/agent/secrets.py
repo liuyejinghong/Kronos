@@ -25,6 +25,7 @@ class SecretMaskedStatus(BaseModel):
     provider: str = Field(min_length=1)
     configured: bool
     masked_value: str | None = None
+    masked_secret: str | None = None
     storage_backend: str = "local_file"
     storage_path: str
 
@@ -39,14 +40,25 @@ class LocalSecretStore:
     def __init__(self, path: str | Path = DEFAULT_SECRET_STORE_PATH) -> None:
         self.path = Path(path)
 
-    def set_secret(self, *, provider: str, api_key: str) -> SecretMaskedStatus:
+    def set_secret(
+        self,
+        *,
+        provider: str,
+        api_key: str,
+        api_secret: str | None = None,
+    ) -> SecretMaskedStatus:
         """Store or replace one provider API key."""
         if not provider.strip():
             raise SecretStoreError("provider is required.")
         if not api_key.strip():
             raise SecretStoreError("api_key is required.")
+        if api_secret is not None and not api_secret.strip():
+            raise SecretStoreError("api_secret is required.")
         payload = self._read_payload()
-        payload[_normalize_provider(provider)] = {"api_key": api_key}
+        item = {"api_key": api_key}
+        if api_secret is not None:
+            item["api_secret"] = api_secret
+        payload[_normalize_provider(provider)] = item
         self._write_payload(payload)
         return self.get_status(provider)
 
@@ -63,13 +75,26 @@ class LocalSecretStore:
         api_key = item.get("api_key")
         return api_key if isinstance(api_key, str) and api_key else None
 
+    def get_secret_pair(self, provider: str) -> tuple[str, str] | None:
+        """Return the raw API key and secret for backend-only exchange calls."""
+        item = self._read_payload().get(_normalize_provider(provider), {})
+        api_key = item.get("api_key")
+        api_secret = item.get("api_secret")
+        if not isinstance(api_key, str) or not api_key:
+            return None
+        if not isinstance(api_secret, str) or not api_secret:
+            return None
+        return api_key, api_secret
+
     def get_status(self, provider: str) -> SecretMaskedStatus:
         """Return a masked provider credential status."""
         secret = self.get_secret(provider)
+        pair = self.get_secret_pair(provider)
         return SecretMaskedStatus(
             provider=_normalize_provider(provider),
             configured=secret is not None,
             masked_value=mask_secret(secret) if secret is not None else None,
+            masked_secret=mask_secret(pair[1]) if pair is not None else None,
             storage_path=str(self.path),
         )
 
@@ -83,8 +108,11 @@ class LocalSecretStore:
         for provider, item in raw.items():
             if isinstance(provider, str) and isinstance(item, dict):
                 api_key = item.get("api_key")
+                api_secret = item.get("api_secret")
                 if isinstance(api_key, str):
                     payload[provider] = {"api_key": api_key}
+                    if isinstance(api_secret, str):
+                        payload[provider]["api_secret"] = api_secret
         return payload
 
     def _write_payload(self, payload: dict[str, dict[str, str]]) -> None:

@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.8] — 2026-05-09
+
 ### Added
 
-- v0.4.8 将推进 Binance 模拟盘 / 测试网真实成交：允许测试网 API Key、测试网真实订单和测试网成交，但禁止主网和真实资金
-- 新增 v0.4.8 版本需求和 OpenSpec 约束，先把产品边界写清楚再进入代码实现
+- **Binance 测试网模拟盘入口**：新增 `kronos paper credentials/preflight/start/status/stop`
+- **测试网凭证边界**：复用本地 SecretStore 保存 Binance testnet API Key / Secret，移除 argv secret，支持环境变量和隐藏输入，并在 CLI、报告和状态中脱敏
+- **测试网订单链路**：新增 testnet-only 执行层、mock testnet 适配器、订单 / 成交 / 错误 ledger 和模拟盘报告；真实成交证据来自 Binance testnet trade 明细，包含成交时间和手续费
+- **观察计划机器摘要**：`paper` 只接受观察计划生成器写出的 metadata，并回查来源报告 / summary hash，不再只靠 Markdown 文案判断准入
+- **v0.4.8 版本需求 + OpenSpec**：新增 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`
+
+### Changed
+
+- README / README.en / PROJECT_STATUS / ROADMAP / TODO 同步到 v0.4.8：当前进入 Binance testnet paper trading 最小闭环，但仍禁止主网和真实资金
+- `paper start` 在 `paper stop` 后必须显式 `--reset-stopped` 才能重新启动，避免停止状态被无意绕过
+
+### Fixed
+
+- 修正 v0.4.8 方向旧口径：不再把下一步描述为“只读 API Key + 本地虚拟成交”，改为“测试网 API Key + Binance testnet 订单证据”
+- 修复失败路径无本地证据的问题：参数非法、停止后未 reset、preflight 未通过、行情、金额上限、下单或成交查询失败都会写入 failed 状态、错误 ledger 和报告
 
 ## [0.4.7] — 2026-05-09
 

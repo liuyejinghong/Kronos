@@ -1,6 +1,6 @@
 # Kronos v0.4.8 版本需求：Binance 模拟盘真实成交
 
-> 状态：待实现
+> 状态：首版已完成
 > 版本目标：0.4.8
 > 约束来源：用户明确边界、`docs/PROJECT_STATUS.md`、`docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md`、`docs/USER_PERSONAS.md`
 
@@ -219,6 +219,30 @@ v0.4.8 完成时，必须满足：
 5. 用户能查看状态、停止运行、读取模拟盘报告。
 6. 所有报告都明确测试网资金不等于真实资金，不能自动升级实盘。
 7. 全量测试、类型、lint、前端构建和 Docker fresh 验证通过。
+
+## v0.4.8 实现结果
+
+首版实现已经把“只读观察计划之后的一步”推进到 Binance 测试网模拟盘入口：
+
+- 新增 `kronos paper credentials status/set/delete`，测试网 API Key / Secret 保存在本地 SecretStore，移除 argv secret，支持环境变量和隐藏输入，控制台和报告只显示脱敏状态。
+- 新增 `kronos paper preflight`，检查只读观察计划 metadata、来源报告 / summary hash、凭证和 Binance testnet 账户连通性；`--mock-testnet` 只用于本地 / CI / Docker 安全验证。
+- 新增 `kronos paper start/status/stop`，默认单品种、最小数量、订单金额上限；停止后再次启动必须显式 `--reset-stopped`；生成订单账本、成交账本、错误账本、状态 JSON 和 Markdown 报告。
+- 真实 testnet 成交证据来自 Binance testnet trade 明细，而不是订单摘要推导；成交账本记录 trade id、成交价、数量、手续费、手续费资产和成交时间。
+- 所有 `paper start` 失败都会落账：参数非法、停止后未显式 reset、preflight 未通过、行情读取失败、金额超过上限、下单失败和成交查询失败都会写入 failed 状态、错误账本和用户可读报告。
+- 执行客户端只允许 `https://testnet.binancefuture.com`，拒绝 Binance mainnet endpoint。
+- 报告固定提示：测试网资金不影响真实账户，测试网成交不能自动升级实盘。
+
+## v0.4.8 仍保留的边界
+
+- 默认 quickstart 不会启动模拟盘，也不会自动下单。
+- 没有测试网凭证时，preflight 和 start 必须失败并给出下一步。
+- Web 工作台暂不提供交易控制台，只能通过 CLI 使用模拟盘入口。
+- 真实 Binance testnet 端到端需要用户显式提供测试网 API Key 后手动执行；自动化测试使用 mock testnet，不真实调用 Binance 网络。
+
+## v0.4.9 建议
+
+- 用用户测试网凭证跑一次真实 Binance testnet 手动验收，保留订单 ID、成交状态和报告截图 / 文本证据。
+- 在 Web 工作台增加模拟盘状态、最近订单和报告入口。
 
 ## 关键风险
 

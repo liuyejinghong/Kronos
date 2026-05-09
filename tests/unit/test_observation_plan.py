@@ -71,6 +71,10 @@ def test_observation_plan_marks_long_real_promoted_report_as_candidate(tmp_path:
     assert "等待 2 根 bar" in text
     assert "7.5 bps" in text
     assert "不能自动升级到实盘" in text
+    metadata = json.loads(plan.path.with_suffix(".json").read_text(encoding="utf-8"))
+    assert metadata["artifact_type"] == "kronos.paper_observation_plan"
+    assert metadata["eligible_for_testnet_paper"] is True
+    assert metadata["promoted"] == 1
 
 
 def test_observation_plan_blocks_short_real_sample(tmp_path: Path) -> None:

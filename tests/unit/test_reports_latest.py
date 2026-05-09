@@ -141,7 +141,7 @@ def test_summarize_report_prefers_auto_run_summary_first_screen(
     assert "评估对象: 1 个已评估, 0 个通过, 1 个未通过." in joined
     assert "市场状态: 本轮没有生成分市场状态证据" in joined
     assert "可信度/只读边界: 这是安装和流程试跑" in joined
-    assert "当前只到研究报告，不会启动模拟盘、实盘或真实订单" in joined
+    assert "本报告不会自动启动模拟盘、主网实盘或真实资金订单" in joined
     assert "1 个已评估" in joined
     assert "0 个通过" in joined
     assert "1 个未通过" in joined
@@ -233,7 +233,7 @@ def test_summarize_report_exposes_market_regime_slices(tmp_path: Path) -> None:
     assert "市场状态: 趋势状态: 只有局部弱信号" in joined
     assert "震荡状态: 该切片不支持升级。" in joined
     assert "可信度/只读边界:" in joined
-    assert "当前只到研究报告" in joined
+    assert "可以手动进入 Binance testnet paper" in joined
 
 
 def test_summarize_report_uses_replay_headline(tmp_path: Path) -> None:
