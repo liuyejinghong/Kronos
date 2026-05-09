@@ -1,10 +1,12 @@
 # Kronos Project Status
 
-> 更新时间：2026-05-08 | 当前版本：0.4.5 | 下一版本：0.4.6
+> 更新时间：2026-05-09 | 当前版本：0.4.7 | 下一版本：0.4.8
 
 ## 一句话判断
 
-v0.4.5 没有扩展实盘能力，而是把结果卡往前推成解释卡：`quickstart` 和 `report latest` 先给结果卡，`report replay` / `report regime` / `report observation` 再把关键交易、市场状态分段和只读观察边界接出来；策略起草后的验证链路也继续翻译成检查配置、空跑确认、进入候选池。
+v0.4.7 没有直接启动实时模拟盘，而是在研究报告之后新增只读观察计划：用户可以用 `kronos report observation-plan` 把最新研究报告转成一份计划，先看清观察对象、样本边界、虚拟订单假设、延迟/滑点假设和人工闸门。
+
+v0.4.6 把 fresh Docker 新用户体验继续压短，并修复 Dockerfile 禁用 `uv` 缓存导致的慢构建问题。v0.4.5 则把结果卡往前推成解释卡：`quickstart` 和 `report latest` 先给结果卡，`report replay` / `report regime` / `report observation` 再把关键交易、市场状态分段和只读观察边界接出来。
 
 v0.4.4 把 Docker 首次体验语义收口成结果卡，`quickstart` 和 `report latest` 先给结果卡，说明用了什么数据、评估了什么、结论能不能信、下一步做什么；策略起草后的验证链路也先翻译成检查配置、空跑确认、进入候选池。
 
@@ -12,25 +14,25 @@ v0.4.2 已经把 v0.4.1 多画像 Docker 评测暴露的首次体验信任断点
 
 2026-05-08 的 fresh Docker 模拟用户测试确认：`report latest` 已经是稳定结果卡，`strategy draft`、`report regime` 和 `report observation` 也把解释链路补齐；`agent start` 能把无数据用户带到 sample 数据和策略草案，但首次入口对完全小白仍偏长。最新复测还确认：`quickstart` 的结果卡已经干净，`report replay` 的缺内容提示清楚，`agent start` 能在 fresh Docker 中接住数据与策略池。首次构建慢的直接根因已定位为 Dockerfile 禁用 `uv` 缓存；去掉 `--no-cache` 后，fresh build 的依赖准备从 15m49s 回到约 12s。
 
-当前产品边界仍是**研究报告、Agent 复盘、策略草案和策略配置试算**。Kronos 不会启动实时模拟盘、不会接入真实交易、不会自动下单。
+当前产品边界仍是**研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划**。Kronos 不会启动实时模拟盘、不会接入真实交易、不会自动下单。
 
-## v0.4.5 立项方向
+## v0.4.7 立项方向
 
-v0.4.5 不再扩展新的研究入口，而是把 v0.4.4 的结果卡往前推一层：用户能从最新报告跳到关键交易重放，按市场状态看差异，并在只读观察前先看清虚拟订单、延迟、滑点和人工闸门。
+v0.4.7 是模拟盘前置版：先生成只读观察计划，不接交易所、不启动实时循环、不记录真实订单。它的目标是把后续实时模拟盘的产品边界先写清楚。
 
-当前已立项的开发指引见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。
+当前已立项的开发指引见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。
 
 ## 当前能力
 
 | 模块 | 状态 | 当前用户能得到什么 |
 |---|---|---|
 | 快速开始 | 已完成 | `kronos quickstart` 一键生成数据、注册 R-breaker、输出研究报告 |
-| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据来源、样本范围、评估对象、结论、可信度和下一步；关键交易重放可用 `kronos report replay` 查看，市场状态分段可用 `kronos report regime` 查看，只读观察边界可用 `kronos report observation` 查看 |
+| 最新报告 | 已完成 | `kronos report latest` 直接打印最近一次产品报告摘要，自动研究报告优先展示数据来源、样本范围、评估对象、结论、可信度和下一步；关键交易重放可用 `kronos report replay` 查看，市场状态分段可用 `kronos report regime` 查看，只读观察边界可用 `kronos report observation` 查看，只读观察计划可用 `kronos report observation-plan` 生成 |
 | 内置策略 | 已完成 | R-breaker 日内突破策略作为示例策略，quickstart 后可被 Agent 看到 |
 | 策略起草 | 已完成 | `kronos strategy draft --prompt "..."` 将 R-breaker 相关想法转成概要、trace 和 TOML 草案；缺字段会澄清，不支持模板会拒绝 |
 | 策略配置 | 已完成 | `kronos strategy init-r-breaker` 生成 TOML，`validate` 校验，`smoke-test` 本地试算 |
 | 策略注册 | 已完成 | `kronos strategy register` 默认要求烟雾测试通过，再写入候选池 |
-| 报告解释 | 已完成 | 技术指标保留，同时补充交易语言解释和模拟盘边界 |
+| 报告解释 | 已完成 | 技术指标保留，同时补充交易语言解释、模拟盘边界和只读观察计划 |
 | 数据同步 | 已完成 | Binance USDM 公开 K 线 / Funding / OI，同步前说明来源、范围和无需 API Key |
 | 对话 Agent | 已完成 | `kronos agent start` 可做首次用户引导、策略起草、环境感知和中英文对话，并按当前数据样本动态说明结论边界 |
 | Web 工作台 | 已完成 | FastAPI + Next.js，本地查看候选池、时间线、报告、设置和审批入口 |
@@ -52,7 +54,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 | AI 自然语言创建策略 | 已交付首版 | 当前只支持 R-breaker 相关想法起草成 TOML；不能把任意自然语言自动变成新策略代码 |
 | 历史重放 | 已完成起步 | 当前提供关键交易重放报告，不做逐笔/逐分钟交易回放 |
 | 市场状态分段评估 | 已完成起步 | 当前可用 `kronos report regime` 查看市场状态切片，不把整体均值当作全部答案 |
-| 实时模拟盘 | v0.4.x 目标 | 当前不会连接实时虚拟订单引擎 |
+| 只读观察计划 | 已完成 | 当前可以从研究报告生成观察计划，但不会启动实时模拟盘 |
+| 实时模拟盘 | v0.4.x 后续目标 | 当前不会连接实时虚拟订单引擎 |
 | 实盘执行 | v0.5.0+ 以后 | 必须等研究闭环、模拟盘和人工闸门稳定后再考虑 |
 
 ## v0.4.0 前置修复
@@ -95,12 +98,20 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 | P2 | Docker 首次构建输出容易被误读成异常 | 已修复：entrypoint 先说明首次运行会准备环境和生成 sample 流程试跑报告，完成后只强调先读最新报告 |
 | P2 | Docker fresh build 依赖下载被反复放大 | 已修复：Dockerfile 去掉 `uv sync --no-cache`，fresh build 复测依赖准备约 12s |
 
+## v0.4.7 只读观察计划
+
+| 优先级 | 问题 | 当前处理 |
+|---|---|---|
+| P0 | 用户读完研究报告后仍不知道能否进入观察 | 已修复：`kronos report observation-plan` 从报告生成只读观察计划 |
+| P0 | sample / 短样本容易被误解成可观察结论 | 已修复：观察计划按 sample、短样本、未通过、已通过分层给出准入判断 |
+| P1 | 模拟盘前的虚拟订单、延迟、滑点和人工闸门没有落成产物 | 已修复：计划正文固定记录这些假设，并声明不会发送真实订单 |
+
 ## 当前推荐顺序
 
-1. 继续推进 v0.4.6：关键交易解释继续深化，补足更细的失败窗口和样本外分析。
-2. 保持市场状态分段和只读观察边界的入口稳定，继续打磨文案和门禁。
-3. 继续打磨首次入口的文案和层级，让 L0/L6 更少停顿。
-4. 模拟盘前先定义只读 API Key、虚拟订单、延迟/滑点、人工闸门和报告入口。
+1. 继续推进 v0.4.8：从只读观察计划进入实时模拟盘最小闭环。
+2. 先定义只读 Binance API Key 权限边界，确保没有交易权限。
+3. 记录虚拟信号、虚拟成交、滑点、延迟和观察报告。
+4. Web 工作台再展示观察计划和观察日志。
 5. 在没有稳定模拟盘证据前，不推进真实交易执行。
 
 ## 版本事实源
@@ -116,6 +127,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - v0.4.4 OpenSpec：`openspec/changes/p4-docker-first-use-result-card/`
 - v0.4.5 版本需求：`docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md`
 - v0.4.5 OpenSpec：`openspec/changes/p4-research-interpretation-path/`
+- v0.4.7 版本需求：`docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md`
+- v0.4.7 OpenSpec：`openspec/changes/p4-paper-observation-plan/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`
 - v0.4.3 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`

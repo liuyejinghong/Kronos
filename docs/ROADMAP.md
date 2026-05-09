@@ -1,6 +1,6 @@
 # Kronos Roadmap
 
-更新时间：2026-05-08
+更新时间：2026-05-09
 
 ## 目标
 
@@ -16,7 +16,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。
 
 ## 路线图原则
 
@@ -123,6 +123,7 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 
 - 关键交易重放：`kronos report replay` 解释入场、出场、失败和关键分歧点。
 - 市场状态分段：`kronos report regime` 把牛市、熊市、震荡市和高波动环境分开呈现。
+- 只读观察计划：`kronos report observation-plan` 从研究报告生成观察计划，明确虚拟订单、延迟、滑点和人工闸门。
 - 只读观察边界：`kronos report observation` 说明虚拟订单、延迟、滑点和人工闸门。
 - 多品种 smoke-test：每个 symbol 都要单独验证，不能只看第一个品种。
 

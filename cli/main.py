@@ -340,6 +340,64 @@ def report_observation(
     typer.echo(f"report: {report}")
 
 
+@report_app.command("observation-plan")
+def report_observation_plan(
+    report_path: str | None = typer.Argument(
+        None,
+        help="Path to a research report. Defaults to the latest product-facing report.",
+    ),
+    reports_path: str = typer.Option(
+        "reports/research",
+        help="Base path for research reports.",
+    ),
+    output_path: str | None = typer.Option(
+        None,
+        help="Optional output path for the generated paper observation plan.",
+    ),
+    latency_bars: int = typer.Option(
+        1,
+        min=0,
+        help="Default virtual-fill latency in bars for the observation plan.",
+    ),
+    slippage_bps: float = typer.Option(
+        5.0,
+        min=0.0,
+        help="Default virtual slippage assumption in basis points.",
+    ),
+) -> None:
+    """Generate a read-only paper observation plan from a research report."""
+    from kronos.reporting import find_latest_report, generate_observation_plan
+
+    if report_path is None:
+        latest = find_latest_report(reports_path)
+        if latest is None:
+            typer.echo(f"No reports found under {Path(reports_path) / 'experiments'}.", err=True)
+            typer.echo(
+                "先跑 `kronos quickstart` 或 `kronos research workbench`, 再生成只读观察计划。",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+        report = latest.path
+    else:
+        report = Path(report_path)
+
+    try:
+        plan = generate_observation_plan(
+            report,
+            output_path=output_path,
+            latency_bars=latency_bars,
+            slippage_bps=slippage_bps,
+        )
+    except FileNotFoundError as exc:
+        typer.echo(str(exc), err=True)
+        typer.echo("请确认报告路径, 或先运行 `kronos report latest` 找到最新报告。", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("--- Paper Observation Plan ---")
+    for line in plan.summary_lines():
+        typer.echo(line)
+
+
 def _find_latest_replay_report(reports_path: str) -> LatestReport | None:
     from kronos.reporting.latest import LatestReport
 

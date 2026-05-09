@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.6-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.7-informational.svg)](CHANGELOG.md)
 
 [English](README.en.md)
 
@@ -48,6 +48,7 @@ uv run kronos data status                          # 数据覆盖状态
 uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # 同步公开行情，不需要 API Key
 uv run kronos quickstart                            # 一键快速开始
 uv run kronos report latest                         # 直接查看最新报告摘要
+uv run kronos report observation-plan               # 从研究报告生成只读观察计划
 uv run kronos strategy draft --prompt "我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期"  # 起草策略 TOML
 uv run kronos strategy init-r-breaker               # 生成 R-breaker TOML 策略配置
 uv run kronos strategy smoke-test ~/.kronos/strategies/r_breaker.toml  # 用本地数据空跑确认信号能算出来
@@ -64,6 +65,7 @@ Docker 内部的策略配置路径是 `/root/.kronos/...`，不要把本地 `~/.
 ```bash
 docker compose up
 docker compose run --rm kronos uv run kronos report latest
+docker compose run --rm kronos uv run kronos report observation-plan
 docker compose run --rm kronos uv run kronos strategy draft --prompt "我想做 BTCUSDT 的 R-breaker 日内突破, 15m 周期"
 docker compose run --rm kronos uv run kronos strategy init-r-breaker
 docker compose run --rm kronos uv run kronos strategy smoke-test /root/.kronos/strategies/r_breaker.toml
@@ -73,7 +75,7 @@ docker compose run --rm kronos uv run kronos agent start
 
 Docker 首次构建时会出现依赖下载和安装输出。只要最后出现结果卡，就是正常流程；第一次建议先运行 `report latest`，读懂结论后再进入 Agent。
 
-当前版本只产出研究报告、Agent 复盘、策略草案和策略配置试算，不会启动模拟盘或真实下单。实时模拟盘将在后续版本接入 Binance 实时行情和只读 API Key。
+当前版本只产出研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划，不会启动模拟盘或真实下单。实时模拟盘将在后续版本接入 Binance 实时行情和只读 API Key。
 
 ---
 

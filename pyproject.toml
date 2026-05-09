@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kronos"
-version = "0.4.6"
+version = "0.4.7"
 description = "Crypto-native quantitative research and trading system"
 requires-python = ">=3.12"
 license = { text = "MIT" }

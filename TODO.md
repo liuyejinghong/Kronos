@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-08 | 版本：0.4.5 | 下一版本：0.4.6
+> 更新：2026-05-09 | 版本：0.4.7 | 下一版本：0.4.8
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -157,19 +157,33 @@
 | 69 | 只读观察边界入口 | `kronos report observation` + `kronos/research/workbench.py` |
 | 70 | 多品种 smoke-test 覆盖所有声明品种 | `kronos/strategy/smoke.py` + `tests/integration/test_cli.py` |
 
-## 下一版本 (v0.4.6+) — 待办
+## v0.4.6 已完成
 
-> 产品目标：在 v0.4.4 的首次体验语义收口后，继续补强“为什么表现好/差”和“在什么市场状态下可用”的解释能力。
+| # | 事项 | 证据 |
+|---|------|------|
+| 71 | `done` Docker 模拟用户测试与修复方案 | `docs/DOCKER_PERSONA_UX_EVALUATION_20260508.md` + `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260508.md` |
+| 72 | `done` fresh Docker 依赖准备根因修复：移除 `uv sync --no-cache` | `Dockerfile` + `tests/unit/test_dockerfile.py` |
+| 73 | `done` quickstart / report latest / agent start 首屏继续压缩为更短的试跑结论和下一步 | `kronos/reporting/latest.py` + `kronos/common/i18n.py` |
+
+## v0.4.7 已完成
+
+| # | 事项 | 证据 |
+|---|------|------|
+| 74 | `done` 只读观察计划版本需求与 OpenSpec 立项 | `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` + `openspec/changes/p4-paper-observation-plan/` |
+| 75 | `done` 从研究报告生成只读观察计划 | `kronos report observation-plan` + `kronos/reporting/observation_plan.py` |
+| 76 | `done` 观察计划明确虚拟订单、延迟、滑点和人工闸门，不启动模拟盘或真实订单 | `paper_observation_plan.md` |
+
+## 下一版本 (v0.4.8+) — 待办
+
+> 产品目标：在只读观察计划之后，继续推进实时模拟盘的最小闭环，但仍保留人工闸门和只读 API Key 边界。
 
 | # | 事项 |
 |---|------|
-| 71 | 历史重放继续深化：围绕关键交易、失败时段和样本外窗口解释策略为什么表现好/差 |
-| 72 | 按市场状态分段继续深化：牛/熊/震荡/高波动独立给出验证结论和晋升门槛 |
-| 73 | 实时模拟盘：只读 Binance API Key 接入前，先明确虚拟订单、延迟、滑点和人工闸门 |
-| 74 | 更细粒度的多品种策略诊断，继续减少局部失效被整体均值掩盖 |
-| 75 | v0.4.6 版本需求 / OpenSpec 立项：在 v0.4.5 基础上继续深化解释路径与观察路径 |
-| 76 | fresh Docker 模拟用户测试收敛：继续压缩首次入口叙事，让 L0/L6 更快知道结论和下一步 |
-| 77 | `done` fresh Docker 复测补记：定位 `uv sync --no-cache` 导致依赖下载被放大，已移除并复测 quickstart、report 和 agent 路径 |
+| 77 | 实时模拟盘最小闭环：从观察计划启动虚拟订单记录，但不发真实订单 |
+| 78 | 只读 Binance API Key 配置边界：只允许读行情/账户可见信息，不允许交易权限 |
+| 79 | 虚拟成交日志和观察报告：记录信号、虚拟成交、滑点、延迟和人工复盘 |
+| 80 | Web 工作台展示只读观察计划和未来观察日志 |
+| 81 | 更细粒度的多品种策略诊断，继续减少局部失效被整体均值掩盖 |
 
 ---
 

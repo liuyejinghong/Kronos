@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- 后续继续深化关键交易重放、市场状态分段和只读观察边界的解释颗粒度
+- 后续继续推进实时模拟盘、虚拟成交记录和只读 API Key 边界
+
+## [0.4.7] — 2026-05-09
+
+### Added
+
+- **只读观察计划**：新增 `kronos report observation-plan`，可从最新研究报告或指定报告生成 `paper_observation_plan.md`
+- **v0.4.7 版本需求 + OpenSpec**：新增 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`，把模拟盘前的观察计划边界写成正式约束
+- 观察计划生成器会记录来源报告、观察对象、样本范围、准入判断、虚拟订单假设、延迟/滑点假设和人工闸门
+
+### Changed
+
+- README / README.en / PROJECT_STATUS / ROADMAP / TODO 同步到 v0.4.7：当前新增的是只读观察计划，不是实时模拟盘
+
+### Fixed
+
+- 修正项目状态和 TODO 标题滞后问题，版本口径从 v0.4.5 / v0.4.6 对齐到 v0.4.7
 
 ## [0.4.6] — 2026-05-08
 

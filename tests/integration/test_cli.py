@@ -443,6 +443,100 @@ class TestReportCLI:
         assert "No read-only observation reports found" in output
         assert "research workbench" in output
 
+    def test_report_observation_plan_generates_from_latest_report(self, tmp_path: Path) -> None:
+        reports_path = tmp_path / "reports" / "research"
+        run_dir = reports_path / "experiments" / "run-plan"
+        run_dir.mkdir(parents=True)
+        report = run_dir / "auto_run_report.md"
+        report.write_text("# Kronos 自动研究日报\n", encoding="utf-8")
+        (run_dir / "auto_run_summary.json").write_text(
+            json.dumps({
+                "summary": {
+                    "evaluated": 1,
+                    "promoted": 1,
+                    "not_promoted": 0,
+                    "skipped": 0,
+                },
+                "run_id": "run-plan",
+                "symbols": ["BTCUSDT"],
+                "timeframe": "15m",
+                "data_coverage": [{
+                    "symbol": "BTCUSDT",
+                    "dataset": "klines_15m",
+                    "span_days": 120.0,
+                }],
+                "config_snapshot": {"data_kind": "local"},
+            }, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, [
+            "report", "observation-plan",
+            "--reports-path", str(reports_path),
+        ])
+
+        plan = run_dir / "paper_observation_plan.md"
+        assert result.exit_code == 0, result.output
+        assert "Paper Observation Plan" in result.stdout
+        assert "只读观察候选" in result.stdout
+        assert f"plan: {plan}" in result.stdout
+        assert plan.exists()
+        assert "不会发送真实订单" in plan.read_text(encoding="utf-8")
+
+    def test_report_observation_plan_generates_from_specified_report(self, tmp_path: Path) -> None:
+        run_dir = tmp_path / "reports" / "research" / "experiments" / "specified-plan"
+        run_dir.mkdir(parents=True)
+        report = run_dir / "auto_run_report.md"
+        report.write_text("# Kronos 自动研究日报\n", encoding="utf-8")
+        (run_dir / "auto_run_summary.json").write_text(
+            json.dumps({
+                "summary": {
+                    "evaluated": 1,
+                    "promoted": 0,
+                    "not_promoted": 1,
+                    "skipped": 0,
+                },
+                "run_id": "specified-plan",
+                "symbols": ["BTCUSDT"],
+                "timeframe": "15m",
+                "data_coverage": [{
+                    "symbol": "BTCUSDT",
+                    "dataset": "klines_15m",
+                    "span_days": 120.0,
+                }],
+                "config_snapshot": {"data_kind": "local"},
+            }, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["report", "observation-plan", str(report)])
+
+        assert result.exit_code == 0, result.output
+        assert "暂不观察" in result.stdout
+        assert f"source_report: {report}" in result.stdout
+        assert (run_dir / "paper_observation_plan.md").exists()
+
+    def test_report_observation_plan_fails_for_missing_report_path(self, tmp_path: Path) -> None:
+        missing_report = tmp_path / "missing" / "auto_run_report.md"
+
+        result = runner.invoke(app, ["report", "observation-plan", str(missing_report)])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "Research report does not exist" in output
+        assert "report latest" in output
+
+    def test_report_observation_plan_fails_without_reports(self, tmp_path: Path) -> None:
+        result = runner.invoke(app, [
+            "report", "observation-plan",
+            "--reports-path", str(tmp_path / "reports" / "research"),
+        ])
+
+        output = result.stdout + (result.stderr or "")
+        assert result.exit_code == 1
+        assert "No reports found" in output
+        assert "只读观察计划" in output
+
 
 class TestQuickstartCLI:
     """Integration tests for 'kronos quickstart' command."""
