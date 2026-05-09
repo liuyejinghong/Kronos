@@ -14,13 +14,13 @@ v0.4.2 已经把 v0.4.1 多画像 Docker 评测暴露的首次体验信任断点
 
 2026-05-08 的 fresh Docker 模拟用户测试确认：`report latest` 已经是稳定结果卡，`strategy draft`、`report regime` 和 `report observation` 也把解释链路补齐；`agent start` 能把无数据用户带到 sample 数据和策略草案，但首次入口对完全小白仍偏长。最新复测还确认：`quickstart` 的结果卡已经干净，`report replay` 的缺内容提示清楚，`agent start` 能在 fresh Docker 中接住数据与策略池。首次构建慢的直接根因已定位为 Dockerfile 禁用 `uv` 缓存；去掉 `--no-cache` 后，fresh build 的依赖准备从 15m49s 回到约 12s。
 
-当前产品边界仍是**研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划**。Kronos 不会启动实时模拟盘、不会接入真实交易、不会自动下单。
+当前产品边界仍是**研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划**。Kronos v0.4.7 不会启动模拟盘、不接入真实交易、不会自动下单。
 
-## v0.4.7 立项方向
+## v0.4.8 立项方向
 
-v0.4.7 是模拟盘前置版：先生成只读观察计划，不接交易所、不启动实时循环、不记录真实订单。它的目标是把后续实时模拟盘的产品边界先写清楚。
+v0.4.8 不是继续做本地虚拟成交，而是进入 **Binance 模拟盘 / 测试网真实成交**：用户可以使用 Binance 模拟盘 API Key，在测试网提交真实测试订单并读取测试网成交。这个过程不影响真实资金，但必须拒绝主网、全程脱敏凭证、保留人工闸门。
 
-当前已立项的开发指引见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。
+当前已立项的开发指引见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。
 
 ## 当前能力
 
@@ -55,7 +55,7 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 | 历史重放 | 已完成起步 | 当前提供关键交易重放报告，不做逐笔/逐分钟交易回放 |
 | 市场状态分段评估 | 已完成起步 | 当前可用 `kronos report regime` 查看市场状态切片，不把整体均值当作全部答案 |
 | 只读观察计划 | 已完成 | 当前可以从研究报告生成观察计划，但不会启动实时模拟盘 |
-| 实时模拟盘 | v0.4.x 后续目标 | 当前不会连接实时虚拟订单引擎 |
+| Binance 模拟盘真实成交 | v0.4.8 立项 | 下一版允许使用测试网 API Key 在 Binance 测试网提交真实测试订单，不影响真实资金 |
 | 实盘执行 | v0.5.0+ 以后 | 必须等研究闭环、模拟盘和人工闸门稳定后再考虑 |
 
 ## v0.4.0 前置修复
@@ -108,11 +108,11 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 
 ## 当前推荐顺序
 
-1. 继续推进 v0.4.8：从只读观察计划进入实时模拟盘最小闭环。
-2. 先定义只读 Binance API Key 权限边界，确保没有交易权限。
-3. 记录虚拟信号、虚拟成交、滑点、延迟和观察报告。
-4. Web 工作台再展示观察计划和观察日志。
-5. 在没有稳定模拟盘证据前，不推进真实交易执行。
+1. 继续推进 v0.4.8：从只读观察计划进入 Binance 测试网模拟盘真实成交最小闭环。
+2. 先实现测试网凭证配置、脱敏状态、testnet endpoint 门禁和 preflight。
+3. 再实现受限测试网订单提交、订单 / 成交 ledger、status 和 stop。
+4. 生成模拟盘报告，明确测试网成交不等于实盘收益。
+5. 在没有稳定测试网模拟盘证据前，不推进主网实盘执行。
 
 ## 版本事实源
 
@@ -129,6 +129,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - v0.4.5 OpenSpec：`openspec/changes/p4-research-interpretation-path/`
 - v0.4.7 版本需求：`docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md`
 - v0.4.7 OpenSpec：`openspec/changes/p4-paper-observation-plan/`
+- v0.4.8 版本需求：`docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md`
+- v0.4.8 OpenSpec：`openspec/changes/p4-testnet-paper-trading/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`
 - v0.4.3 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`

@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- 后续继续推进实时模拟盘、虚拟成交记录和只读 API Key 边界
+- v0.4.8 将推进 Binance 模拟盘 / 测试网真实成交：允许测试网 API Key、测试网真实订单和测试网成交，但禁止主网和真实资金
+- 新增 v0.4.8 版本需求和 OpenSpec 约束，先把产品边界写清楚再进入代码实现
 
 ## [0.4.7] — 2026-05-09
 

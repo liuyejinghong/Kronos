@@ -75,7 +75,7 @@ docker compose run --rm kronos uv run kronos agent start
 
 Docker 首次构建时会出现依赖下载和安装输出。只要最后出现结果卡，就是正常流程；第一次建议先运行 `report latest`，读懂结论后再进入 Agent。
 
-当前版本只产出研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划，不会启动模拟盘或真实下单。实时模拟盘将在后续版本接入 Binance 实时行情和只读 API Key。
+当前版本只产出研究报告、Agent 复盘、策略草案、策略配置试算和只读观察计划，不会启动模拟盘或真实下单。下一版本计划接入 Binance 模拟盘 / 测试网 API Key，在测试网提交真实测试订单，但仍不会触碰真实资金或主网实盘。
 
 ---
 

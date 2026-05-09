@@ -74,7 +74,7 @@ docker compose run --rm kronos uv run kronos agent start
 
 The first Docker build may show dependency download and install output. If the run ends with a result card, the flow is normal. On first use, read `report latest` before entering the Agent.
 
-This version only writes research reports, Agent reviews, strategy drafts, strategy config smoke-test results, and read-only observation plans. It does not start paper trading or live orders. Realtime paper trading is planned for a later version with Binance realtime data and a read-only API key.
+This version only writes research reports, Agent reviews, strategy drafts, strategy config smoke-test results, and read-only observation plans. It does not start paper trading or live orders. The next version is planned to use Binance testnet API keys for real testnet orders while still avoiding real funds and mainnet live trading.
 
 ---
 

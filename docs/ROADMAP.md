@@ -16,7 +16,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。v0.4.8 Binance 模拟盘真实成交见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。
 
 ## 路线图原则
 
@@ -126,6 +126,25 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 - 只读观察计划：`kronos report observation-plan` 从研究报告生成观察计划，明确虚拟订单、延迟、滑点和人工闸门。
 - 只读观察边界：`kronos report observation` 说明虚拟订单、延迟、滑点和人工闸门。
 - 多品种 smoke-test：每个 symbol 都要单独验证，不能只看第一个品种。
+
+### 阶段 A0.6：Binance 模拟盘真实成交（v0.4.8）
+
+目标：从只读观察计划进入 Binance 模拟盘 / 测试网真实成交，验证下单链路，但不影响真实资金。
+
+状态：已完成版本需求和 OpenSpec 立项，待实现。
+
+约束入口：
+
+- 版本需求：`docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md`
+- OpenSpec：`openspec/changes/p4-testnet-paper-trading/`
+
+待完成：
+
+- 测试网凭证配置和脱敏状态。
+- testnet endpoint 门禁，`paper` 命令拒绝 mainnet/live。
+- `paper preflight` 检查观察计划、凭证、测试网连接和风控限额。
+- `paper start/status/stop` 最小闭环。
+- Binance 测试网订单 ID、成交状态和模拟盘报告。
 
 ### 阶段 A0：Kronos Agent MVP
 
