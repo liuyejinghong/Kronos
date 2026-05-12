@@ -139,9 +139,8 @@ def validate_factor(
         n_obs = 0
 
     # rank_ic_positive_ratio requires a time-series of cross-sectional IC.
-    # For a single-symbol run there's no cross-section, so we use NaN as a
-    # sentinel and skip that threshold in adjudication (adjudicate handles NaN gracefully
-    # by treating it as 0 which will flag it as soft-review at most).
+    # For a single-symbol run there's no cross-section, so we keep NaN as a
+    # "not applicable" sentinel and let adjudication skip that threshold.
     rank_ic_positive_ratio = float("nan")
     ic_ir = float("nan")
 
@@ -179,14 +178,11 @@ def validate_factor(
     # ------------------------------------------------------------------
     # 7. Adjudicate
     # ------------------------------------------------------------------
-    # rank_ic_positive_ratio: treat NaN as 0 → will trigger review/fail unless
-    # other metrics are strong enough. Use 0.0 so adjudicate sees a numeric value.
-    adj_ratio = rank_ic_positive_ratio if not _is_nan(rank_ic_positive_ratio) else 0.0
     adj_turnover = median_turnover if not _is_nan(median_turnover) else float("inf")
 
     verdict_str = adjudicate(
         mean_rank_ic=mean_rank_ic if not _is_nan(mean_rank_ic) else 0.0,
-        rank_ic_positive_ratio=adj_ratio,
+        rank_ic_positive_ratio=rank_ic_positive_ratio,
         top_minus_bottom=top_minus_bottom if not _is_nan(top_minus_bottom) else 0.0,
         median_turnover=adj_turnover,
         config=config,

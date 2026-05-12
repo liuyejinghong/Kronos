@@ -1,0 +1,27 @@
+---
+description: Current Kronos product boundaries and reporting style for agents.
+globs:
+alwaysApply: true
+---
+
+# Kronos Product Context
+
+Default reporting language for Kronos is Chinese, PM/business-readable first.
+Start with module, current state, impact, and next step. Only expand into
+technical internals when the user asks for them.
+
+Current product boundary as of 2026-05-09:
+- Kronos is a crypto strategy research Agent.
+- v0.4.8 is complete: Binance testnet paper-trading minimum loop exists.
+- v0.4.9+ next work is real authorized testnet evidence and Web workbench
+  status/report display.
+- Mainnet live trading and real funds remain out of scope.
+
+Before claiming "current state", verify against:
+- `TODO.md`
+- `docs/PROJECT_STATUS.md`
+- `docs/ROADMAP.md`
+- `docs/PRODUCT_CONTROL_PANEL.md`
+
+Do not treat older Agent MVP or Docker UX conclusions as the current product
+definition without rechecking the current status docs.

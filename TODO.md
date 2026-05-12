@@ -1,6 +1,6 @@
 # Kronos TODO
 
-> 更新：2026-05-09 | 版本：0.4.8 | 下一版本：0.4.9
+> 更新：2026-05-11 | 版本：0.4.10 | 下一版本：0.4.11
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
 
 ## v0.3.2 已完成
@@ -188,12 +188,26 @@
 | 83 | `done` Docker fresh 验证：无凭证时给清晰下一步，mock testnet 安全路径可用 |
 | 84 | `done` `paper credentials set` 移除 argv secret，支持环境变量和隐藏输入，减少 shell history 暴露 |
 
-## 下一版本 (v0.4.9+) — 待办
+## v0.4.9 已完成
 
 | # | 事项 |
 |---|------|
-| 85 | `blocked` 用用户提供的 Binance testnet API Key 跑一次人工授权的端到端真实测试网下单验证：2026-05-09 已授权尝试，但当前缺测试网凭证且真实 90 天数据没有 promoted 候选，不能绕过闸门 |
-| 86 | Web 工作台展示测试网模拟盘状态和报告 |
+| 85 | `done` v0.4.9 测试网证据与 Web 状态可见性版本需求与 OpenSpec 立项 | `docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md` + `openspec/changes/p4-testnet-web-status/` |
+| 86 | `done` 用用户提供的 Binance testnet API Key 跑一次人工授权的端到端真实测试网下单验证：`20260509T134805Z-paper` 已完成，ETHUSDT BUY 0.01，order id `8693595272`，trade id `272130743` | `docs/TESTNET_E2E_ACCEPTANCE_20260509.md` + `reports/paper/20260509T134805Z-paper/paper_report.md` |
+| 87 | `done` Web 工作台展示测试网模拟盘状态、最近订单、成交 / 错误和报告入口 | `kronos/web/routes/paper.py` + `web/components/paper-status-panel.tsx` + `openspec/changes/p4-testnet-web-status/specs/testnet-web-status/spec.md` |
+| 88 | `done` v0.4.9 多画像模拟用户验收：成功路径、空状态、无凭证阻塞、负责人 review、Web 看板桌面 / 窄屏均已复核；看板顺序已修到测试网模块优先 | `docs/KRONOS_V049_PERSONA_ACCEPTANCE_20260511.md` |
+
+## v0.4.10 已完成 — Agent 记忆与交接控制台
+
+> 产品目标：把 2026-05-09 建立的持久化 Agent Harness 产品化，让 Web 工作台能展示当前状态、最近决策、失败教训、下一步、交接包和记忆漂移检查。该版本不抢 v0.4.9 测试网模拟盘主线。
+
+| # | 事项 | 索引 |
+|---|------|------|
+| 89 | `done` Agent 记忆与交接控制台版本需求与 OpenSpec 立项 | `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` + `openspec/changes/p4-agent-memory-control/` |
+| 90 | `done` Web 工作台展示当前状态、最近决策、失败教训和下一步 | `kronos/agent/memory_control/` + `web/components/agent-memory-panel.tsx` |
+| 91 | `done` 生成一键 Agent 交接包，帮助新会话 / 新模型恢复上下文 | `/api/agent/memory/handoff` |
+| 92 | `done` 增加记忆漂移检查：版本冲突、缺索引、必备段落缺失和疑似 secret | `/api/agent/memory/check` + `tests/unit/agent/test_memory_control.py` |
+| 93 | `done` 记忆控制台首版只读优先，不自动覆盖长期记忆 | `docs/KRONOS_V0410_PERSONA_ACCEPTANCE_20260511.md` |
 
 ---
 

@@ -4,6 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **默认语言：中文。所有回复、文档、代码注释、commit message 均使用中文。**
 
+## Persistent Agent Harness
+
+每次新会话、上下文压缩后、或汇报当前项目状态前，先读取并对齐这套持久化记忆：
+
+1. `MEMORY.md`：长期项目记忆、经验教训、交接状态。
+2. `DECISIONS.md`：长期决策、拒绝过的方案和约束。
+3. `docs/agent-harness/PROGRESS_LOG.md`：最近的 Harness / 交接进度。
+4. `TODO.md`、`docs/PROJECT_STATUS.md`、`docs/ROADMAP.md`、
+   `docs/PRODUCT_CONTROL_PANEL.md`：当前产品真实状态。
+
+不要只依赖聊天记录判断当前状态。任何会影响后续 agent 的长期事实、决策、经验教训或交接点，都要写回对应记忆文件。禁止把明文 API Key、密码、交易所凭证、token 或其他秘密写入记忆文件。
+
+## Version Planning Gate
+
+任何新版本开始开发前，必须先补完整开发方案：
+
+1. `docs/RELEASE_<version>_<topic>.md`：产品目标、范围、非目标、风险、测试和完成标准。
+2. `openspec/changes/<change-id>/proposal.md`、`design.md`、`tasks.md`、`specs/*/spec.md`。
+3. 将索引同步到 `TODO.md`、`docs/PROJECT_STATUS.md`、`docs/ROADMAP.md`、`docs/PRODUCT_CONTROL_PANEL.md`。
+
+除非用户明确要求紧急补丁，否则不要只凭 TODO 条目直接进入版本开发。
+
 ## Build & Test Commands
 
 ```

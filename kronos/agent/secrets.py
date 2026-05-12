@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from contextlib import suppress
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 SECRET_STORE_DIRNAME = ".kronos-secrets"
 SECRET_STORE_FILENAME = "agent_secrets.json"
+SECRET_STORE_PATH_ENV = "KRONOS_SECRET_STORE_PATH"
 DEFAULT_SECRET_STORE_PATH = Path(SECRET_STORE_DIRNAME) / SECRET_STORE_FILENAME
 
 
@@ -37,8 +39,9 @@ class LocalSecretStore:
     Status methods return masked values for user-facing surfaces.
     """
 
-    def __init__(self, path: str | Path = DEFAULT_SECRET_STORE_PATH) -> None:
-        self.path = Path(path)
+    def __init__(self, path: str | Path | None = None) -> None:
+        configured_path = path or os.environ.get(SECRET_STORE_PATH_ENV) or DEFAULT_SECRET_STORE_PATH
+        self.path = Path(configured_path)
 
     def set_secret(
         self,

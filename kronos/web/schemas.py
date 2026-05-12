@@ -124,6 +124,81 @@ class AgentRunReportResponse(BaseModel):
     content_md: str
 
 
+class PaperOrderResponse(BaseModel):
+    """Safe testnet order evidence for the Web workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    order_id: str | None = None
+    client_order_id: str | None = None
+    symbol: str
+    side: str
+    order_type: str | None = None
+    quantity: float | None = None
+    status: str
+    environment: str = "testnet"
+    created_at: str | None = None
+
+
+class PaperFillResponse(BaseModel):
+    """Safe testnet fill evidence for the Web workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    order_id: str | None = None
+    trade_id: str | None = None
+    symbol: str
+    side: str
+    price: float | None = None
+    quantity: float | None = None
+    commission: float | None = None
+    commission_asset: str | None = None
+    fill_time: str | None = None
+    environment: str = "testnet"
+
+
+class PaperErrorResponse(BaseModel):
+    """Safe testnet error evidence for the Web workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str | None = None
+    environment: str = "testnet"
+    reason: str
+    created_at: str | None = None
+
+
+class PaperStatusResponse(BaseModel):
+    """PM-facing testnet paper status for the Web workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: str
+    environment: str = "testnet"
+    run_id: str | None = None
+    updated_at: str | None = None
+    message_zh: str
+    next_action_zh: str
+    run_dir: str | None = None
+    report_path: str | None = None
+    report_available: bool = False
+    truncated: bool = False
+    latest_orders: list[PaperOrderResponse] = Field(default_factory=list)
+    latest_fills: list[PaperFillResponse] = Field(default_factory=list)
+    latest_errors: list[PaperErrorResponse] = Field(default_factory=list)
+
+
+class PaperRunReportResponse(BaseModel):
+    """Readable testnet paper report payload for the Web workbench."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    title_zh: str
+    report_path: str
+    content_md: str
+
+
 class CandidateListItemResponse(BaseModel):
     """Candidate row for the candidate pool table."""
 

@@ -16,7 +16,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。v0.4.8 Binance 模拟盘真实成交见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。v0.4.8 Binance 模拟盘真实成交见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。v0.4.9 测试网证据与 Web 状态可见性见 `docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md` 和 `openspec/changes/p4-testnet-web-status/`。v0.4.10 Agent 记忆与交接控制台见 `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` 和 `openspec/changes/p4-agent-memory-control/`。
 
 ## 路线图原则
 
@@ -36,6 +36,8 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 14. 连续两轮同类失败且无新证据时，候选进入观察或淘汰。
 15. 产品边界确认到当前版本收敛，后续进入实现；只有高风险或方向分叉事项才重新请求确认。
 16. 实现前必须先完成同类 Agent 项目的架构借鉴评审和 OpenSpec 约束，避免重复造轮子或框架先行；架构借鉴不等于直接复制、接入或魔改上游项目。
+17. Agent 记忆是产品能力，不只是开发过程文件；但首版记忆控制台必须只读优先，不能自动覆盖长期记忆或绕过人工闸门。
+18. 每个版本开始开发前必须先有版本需求文档和 OpenSpec 约束，并同步 TODO、项目状态、路线图和产品看板索引。
 
 ## 阶段路线
 
@@ -148,8 +150,65 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 
 下一步：
 
-- 用用户提供的 Binance testnet API Key 跑一次手动真实 testnet 端到端证据。
-- 在 Web 工作台展示模拟盘状态和报告入口。
+- 已由 v0.4.9 完成真实 testnet 端到端证据和 Web 工作台展示。
+- 后续只继续产品验收与只读呈现，不推进主网实盘。
+
+### 阶段 A0.6.1：测试网证据与 Web 状态可见性（v0.4.9）
+
+目标：补齐 v0.4.8 之后的验收缺口：真实 testnet E2E 证据，以及 Web 工作台里的测试网模拟盘状态、订单、成交 / 错误和报告入口。
+
+状态：已完成；testnet 凭证已写入本机 ignored SecretStore，真实 promoted 候选、观察计划、preflight、testnet 下单和 Web 展示均已通过。
+
+约束入口：
+
+- 版本需求：`docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md`
+- OpenSpec：`openspec/changes/p4-testnet-web-status/`
+- 阻塞记录：`docs/TESTNET_E2E_ATTEMPT_20260509.md`
+- 验收记录：`docs/TESTNET_E2E_ACCEPTANCE_20260509.md`
+- 多画像模拟用户验收：`docs/KRONOS_V049_PERSONA_ACCEPTANCE_20260511.md`
+
+规划范围：
+
+- 保留凭证、promoted 候选、观察计划、preflight 和用户明确授权五个硬闸门。
+- 已跑通一笔最小 Binance testnet 订单并保存 order id 和 trade 明细：`20260509T134805Z-paper`，ETHUSDT BUY 0.01，order id `8693595272`，trade id `272130743`。
+- 已完成 Web paper status/report API，读取 `reports/paper/current_status.json` 和最近 run ledger。
+- 已完成 Web 测试网模拟盘状态面板，展示 paper status、最近订单、最近成交 / 错误和报告入口。
+- 无 run、失败 run、停止 run 都展示产品化下一步；真实 E2E 已通过，初始无合格候选阻塞仍作为闸门样例保留。
+- 2026-05-11 多画像模拟用户验收已通过：成功路径、空状态、无凭证阻塞、负责人 review、Web 桌面 / 窄屏均已复核。
+
+边界：
+
+- Web 只读优先，不提供 mainnet/live 切换。
+- Web 不录入或显示 API Key / Secret。
+- testnet 成交不等于实盘收益。
+
+### 阶段 A0.7：Agent 记忆与交接控制台（v0.4.10）
+
+目标：把持久化 Agent Harness 产品化，让 Web 工作台能展示当前状态、最近决策、失败教训、下一步、一键交接包和记忆漂移检查。
+
+状态：已完成；Web 已提供 Agent 记忆 / 交接控制台、交接包和漂移检查，首版只读优先。
+
+约束入口：
+
+- 版本需求：`docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md`
+- OpenSpec：`openspec/changes/p4-agent-memory-control/`
+
+规划范围：
+
+- Web 展示当前版本、产品边界、最高优先级和下一步。
+- Web 首屏展示当前验收对象、最新成功运行 / 验收记录、来源文档和建议下一步。
+- Web 展示最近决策、拒绝方案和经验教训，并保留来源文件引用。
+- 生成一键 Agent 交接包，方便新会话 / 新模型恢复上下文。
+- 检查 `MEMORY.md`、`DECISIONS.md`、`TODO.md`、`PROJECT_STATUS.md`、`ROADMAP.md` 之间的明显漂移。
+- 检查疑似 secret，所有输出默认脱敏。
+
+边界：
+
+- 不引入向量数据库。
+- 不自动保存全量聊天记录。
+- 不强依赖 OpenHarness / Harness-Mem runtime。
+- 不自动覆盖长期记忆。
+- 不改变 v0.4.9 的测试网模拟盘主线。
 
 ### 阶段 A0：Kronos Agent MVP
 
@@ -341,12 +400,9 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 
 ## 当前推荐顺序
 
-1. 产品验收 Agent MVP 交付文档：`docs/AGENT_MVP_DELIVERY.md`。
-2. 打开 Web 工作台读取 `20260430-agent-mvp-delivery-v1`，确认候选池、Agent 摘要、event timeline、artifact references、masked settings、DeepSeek 配置状态和审批入口一致。
-3. 产品评审 Agent MVP 交付报告：`reports/research/experiments/20260430-agent-mvp-delivery-v1/agent_run_report.md`。
-4. 产品评审退休候选池。
-5. 围绕 `trend_pullback_entry` 设计 crypto-native 改造 proposal。
-6. 在没有候选通过前，不推进组合、风控、执行或定时器。
+1. 对 v0.4.10 Agent 记忆与交接控制台做产品 review。
+2. 规划 v0.4.11：把失败记忆约束接入 Agent 候选生成和研究决策。
+3. 主网实盘执行仍暂缓；testnet 成交只证明链路，不证明策略可实盘。
 
 ## 暂缓事项
 

@@ -1,0 +1,30 @@
+---
+description: Kronos filesystem memory read/write protocol for cross-session continuity.
+globs:
+alwaysApply: true
+---
+
+# Kronos Memory Protocol
+
+Read memory:
+- Start with `MEMORY.md` for durable facts and active handoff context.
+- Use `DECISIONS.md` for decisions, rejected alternatives, and constraints.
+- Use `docs/agent-harness/PROGRESS_LOG.md` for recent harness progress.
+
+Write memory when:
+- product status, backlog, release boundary, or architecture changes;
+- the user gives a durable project preference;
+- a repeated issue has a lesson learned;
+- a future agent would otherwise rediscover the same context.
+
+Do not write:
+- secrets, raw API keys, passwords, tokens, or exchange credentials;
+- full chat transcripts or noisy command logs;
+- speculative ideas without evidence or a decision.
+
+End every substantial task with:
+- result;
+- changed files;
+- verification;
+- remaining risks;
+- memory/docs updated when durable state changed.

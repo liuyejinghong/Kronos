@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.10] — 2026-05-11
+
+### Added
+
+- **Agent 记忆与交接控制台**：新增 `kronos/agent/memory_control/`，从 `MEMORY.md`、`DECISIONS.md`、`PROGRESS_LOG.md`、`TODO.md`、`PROJECT_STATUS.md` 和 `ROADMAP.md` 读取当前状态、决策、经验教训和来源文件。
+- **Agent Memory Web API**：新增 `/api/agent/memory/summary`、`/api/agent/memory/decisions`、`/api/agent/memory/handoff` 和 `/api/agent/memory/check`。
+- **Web 记忆页**：工作台侧边栏新增「记忆」，首屏展示当前版本、当前验收对象、最新成功运行 / 验收记录、来源文档和建议下一步。
+- **一键交接包**：生成可复制的新 Agent 接手提示词，包含项目路径、必读文件、产品边界、当前待办和安全禁令。
+- **记忆漂移检查**：检查必备文件、版本一致性、release/OpenSpec 索引、必备段落和疑似 secret。
+- **v0.4.10 模拟用户验收记录**：新增 `docs/KRONOS_V0410_PERSONA_ACCEPTANCE_20260511.md`。
+
+### Changed
+
+- README / README.en / TODO / PROJECT_STATUS / ROADMAP / PRODUCT_CONTROL_PANEL 同步到 v0.4.10：Agent 记忆已经从开发侧 harness 变成 Web 可验收产品能力。
+- Web 今日页增加 v0.4.10 首屏验收状态摘要，继续保留 v0.4.9 testnet paper 状态优先展示。
+
+### Security
+
+- Agent 记忆控制台首版只读优先，不自动覆盖 `MEMORY.md`、`DECISIONS.md` 或任何长期记忆文件。
+- 记忆输出和交接包默认脱敏疑似 API Key / Secret / token；控制台不读取 `.env` 或 SecretStore 明文。
+
+## [0.4.9] — 2026-05-09
+
+### Added
+
+- **测试网 Web 状态可见性**：新增 `/api/paper/status` 和 `/api/paper/runs/{run_id}/report`，从 `reports/paper/current_status.json` 与 paper ledger 读取状态、订单、成交、错误和报告。
+- **Web 测试网模拟盘面板**：Next.js 工作台首页新增只读 testnet paper 状态面板，展示环境、状态、run id、更新时间、最近订单、最近成交、最近错误和报告入口。
+- **真实 Binance testnet E2E 验收**：用真实 90.14 天数据生成 promoted 观察候选，通过 preflight，并完成 `20260509T134805Z-paper`，记录 ETHUSDT testnet order id、trade id、成交价和手续费。
+- **v0.4.9 版本需求 + OpenSpec**：新增 `docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md` 和 `openspec/changes/p4-testnet-web-status/`。
+- **v0.4.9 验收报告**：新增 `docs/TESTNET_E2E_ACCEPTANCE_20260509.md`。
+- **v0.4.9 多画像模拟用户验收**：新增 `docs/KRONOS_V049_PERSONA_ACCEPTANCE_20260511.md`，覆盖成功路径、空状态、无凭证阻塞、负责人 review 和 Web 桌面 / 窄屏验收。
+
+### Changed
+
+- CLI 新增 `kronos --version` / `kronos -V`，模拟用户验收时可以先确认当前安装版本为 `0.4.9`。
+- Web 报告阅读器支持 Agent 报告和 paper run 报告两种来源；Dashboard 不再在缺少真实 run id 时请求 `latest` Agent 报告，减少本地浏览器控制台噪音。
+- `research auto-run --candidates <内置因子名>` 支持把已注册因子作为一次性研究候选，不再要求先写入用户候选池。
+- 单标的 validation 不再把不可计算的 `rank_ic_positive_ratio` 当成失败证据；该稳定性门槛只在可计算时参与判断。
+- 自动研究报告对 4h/1h 等重采样周期显示 `1m K线（重采样为 <timeframe>）`，避免误导用户以为缺少同名 Parquet 文件。
+- README / README.en / PROJECT_STATUS / ROADMAP / TODO 同步到 v0.4.9：当前 Web 已可读测试网模拟盘证据，真实 Binance testnet E2E 已完成但仍不能解释成实盘收益。
+
+### Security
+
+- Paper Web API 不读取 raw SecretStore，只读 ledger/status/report；错误原因和 paper 报告正文中的 `api_key`、`api_secret`、`signature`、`token` 和带 query 的 URL 会在返回前脱敏。
+- Web 仍不提供 mainnet/live 切换，不提供绕过 preflight 的启动按钮，不把 testnet 成交描述成实盘收益。
+- `paper start` 在真实下单前读取 Binance testnet `MIN_NOTIONAL` 并做本地拦截；HTTP 错误会保留 Binance 返回码和消息，但不把签名 query URL 写成用户诊断主路径。
+
 ## [0.4.8] — 2026-05-09
 
 ### Added

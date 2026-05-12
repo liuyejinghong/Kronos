@@ -9,7 +9,7 @@
 
 ## 实际检查结果
 
-### 1. 测试网凭证未配置
+### 1. 测试网凭证状态
 
 命令：
 
@@ -17,7 +17,7 @@
 uv run kronos paper credentials status
 ```
 
-结果：
+首次验收时的结果：
 
 ```text
 configured: no
@@ -26,7 +26,24 @@ api_secret: -
 storage: .kronos-secrets/agent_secrets.json
 ```
 
-当前 shell 中也没有 `BINANCE_TESTNET_API_KEY` / `BINANCE_TESTNET_API_SECRET`。
+后续用户已重新提供 Binance testnet 凭证，并已通过隐藏输入写入本机
+`.kronos-secrets/agent_secrets.json`。该路径被 `.gitignore` 忽略，不应进入
+Git 或打包产物。当前凭证状态为：
+
+```text
+configured: yes
+api_key: ************************************************************SXb7
+api_secret: ************************************************************daSD
+storage: .kronos-secrets/agent_secrets.json
+```
+
+无下单连通性校验也已通过：
+
+```text
+account_ping: ok
+can_trade: True
+BTCUSDT ticker: ok
+```
 
 ### 2. 本地真实数据存在，但没有通过验证的候选
 
@@ -117,20 +134,35 @@ reports/paper/20260509T041553Z-preflight/paper_preflight_report.md
 
 本次没有提交 Binance testnet 订单，这是正确结果。v0.4.8 的设计目标不是“用户一授权就下单”，而是“只有测试网凭证 + 合格观察候选同时存在时，才允许 testnet 下单”。
 
-当前两个阻塞项都属于真实产品闸门：
+当前阻塞项属于真实产品闸门：
 
-1. 没有本地测试网 API Key / Secret。
-2. 真实 90 天数据研究没有产生 promoted 候选，因此观察计划不是“只读观察候选”。
+1. 真实 90 天数据研究没有产生 promoted 候选，因此观察计划不是“只读观察候选”。
+2. preflight 正确拒绝使用“暂不观察”计划启动测试网模拟盘。
 
-如果为了完成演示而绕过这两个条件，就会破坏 v0.4.8 刚建立的研究证据链。
+如果为了完成演示而绕过候选、观察计划或 preflight，就会破坏 v0.4.8 刚建立的研究证据链。
 
 ## 下一步
 
 v0.4.9 的真实 testnet E2E 应按以下顺序推进：
 
-1. 通过隐藏输入或环境变量配置 Binance testnet API Key / Secret。
-2. 先产出一个真实数据、非 sample、promoted > 0 的观察候选。
-3. 用该观察候选运行 `paper preflight`。
-4. preflight 通过后再运行一笔最小数量、受限金额的 Binance testnet 订单。
-5. 保留订单 ID、trade 明细、成交时间、手续费、状态 JSON 和 Markdown 报告。
+1. 先产出一个真实数据、非 sample、promoted > 0 的观察候选。
+2. 用该观察候选运行 `paper preflight`。
+3. preflight 通过后再运行一笔最小数量、受限金额的 Binance testnet 订单。
+4. 保留订单 ID、trade 明细、成交时间、手续费、状态 JSON 和 Markdown 报告。
 
+## 后续结果
+
+v0.4.9 已完成上述后续步骤，详见
+`docs/TESTNET_E2E_ACCEPTANCE_20260509.md`。
+
+关键变化：
+
+- `signal_persistence_density` 在 ETHUSDT / BTCUSDT / SOLUSDT 横截面、
+  4h 重采样、真实 90.14 天数据上自然产生 `promoted=1`。
+- 观察计划变为“只读观察候选”，`paper preflight` 通过。
+- 首次 ETHUSDT 0.001 testnet 下单因 Binance `MIN_NOTIONAL=20` 被拒绝；
+  v0.4.9 已补本地下单前最小名义金额检查。
+- 第二次 ETHUSDT 0.01 testnet 下单成功，run id
+  `20260509T134805Z-paper`，订单 `8693595272`，状态 `FILLED`，
+  trade id `272130743`。
+- Web 工作台已能展示真实 testnet paper 状态、订单、成交、手续费和报告。

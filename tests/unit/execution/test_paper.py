@@ -15,6 +15,7 @@ from kronos.execution.paper import (
     PaperTradingError,
     delete_testnet_credentials,
     get_testnet_credential_status,
+    read_paper_status,
     run_paper_preflight,
     set_testnet_credentials,
     start_paper_run,
@@ -388,6 +389,37 @@ def test_notional_limit_failure_writes_status_and_report(tmp_path: Path) -> None
     assert "exceeds max" in status["failure_reason"]
 
 
+def test_min_exchange_notional_failure_writes_readable_status(tmp_path: Path) -> None:
+    class MinNotionalClient(BinanceUSDMMockTestnetClient):
+        def ticker_price(self, symbol: str) -> float:
+            return 1_000.0
+
+        def min_notional(self, symbol: str) -> float | None:
+            return 20.0
+
+    store = _secret_store(tmp_path)
+    output_base = tmp_path / "reports" / "paper"
+    set_testnet_credentials(api_key="testnet-api-key-123456", api_secret="testnet-secret", secret_store=store)
+
+    with pytest.raises(PaperTradingError, match="below Binance testnet minimum"):
+        start_paper_run(
+            plan_path=_write_candidate_plan(tmp_path),
+            output_base_path=output_base,
+            secret_store=store,
+            client=MinNotionalClient(),
+            run_id="too-small",
+            symbol="ETHUSDT",
+            quantity=0.001,
+        )
+
+    status = json.loads((output_base / "current_status.json").read_text(encoding="utf-8"))
+    errors = (output_base / "too-small" / "paper_errors.jsonl").read_text(encoding="utf-8")
+
+    assert status["status"] == "failed"
+    assert "below Binance testnet minimum 20.00 USDT" in status["failure_reason"]
+    assert "signature=" not in errors
+
+
 def test_ticker_failure_writes_status_error_ledger_and_report(tmp_path: Path) -> None:
     class FailingTickerClient(BinanceUSDMMockTestnetClient):
         def ticker_price(self, symbol: str) -> float:
@@ -462,6 +494,18 @@ def test_stop_paper_run_persists_stopped_state(tmp_path: Path) -> None:
     assert payload["status"] == "stopped"
     assert payload["environment"] == "testnet"
     assert "不会再提交新订单" in payload["message"]
+
+
+def test_read_paper_status_returns_none_when_missing(tmp_path: Path) -> None:
+    assert read_paper_status(tmp_path / "reports" / "paper") is None
+
+
+def test_read_paper_status_ignores_non_object_payload(tmp_path: Path) -> None:
+    output_base = tmp_path / "reports" / "paper"
+    output_base.mkdir(parents=True)
+    (output_base / "current_status.json").write_text("[]", encoding="utf-8")
+
+    assert read_paper_status(output_base) is None
 
 
 def test_status_empty_credentials_are_not_configured(tmp_path: Path) -> None:

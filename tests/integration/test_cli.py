@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -20,11 +21,22 @@ from kronos.factor.candidates import (
 from kronos.reporting.observation_plan import generate_observation_plan
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     import pytest
 
 runner = CliRunner()
+
+
+def test_cli_version_matches_package_version() -> None:
+    expected_version = (
+        (Path(__file__).resolve().parents[2] / "VERSION")
+        .read_text(encoding="utf-8")
+        .strip()
+    )
+
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout.strip() == expected_version
 
 
 def _register_test_candidates() -> None:
@@ -1284,6 +1296,105 @@ class TestResearchPromotionCLI:
         assert summary["summary"]["evidence_reviews"] == 2
         assert summary["artifact_paths"]["workbench_report"] == str(workbench_report)
         assert summary["config_snapshot"]["command"] == "research auto-run"
+
+    def test_auto_run_accepts_registered_factor_name_as_candidate(self, tmp_path: Path) -> None:
+        clear_candidates()
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=120),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "auto-run",
+            "--symbols", "BTCUSDT",
+            "--candidates", "signal_persistence_density",
+            "--skip-watchlist-evidence",
+            "--timeframe", "1m",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--min-history-days", "0",
+            "--run-id", "test-auto-run-factor-name",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        auto_summary = (
+            reports_path
+            / "experiments"
+            / "test-auto-run-factor-name"
+            / "auto_run_summary.json"
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Auto Runner Summary" in result.stdout
+        assert auto_summary.exists()
+        summary = json.loads(auto_summary.read_text(encoding="utf-8"))
+        assert summary["workbench"]["batch"]["decisions"][0]["factor_name"] == (
+            "signal_persistence_density"
+        )
+        assert summary["config_snapshot"]["candidates"] == ["signal_persistence_density"]
+
+    def test_auto_run_reports_resampled_timeframe_coverage_from_one_minute_data(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        clear_candidates()
+        config = _write_test_config(tmp_path)
+        data_path = tmp_path / "data"
+        reports_path = tmp_path / "reports"
+
+        from kronos.data.storage.parquet_store import write_partition
+
+        write_partition(
+            _make_variable_kline_table(n=240),
+            data_path,
+            "BTCUSDT",
+            "klines_1m",
+            2024,
+            3,
+        )
+
+        result = runner.invoke(app, [
+            "research", "auto-run",
+            "--symbols", "BTCUSDT",
+            "--candidates", "signal_persistence_density",
+            "--skip-watchlist-evidence",
+            "--timeframe", "4h",
+            "--periods", "1",
+            "--train-size", "12",
+            "--validation-size", "6",
+            "--test-size", "6",
+            "--step-size", "6",
+            "--min-history-days", "0",
+            "--run-id", "test-auto-run-resampled-coverage",
+            "--output-path", str(reports_path),
+            "--config", str(config),
+        ])
+
+        auto_summary = (
+            reports_path
+            / "experiments"
+            / "test-auto-run-resampled-coverage"
+            / "auto_run_summary.json"
+        )
+
+        assert result.exit_code == 0, result.output
+        summary = json.loads(auto_summary.read_text(encoding="utf-8"))
+        assert summary["data_coverage"][0]["dataset"] == "klines_1m"
+        assert summary["data_coverage"][0]["dataset_label"] == "1m K线（重采样为 4h）"
 
     def test_run_today_writes_system_status_and_wraps_auto_run(self, tmp_path: Path) -> None:
         config = _write_test_config(tmp_path)

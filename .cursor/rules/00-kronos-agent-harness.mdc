@@ -1,0 +1,26 @@
+---
+description: Kronos persistent Agent Harness bootstrap. Always load this before planning, editing, or reporting project state.
+globs:
+alwaysApply: true
+---
+
+# Kronos Agent Harness Bootstrap
+
+You are working in the Kronos repository. Do not rely on chat history alone.
+
+Before planning, editing, or reporting current project state:
+
+1. Read `MEMORY.md`.
+2. Read `DECISIONS.md`.
+3. Read `docs/agent-harness/PROGRESS_LOG.md`.
+4. For current product state, verify `TODO.md`, `docs/PROJECT_STATUS.md`,
+   `docs/ROADMAP.md`, and `docs/PRODUCT_CONTROL_PANEL.md`.
+5. For implementation work, read the relevant release/OpenSpec/review document
+   before changing code.
+
+Treat `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/` as bootloaders. Treat
+`MEMORY.md`, `DECISIONS.md`, and the existing product docs as the durable
+source of truth.
+
+When durable state changes, update the relevant memory file before final
+handoff.

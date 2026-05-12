@@ -19,6 +19,7 @@ class WebAppContext:
     research_path: Path
     secret_store_path: Path
     material_store_path: Path
+    paper_path: Path
 
 
 def create_app(
@@ -28,6 +29,7 @@ def create_app(
     research_path: str | Path | None = None,
     secret_store_path: str | Path | None = None,
     material_store_path: str | Path | None = None,
+    paper_path: str | Path | None = None,
 ) -> FastAPI:
     """Create the local FastAPI app for the Kronos Agent workbench."""
     root = Path(project_root or ".").resolve()
@@ -39,6 +41,7 @@ def create_app(
         material_store_path=Path(
             material_store_path or root / "reports" / "agent_materials" / "materials.jsonl"
         ),
+        paper_path=Path(paper_path or root / "reports" / "paper"),
     )
 
     app = FastAPI(
@@ -59,13 +62,17 @@ def create_app(
     from kronos.web.routes.candidates import router as candidates_router
     from kronos.web.routes.events import router as events_router
     from kronos.web.routes.materials import router as materials_router
+    from kronos.web.routes.memory import router as memory_router
+    from kronos.web.routes.paper import router as paper_router
     from kronos.web.routes.settings import router as settings_router
 
     app.include_router(agent_router)
+    app.include_router(memory_router)
     app.include_router(candidates_router)
     app.include_router(events_router)
     app.include_router(settings_router)
     app.include_router(materials_router)
+    app.include_router(paper_router)
     app.include_router(approvals_router)
     return app
 

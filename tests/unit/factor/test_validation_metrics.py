@@ -290,6 +290,17 @@ class TestAdjudicate:
         )
         assert result == "pass"
 
+    def test_unavailable_positive_ratio_does_not_block_single_symbol_pass(self) -> None:
+        cfg = self._config()
+        result = adjudicate(
+            mean_rank_ic=0.05,
+            rank_ic_positive_ratio=float("nan"),
+            top_minus_bottom=0.01,
+            median_turnover=0.30,
+            config=cfg,
+        )
+        assert result == "pass"
+
     def test_low_ic_fails(self) -> None:
         cfg = self._config()
         result = adjudicate(
@@ -354,14 +365,15 @@ class TestValidateFactor:
         assert parsed["outcome"] in {"pass", "review", "fail"}
 
     def test_perfect_predictor_passes(self) -> None:
-        """Factor = forward return (shifted) → should at least be 'review' or 'pass'."""
+        """Factor = forward return (shifted) should pass even without cross-sectional ratio."""
         n = 100
         p = _prices(n, seed=5)
         avail = _available_at(n)
         fwd = compute_forward_returns(p, avail, [1])
         factor = fwd["fwd_1"].fillna(0.0)
         result = validate_factor(factor, p, avail, config=ValidationConfig(periods=[1]))
-        assert result.outcome in {ValidationOutcome.PASS, ValidationOutcome.REVIEW}
+        assert result.rank_ic_positive_ratio != result.rank_ic_positive_ratio
+        assert result.outcome is ValidationOutcome.PASS
 
     def test_random_factor_outcome_is_valid_enum(self) -> None:
         rng = np.random.default_rng(99)

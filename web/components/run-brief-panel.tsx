@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, FileText, ShieldAlert, Target, TrendingUp } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { kronosApi, type ArtifactRef } from "@/lib/api";
+import { DEFAULT_RUN_ID, kronosApi, type ArtifactRef } from "@/lib/api";
 import { compactLabel } from "@/lib/utils";
 
 type RunBriefPanelProps = {
@@ -18,6 +18,7 @@ export function RunBriefPanel({ modelConfigured, onOpenReport, runId }: RunBrief
     queryKey: ["agent-run-brief", runId],
     queryFn: () => kronosApi.agentRunBrief(runId),
     retry: 1,
+    enabled: runId !== DEFAULT_RUN_ID,
   });
 
   if (briefQuery.isLoading) {

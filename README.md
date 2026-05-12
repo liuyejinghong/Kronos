@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.4.8-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.10-informational.svg)](CHANGELOG.md)
 
 [English](README.en.md)
 
@@ -36,7 +36,7 @@ Docker 用户：`docker compose up`。
 | **因子平台** | 17 个内置因子、5 个家族、自定义因子注册、完整验证管线、Alphalens 集成 |
 | **回测引擎** | 信号调度、成本模型、Freqtrade 交叉验证 |
 | **AI Agent** | 多角色 LLM 驱动研究（DeepSeek-V4）、自动假设生成、工具执行、结论沉淀 |
-| **Web 工作台** | 候选池看板、Agent 时间线、报告阅读、模型配置、审批中心 |
+| **Web 工作台** | 候选池看板、Agent 时间线、报告阅读、测试网模拟盘状态、Agent 记忆控制台、模型配置、审批中心 |
 | **实验管理** | run_id 贯穿全链路、JSONL 账本、DuckDB 查询、知识库（SQLite + FTS） |
 
 ---
@@ -82,7 +82,7 @@ docker compose run --rm kronos uv run kronos agent start
 
 Docker 首次构建时会出现依赖下载和安装输出。只要最后出现结果卡，就是正常流程；第一次建议先运行 `report latest`，读懂结论后再进入 Agent。
 
-当前版本在研究报告和只读观察计划之后，新增 Binance 模拟盘 / 测试网模拟盘入口：可以配置测试网 API Key，跑 preflight，并通过 mock testnet 验证订单链路。真实 Binance testnet 下单仍需要用户显式配置测试网凭证；成交证据来自 testnet trade 明细，失败会写入本地状态、报告和错误账本。系统不会触碰真实资金或主网实盘。`paper` 只接受观察计划生成器产出的机器摘要，停止后再次启动需要显式 `--reset-stopped`。
+当前版本在测试网模拟盘 Web 状态之后，新增 Agent 记忆与交接控制台：Web 工作台侧边栏「记忆」会展示当前版本、验收对象、最新成功运行、来源文档、最近决策、经验教训、一键交接包和记忆漂移检查。v0.4.9 已完成一次真实 Binance testnet 端到端验收，并能在 Web 工作台只读展示 paper 状态、最近订单、成交和报告。真实 testnet 下单仍需要用户显式配置测试网凭证和合格观察候选；成交证据来自 testnet trade 明细，失败会写入本地状态、报告和错误账本。系统不会触碰真实资金或主网实盘。`paper` 只接受观察计划生成器产出的机器摘要，停止后再次启动需要显式 `--reset-stopped`。
 
 ---
 

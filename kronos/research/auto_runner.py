@@ -439,9 +439,9 @@ def _data_coverage_snapshot(
     timeframe: str,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    kline_dataset = f"klines_{timeframe}"
+    kline_label = "1m K线" if timeframe == "1m" else f"1m K线（重采样为 {timeframe}）"
     for symbol in symbols:
-        for dataset, label in [(kline_dataset, f"{timeframe} K线"), ("funding", "资金费率")]:
+        for dataset, label in [("klines_1m", kline_label), ("funding", "资金费率")]:
             for info in coverage(symbol, base_path=base_path, datasets=[dataset]):
                 span_days = round((info.max_event_time - info.min_event_time) / 86_400_000, 2)
                 rows.append({

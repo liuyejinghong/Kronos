@@ -119,6 +119,9 @@ class TestnetClient(Protocol):
     def ticker_price(self, symbol: str) -> float:
         """Return the latest testnet ticker price."""
 
+    def min_notional(self, symbol: str) -> float | None:
+        """Return exchange minimum order notional when available."""
+
     def place_market_order(
         self,
         *,
@@ -144,6 +147,9 @@ class BinanceUSDMMockTestnetClient:
 
     def ticker_price(self, symbol: str) -> float:
         return 50_000.0 if symbol.upper() == "BTCUSDT" else 1_000.0
+
+    def min_notional(self, symbol: str) -> float | None:
+        return None
 
     def place_market_order(
         self,
@@ -207,12 +213,38 @@ class BinanceUSDMTestnetClient:
             params={"symbol": symbol.upper()},
             timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
+        _raise_testnet_status(response, method="GET", endpoint="/fapi/v1/ticker/price")
         payload = response.json()
         price = payload.get("price")
         if not isinstance(price, str):
             raise PaperTradingError("Binance testnet ticker response did not include a price.")
         return float(price)
+
+    def min_notional(self, symbol: str) -> float | None:
+        response = httpx.get(
+            f"{self.base_url}/fapi/v1/exchangeInfo",
+            params={"symbol": symbol.upper()},
+            timeout=self.timeout_seconds,
+        )
+        _raise_testnet_status(response, method="GET", endpoint="/fapi/v1/exchangeInfo")
+        payload = response.json()
+        symbols = payload.get("symbols")
+        if not isinstance(symbols, list):
+            return None
+        for item in symbols:
+            if not isinstance(item, dict) or item.get("symbol") != symbol.upper():
+                continue
+            filters = item.get("filters")
+            if not isinstance(filters, list):
+                return None
+            for rule in filters:
+                if not isinstance(rule, dict) or rule.get("filterType") != "MIN_NOTIONAL":
+                    continue
+                raw_notional = rule.get("notional")
+                if raw_notional is None:
+                    return None
+                return float(raw_notional)
+        return None
 
     def place_market_order(
         self,
@@ -314,7 +346,7 @@ class BinanceUSDMTestnetClient:
             headers={"X-MBX-APIKEY": self.credentials.api_key},
             timeout=self.timeout_seconds,
         )
-        response.raise_for_status()
+        _raise_testnet_status(response, method=method, endpoint=endpoint)
         return response.json()
 
 
@@ -485,6 +517,38 @@ def start_paper_run(
     notional = price * quantity
     if notional > max_notional_usdt:
         reason = f"order notional {notional:.2f} USDT exceeds max {max_notional_usdt:.2f} USDT."
+        _write_failed_run(
+            run_dir=run_dir,
+            status_path=status_path,
+            report_path=report_path,
+            run_id=resolved_run_id,
+            symbol=symbol,
+            side=normalized_side,
+            quantity=quantity,
+            max_notional_usdt=max_notional_usdt,
+            reason=reason,
+        )
+        raise PaperTradingError(reason)
+    try:
+        min_notional = selected_client.min_notional(symbol)
+    except Exception as exc:
+        _write_failed_run(
+            run_dir=run_dir,
+            status_path=status_path,
+            report_path=report_path,
+            run_id=resolved_run_id,
+            symbol=symbol,
+            side=normalized_side,
+            quantity=quantity,
+            max_notional_usdt=max_notional_usdt,
+            reason=f"Binance 测试网交易规则读取失败: {exc}",
+        )
+        raise PaperTradingError(f"Binance 测试网交易规则读取失败: {exc}") from exc
+    if min_notional is not None and notional < min_notional:
+        reason = (
+            f"order notional {notional:.2f} USDT is below Binance testnet minimum "
+            f"{min_notional:.2f} USDT."
+        )
         _write_failed_run(
             run_dir=run_dir,
             status_path=status_path,
@@ -756,3 +820,31 @@ def _new_run_id(suffix: str) -> str:
 
 def _format_quantity(value: float) -> str:
     return f"{value:.8f}".rstrip("0").rstrip(".")
+
+
+def _raise_testnet_status(response: httpx.Response, *, method: str, endpoint: str) -> None:
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        detail = _testnet_error_detail(response)
+        message = (
+            f"{method.upper()} {endpoint} failed with HTTP {response.status_code}"
+            f"{f': {detail}' if detail else ''}"
+        )
+        raise PaperTradingError(message) from exc
+
+
+def _testnet_error_detail(response: httpx.Response) -> str | None:
+    try:
+        payload = response.json()
+    except ValueError:
+        text = response.text.strip()
+        return text[:240] if text else None
+    if isinstance(payload, dict):
+        code = payload.get("code")
+        message = payload.get("msg")
+        if code is not None and message is not None:
+            return f"{code} {message}"
+        if message is not None:
+            return str(message)
+    return None

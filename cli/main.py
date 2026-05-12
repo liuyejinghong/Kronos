@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime
+from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,7 @@ _LANG_OPTION = typer.Option(
     "--lang",
     help="Display language: zh (简体中文) or en (English).",
 )
+_VERSION_FILE = Path(__file__).resolve().parents[1] / "VERSION"
 
 app = typer.Typer(
     name="kronos",
@@ -45,12 +47,36 @@ app.add_typer(strategy_app)
 app.add_typer(paper_app)
 
 
+def _project_version() -> str:
+    try:
+        return metadata.version("kronos")
+    except metadata.PackageNotFoundError:
+        if _VERSION_FILE.exists():
+            return _VERSION_FILE.read_text(encoding="utf-8").strip()
+        return "unknown"
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(_project_version())
+        raise typer.Exit()
+
+
 @app.callback(invoke_without_command=True)
 def _global(
     ctx: typer.Context,
     lang: str | None = _LANG_OPTION,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show Kronos version and exit.",
+    ),
 ) -> None:
     """Resolve language and config before any subcommand runs."""
+    _ = version
     init_i18n(cli_lang=lang)
     if ctx.invoked_subcommand is None:
         raise typer.Exit()
@@ -100,15 +126,44 @@ def _strategy_path_hint(path: str) -> str | None:
 
 
 def _resolve_candidate_specs(candidates: str | None) -> tuple[list[CandidateFactorSpec], set[str]]:
-    from kronos.factor.candidates import list_candidate_factors
+    from kronos.factor.candidates import CandidateFactorSpec, list_candidate_factors
 
     candidate_filter = set(_split_csv(candidates))
     candidate_specs = list_candidate_factors()
     if candidate_filter:
-        candidate_specs = [
+        matched_specs = [
             spec for spec in candidate_specs
             if spec.candidate_id in candidate_filter or spec.implementation_name in candidate_filter
         ]
+        matched_keys = {
+            key
+            for spec in matched_specs
+            for key in (spec.candidate_id, spec.implementation_name)
+            if key is not None
+        }
+        missing_filter = candidate_filter - matched_keys
+        if missing_filter:
+            from kronos.factor.bootstrap import registry
+
+            factor_summaries = {
+                str(item["name"]): item
+                for item in registry.list_factors()
+            }
+            for factor_name in sorted(missing_filter):
+                summary = factor_summaries.get(factor_name)
+                if summary is None:
+                    continue
+                matched_specs.append(CandidateFactorSpec(
+                    candidate_id=factor_name,
+                    family=str(summary["family"]),
+                    title=str(factor_name).replace("_", " ").title(),
+                    source_strategies=("builtin_factor",),
+                    migration_rank=99,
+                    implementation_name=factor_name,
+                    origin="builtin_factor",
+                    initial_status=str(summary["status"]),
+                ))
+        candidate_specs = matched_specs
     return candidate_specs, candidate_filter
 
 

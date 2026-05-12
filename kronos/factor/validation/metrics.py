@@ -326,15 +326,20 @@ def adjudicate(
     """Apply threshold rules and return 'pass', 'review', or 'fail'.
 
     Uses duck-typing on config to avoid importing ValidationConfig here.
+    ``rank_ic_positive_ratio`` is a cross-sectional stability gate. Single-symbol
+    validation cannot compute it, so NaN means "not applicable" rather than
+    evidence against the candidate.
     """
     min_ric = getattr(config, "min_mean_rank_ic", 0.02)
     min_ratio = getattr(config, "min_rank_ic_positive_ratio", 0.55)
     min_tmb = getattr(config, "min_top_minus_bottom_return", 0.0)
     max_to = getattr(config, "max_median_turnover", 0.70)
+    ratio_available = not np.isnan(rank_ic_positive_ratio)
+    ratio_ok = (not ratio_available) or rank_ic_positive_ratio >= min_ratio
 
     all_pass = (
         mean_rank_ic >= min_ric
-        and rank_ic_positive_ratio >= min_ratio
+        and ratio_ok
         and top_minus_bottom > min_tmb
         and median_turnover <= max_to
     )

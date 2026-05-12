@@ -77,6 +77,118 @@ export type AgentRunReport = {
   content_md: string;
 };
 
+export type PaperOrder = {
+  order_id: string | null;
+  client_order_id: string | null;
+  symbol: string;
+  side: string;
+  order_type: string | null;
+  quantity: number | null;
+  status: string;
+  environment: string;
+  created_at: string | null;
+};
+
+export type PaperFill = {
+  order_id: string | null;
+  trade_id: string | null;
+  symbol: string;
+  side: string;
+  price: number | null;
+  quantity: number | null;
+  commission: number | null;
+  commission_asset: string | null;
+  fill_time: string | null;
+  environment: string;
+};
+
+export type PaperError = {
+  run_id: string | null;
+  environment: string;
+  reason: string;
+  created_at: string | null;
+};
+
+export type PaperStatus = {
+  status: string;
+  environment: string;
+  run_id: string | null;
+  updated_at: string | null;
+  message_zh: string;
+  next_action_zh: string;
+  run_dir: string | null;
+  report_path: string | null;
+  report_available: boolean;
+  truncated: boolean;
+  latest_orders: PaperOrder[];
+  latest_fills: PaperFill[];
+  latest_errors: PaperError[];
+};
+
+export type PaperRunReport = {
+  run_id: string;
+  title_zh: string;
+  report_path: string;
+  content_md: string;
+};
+
+export type MemorySourceRef = {
+  path: string;
+  label_zh: string;
+  exists: boolean;
+};
+
+export type MemorySummaryItem = {
+  title_zh: string;
+  body_zh: string;
+  source_paths: string[];
+};
+
+export type AgentMemoryState = {
+  current_version: string;
+  next_version: string;
+  current_acceptance_target_zh: string;
+  latest_successful_run_zh: string;
+  product_boundary_zh: string;
+  highest_priority_zh: string;
+  next_action_zh: string;
+  source_paths: string[];
+};
+
+export type MemoryCheckSeverity = "passed" | "warning" | "blocking";
+
+export type MemoryCheckItem = {
+  check_id: string;
+  severity: MemoryCheckSeverity;
+  title_zh: string;
+  detail_zh: string;
+  source_paths: string[];
+  suggestion_zh: string | null;
+};
+
+export type MemoryCheckSummary = {
+  status: MemoryCheckSeverity;
+  passed_count: number;
+  warning_count: number;
+  blocking_count: number;
+  items: MemoryCheckItem[];
+};
+
+export type AgentHandoffPack = {
+  title_zh: string;
+  prompt_md: string;
+  source_paths: string[];
+};
+
+export type AgentMemoryDashboard = {
+  state: AgentMemoryState;
+  decisions: MemorySummaryItem[];
+  lessons: MemorySummaryItem[];
+  sources: MemorySourceRef[];
+  handoff: AgentHandoffPack;
+  check: MemoryCheckSummary;
+};
+
 export type CandidateListItem = {
   candidate_id: string;
   title_zh: string;
@@ -200,6 +312,12 @@ export const kronosApi = {
     apiFetch<AgentRunBrief>(`/agent/runs/${encodeURIComponent(runId)}/summary`),
   agentRunReport: (runId: string) =>
     apiFetch<AgentRunReport>(`/agent/runs/${encodeURIComponent(runId)}/report`),
+  paperStatus: () => apiFetch<PaperStatus>("/paper/status"),
+  paperRunReport: (runId: string) =>
+    apiFetch<PaperRunReport>(`/paper/runs/${encodeURIComponent(runId)}/report`),
+  agentMemory: () => apiFetch<AgentMemoryDashboard>("/agent/memory/summary"),
+  agentMemoryCheck: () => apiFetch<MemoryCheckSummary>("/agent/memory/check"),
+  agentMemoryHandoff: () => apiFetch<AgentHandoffPack>("/agent/memory/handoff"),
   candidateDetail: (candidateId: string) =>
     apiFetch<CandidateDetail>(`/candidates/${encodeURIComponent(candidateId)}`),
   agentEvents: (runId: string) =>

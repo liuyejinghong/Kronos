@@ -34,3 +34,12 @@ def sample_config_path(tmp_path: Path) -> Path:
 def isolated_candidate_registry(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Keep tests from reading or writing the user's real candidate registry."""
     monkeypatch.setenv("KRONOS_CANDIDATES_PATH", str(tmp_path / ".kronos" / "candidates.json"))
+
+
+@pytest.fixture(autouse=True)
+def isolated_secret_store(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep tests from reading or writing the user's real local exchange/API credentials."""
+    monkeypatch.setenv(
+        "KRONOS_SECRET_STORE_PATH",
+        str(tmp_path / ".kronos-secrets" / "agent_secrets.json"),
+    )

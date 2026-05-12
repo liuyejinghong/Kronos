@@ -1,5 +1,34 @@
 # Repository Guidelines
 
+## Persistent Agent Harness
+Before planning, editing, or reporting current project state, load the
+repository-local memory stack:
+
+1. `MEMORY.md` — durable project memory, lessons, and handoff state.
+2. `DECISIONS.md` — architecture/product/process decisions and rejected
+   alternatives.
+3. `docs/agent-harness/PROGRESS_LOG.md` — recent harness and handoff progress.
+4. `TODO.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and
+   `docs/PRODUCT_CONTROL_PANEL.md` — current product truth.
+
+Do not rely on chat history alone. If a change creates durable knowledge, update
+the appropriate memory file before final handoff. Never store secrets, raw API
+keys, passwords, exchange credentials, or private tokens in memory files.
+
+## Version Planning Gate
+Before starting development for any new version, create and index the full
+development plan first:
+
+1. `docs/RELEASE_<version>_<topic>.md` with product goal, scope, non-goals,
+   risks, tests, and completion criteria.
+2. `openspec/changes/<change-id>/proposal.md`, `design.md`, `tasks.md`, and
+   `specs/*/spec.md`.
+3. Index links in `TODO.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and
+   `docs/PRODUCT_CONTROL_PANEL.md`.
+
+Do not implement version work from a bare TODO item unless the user explicitly
+asks for an emergency patch.
+
 ## Project Structure & Module Organization
 `kronos/` contains the application code, organized by domain: `data/` for ingestion and storage, `factor/` for factor definitions and materialization, and placeholders such as `execution/`, `risk/`, and `portfolio/` for later phases. `cli/main.py` exposes the Typer-based `kronos` CLI. Runtime config lives in `configs/` (`dev.toml`, `backtest.toml`). Tests are split into `tests/unit`, `tests/integration`, and `tests/e2e`. Planning and design records live under `openspec/changes/`, with broader project docs in `docs/`.
 

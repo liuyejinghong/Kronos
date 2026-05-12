@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from kronos.agent.secrets import LocalSecretStore, SecretStoreError, mask_secret
+from kronos.agent.secrets import (
+    SECRET_STORE_PATH_ENV,
+    LocalSecretStore,
+    SecretStoreError,
+    mask_secret,
+)
 
 
 def test_local_secret_store_returns_masked_status_without_raw_secret(tmp_path: Path) -> None:
@@ -38,6 +43,20 @@ def test_local_secret_store_can_delete_secret(tmp_path: Path) -> None:
     assert status.configured is False
     assert status.masked_value is None
     assert store.get_secret("deepseek") is None
+
+
+def test_local_secret_store_uses_env_path_when_no_explicit_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    env_path = tmp_path / "isolated" / "agent_secrets.json"
+    monkeypatch.setenv(SECRET_STORE_PATH_ENV, str(env_path))
+
+    store = LocalSecretStore()
+    store.set_secret(provider="deepseek", api_key="sk-test-secret-123456")
+
+    assert env_path.exists()
+    assert store.path == env_path
 
 
 def test_secret_mask_keeps_only_short_suffix() -> None:

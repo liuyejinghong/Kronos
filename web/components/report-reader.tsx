@@ -7,17 +7,20 @@ import type { ReactNode } from "react";
 import { kronosApi } from "@/lib/api";
 
 type ReportReaderPanelProps = {
+  mode?: "agent" | "paper";
   runId: string;
   onClose?: () => void;
 };
 
-export function ReportReaderPanel({ runId, onClose }: ReportReaderPanelProps) {
+export function ReportReaderPanel({ mode = "agent", runId, onClose }: ReportReaderPanelProps) {
   const reportQuery = useQuery({
-    queryKey: ["agent-run-report", runId],
-    queryFn: () => kronosApi.agentRunReport(runId),
+    queryKey: [mode === "paper" ? "paper-run-report" : "agent-run-report", runId],
+    queryFn: () => (mode === "paper" ? kronosApi.paperRunReport(runId) : kronosApi.agentRunReport(runId)),
     retry: 1,
+    enabled: mode === "agent" || runId !== "latest",
   });
   const readableReport = reportQuery.data ? makeReadableReport(reportQuery.data.content_md) : null;
+  const isPaper = mode === "paper";
 
   return (
     <section className="min-w-0 rounded-lg border border-slate-200 bg-white">
@@ -25,12 +28,14 @@ export function ReportReaderPanel({ runId, onClose }: ReportReaderPanelProps) {
         <div className="min-w-0">
           <div className="mb-2 inline-flex items-center gap-2 rounded border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
             <FileText className="h-3.5 w-3.5" />
-            本轮研究报告
+            {isPaper ? "测试网模拟盘报告" : "本轮研究报告"}
           </div>
           <h2 className="break-words text-xl font-semibold text-slate-950">
-            {reportQuery.data?.title_zh ?? "Agent 研究报告"}
+            {reportQuery.data?.title_zh ?? (isPaper ? "测试网模拟盘报告" : "Agent 研究报告")}
           </h2>
-          <p className="mt-1 break-all text-xs text-slate-500">批次：{runId}</p>
+          <p className="mt-1 break-all text-xs text-slate-500">
+            {isPaper ? "paper run" : "批次"}：{runId}
+          </p>
         </div>
         {onClose ? (
           <button
@@ -53,7 +58,9 @@ export function ReportReaderPanel({ runId, onClose }: ReportReaderPanelProps) {
           </div>
         ) : reportQuery.isError || !reportQuery.data ? (
           <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            当前批次还没有可阅读报告。完成一轮 Agent 研究后，这里会直接显示报告正文，而不是只显示文件路径。
+            {isPaper
+              ? "当前还没有可阅读的测试网模拟盘报告。完成一次 paper run 后，这里会显示订单、成交和边界说明。"
+              : "当前批次还没有可阅读报告。完成一轮 Agent 研究后，这里会直接显示报告正文，而不是只显示文件路径。"}
           </div>
         ) : (
           <div className="grid gap-4">

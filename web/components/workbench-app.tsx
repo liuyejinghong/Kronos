@@ -15,6 +15,7 @@ import {
   FilePlus2,
   FileText,
   Gauge,
+  GitBranch,
   KeyRound,
   ListChecks,
   PlayCircle,
@@ -25,24 +26,35 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { AgentMemoryPanel } from "@/components/agent-memory-panel";
 import { AgentTimeline } from "@/components/agent-timeline";
 import { ApprovalCenter } from "@/components/approval-center";
 import { CandidateDetailPanel } from "@/components/candidate-detail-panel";
 import { CandidateTable } from "@/components/candidate-table";
 import { MaterialsPanel } from "@/components/materials-panel";
+import { PaperStatusPanel } from "@/components/paper-status-panel";
 import { ReportReaderPanel } from "@/components/report-reader";
 import { RunBriefPanel } from "@/components/run-brief-panel";
 import { SettingsPanel } from "@/components/settings-panel";
 import { LifecycleChart } from "@/components/lifecycle-chart";
 import { StatusChart } from "@/components/status-chart";
-import { DEFAULT_RUN_ID, kronosApi, type CandidateListItem } from "@/lib/api";
+import {
+  DEFAULT_RUN_ID,
+  kronosApi,
+  type AgentMemoryDashboard,
+  type CandidateListItem,
+  type PaperStatus,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type WorkbenchView = "dashboard" | "candidates" | "reports" | "timeline" | "operations";
+type WorkbenchView = "dashboard" | "memory" | "candidates" | "reports" | "timeline" | "operations";
+type ReportMode = "agent" | "paper";
 type OperationTab = "settings" | "materials" | "approvals";
 
 export function WorkbenchApp() {
   const [activeView, setActiveView] = useState<WorkbenchView>("dashboard");
+  const [reportMode, setReportMode] = useState<ReportMode>("agent");
+  const [paperReportRunId, setPaperReportRunId] = useState<string | null>(null);
   const [activeOperationTab, setActiveOperationTab] = useState<OperationTab>("settings");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
 
@@ -51,6 +63,8 @@ export function WorkbenchApp() {
   const candidateQuery = useQuery({ queryKey: ["candidates"], queryFn: kronosApi.candidates });
   const settingsQuery = useQuery({ queryKey: ["llm-settings"], queryFn: kronosApi.llmSettings });
   const approvalsQuery = useQuery({ queryKey: ["approvals"], queryFn: kronosApi.approvals });
+  const paperQuery = useQuery({ queryKey: ["paper-status"], queryFn: kronosApi.paperStatus });
+  const memoryQuery = useQuery({ queryKey: ["agent-memory"], queryFn: kronosApi.agentMemory });
 
   const candidates = useMemo(() => candidateQuery.data ?? [], [candidateQuery.data]);
   const provider = settingsQuery.data?.providers[0];
@@ -65,7 +79,9 @@ export function WorkbenchApp() {
     statusQuery.isError ||
     candidateQuery.isError ||
     settingsQuery.isError ||
-    approvalsQuery.isError;
+    approvalsQuery.isError ||
+    paperQuery.isError ||
+    memoryQuery.isError;
 
   const visibleSelectedCandidateId =
     selectedCandidateId && candidates.some((candidate) => candidate.candidate_id === selectedCandidateId)
@@ -87,6 +103,17 @@ export function WorkbenchApp() {
     setActiveView("operations");
   };
 
+  const openAgentReport = () => {
+    setReportMode("agent");
+    setActiveView("reports");
+  };
+
+  const openPaperReport = () => {
+    setReportMode("paper");
+    setPaperReportRunId(paperQuery.data?.run_id ?? null);
+    setActiveView("reports");
+  };
+
   return (
     <Tooltip.Provider delayDuration={160}>
       <div className="min-h-screen bg-[var(--background)]">
@@ -97,9 +124,9 @@ export function WorkbenchApp() {
             apiHealthy={healthQuery.data?.status === "ok"}
             onSelectView={setActiveView}
           />
-          <main className="min-w-0 overflow-x-hidden px-4 py-4 sm:px-6 lg:px-8">
-            <div className="mx-auto grid max-w-[1600px] gap-5">
-              <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5">
+          <main className="min-w-0 overflow-x-hidden px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
+            <div className="mx-auto grid max-w-[1600px] gap-4 sm:gap-5">
+              <header className="rounded-lg border border-slate-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -128,6 +155,8 @@ export function WorkbenchApp() {
                       void candidateQuery.refetch();
                       void settingsQuery.refetch();
                       void approvalsQuery.refetch();
+                      void paperQuery.refetch();
+                      void memoryQuery.refetch();
                     }}
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -154,6 +183,9 @@ export function WorkbenchApp() {
                   currentRunId={currentRunId}
                   familyCount={familyCount}
                   pendingApprovalCount={pendingApprovalCount}
+                  paperStatus={paperQuery.data}
+                  paperStatusLoading={paperQuery.isLoading}
+                  memory={memoryQuery.data}
                   providerConfigured={providerConfigured}
                   providerHint={provider?.masked_value ?? "DeepSeek 本地密钥"}
                   statusHint={
@@ -161,7 +193,8 @@ export function WorkbenchApp() {
                     "无挂起任务，等待材料或下一轮启动"
                   }
                   onOpenCandidates={() => setActiveView("candidates")}
-                  onOpenReports={() => setActiveView("reports")}
+                  onOpenPaperReport={openPaperReport}
+                  onOpenReports={openAgentReport}
                   onOpenMaterials={() => openOperations("materials")}
                   onOpenSettings={() => openOperations("settings")}
                   onSelectCandidate={(candidateId) => {
@@ -169,6 +202,10 @@ export function WorkbenchApp() {
                     setActiveView("candidates");
                   }}
                 />
+              ) : null}
+
+              {activeView === "memory" ? (
+                <AgentMemoryPanel isLoading={memoryQuery.isLoading} memory={memoryQuery.data} />
               ) : null}
 
               {activeView === "candidates" ? (
@@ -182,7 +219,11 @@ export function WorkbenchApp() {
               ) : null}
 
               {activeView === "reports" ? (
-                <ReportReaderPanel runId={currentRunId} onClose={() => setActiveView("dashboard")} />
+                <ReportReaderPanel
+                  mode={reportMode}
+                  runId={reportMode === "paper" ? (paperReportRunId ?? "latest") : currentRunId}
+                  onClose={() => setActiveView("dashboard")}
+                />
               ) : null}
 
               {activeView === "timeline" ? <AgentTimeline runId={currentRunId} /> : null}
@@ -212,10 +253,14 @@ function DashboardView({
   currentRunId,
   familyCount,
   pendingApprovalCount,
+  paperStatus,
+  paperStatusLoading,
+  memory,
   providerConfigured,
   providerHint,
   statusHint,
   onOpenCandidates,
+  onOpenPaperReport,
   onOpenReports,
   onOpenMaterials,
   onOpenSettings,
@@ -228,10 +273,14 @@ function DashboardView({
   currentRunId: string;
   familyCount: number;
   pendingApprovalCount: number;
+  paperStatus?: PaperStatus;
+  paperStatusLoading: boolean;
+  memory?: AgentMemoryDashboard;
   providerConfigured: boolean;
   providerHint: string;
   statusHint: string;
   onOpenCandidates: () => void;
+  onOpenPaperReport: () => void;
   onOpenReports: () => void;
   onOpenMaterials: () => void;
   onOpenSettings: () => void;
@@ -239,6 +288,14 @@ function DashboardView({
 }) {
   return (
     <div className="grid min-w-0 gap-5">
+      <PaperStatusPanel
+        isLoading={paperStatusLoading}
+        paper={paperStatus}
+        onOpenReport={onOpenPaperReport}
+      />
+
+      <MemorySnapshotCard memory={memory} />
+
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard
           icon={<Activity className="h-4 w-4" />}
@@ -323,6 +380,38 @@ function SourceNotice({ providerConfigured, runId }: { providerConfigured: boole
             ? `当前批次 ${runId} 可继续接入已配置模型；页面展示的是本地报告和事件流的可审计结果。`
             : `当前批次 ${runId} 来自本地确定性验收和历史报告读取，不是 DeepSeek 实时生成。配置模型后才能启动新的多角色 LLM 研究。`}
         </p>
+      </div>
+    </section>
+  );
+}
+
+function MemorySnapshotCard({ memory }: { memory?: AgentMemoryDashboard }) {
+  if (!memory) {
+    return null;
+  }
+  return (
+    <section className="grid min-w-0 gap-3 rounded-lg border border-slate-200 bg-white p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="rounded border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
+            v{memory.state.current_version}
+          </span>
+          <span className="rounded border border-sky-100 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">
+            验收对象：Agent 记忆控制台
+          </span>
+        </div>
+        <h2 className="text-base font-semibold text-slate-950">v0.4.10 首屏验收状态</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          最新证据：{memory.state.latest_successful_run_zh}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          下一步：{memory.state.next_action_zh}
+        </p>
+      </div>
+      <div className="grid content-start gap-2 text-sm">
+        <span className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+          {memory.check.warning_count} 警告 / {memory.check.blocking_count} 阻塞
+        </span>
       </div>
     </section>
   );
@@ -589,6 +678,7 @@ function Sidebar({
 }) {
   const navItems: Array<{ view: WorkbenchView; label: string; icon: ReactNode }> = [
     { view: "dashboard", label: "今日", icon: <ClipboardList className="h-4 w-4" /> },
+    { view: "memory", label: "记忆", icon: <GitBranch className="h-4 w-4" /> },
     { view: "candidates", label: "候选池", icon: <Database className="h-4 w-4" /> },
     { view: "reports", label: "报告", icon: <FileText className="h-4 w-4" /> },
     { view: "timeline", label: "时间线", icon: <ListChecks className="h-4 w-4" /> },
@@ -596,7 +686,7 @@ function Sidebar({
   ];
 
   return (
-    <aside className="border-b border-slate-200 bg-white px-4 py-4 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+    <aside className="border-b border-slate-200 bg-white px-4 py-3 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:py-4">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-slate-900 text-white">
           <BrainCircuit className="h-5 w-5" />
@@ -607,7 +697,7 @@ function Sidebar({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-sm sm:grid-cols-5 lg:mt-5 lg:grid-cols-1">
+      <div className="mt-3 grid grid-cols-3 gap-2 text-sm sm:grid-cols-5 lg:mt-5 lg:grid-cols-1">
         {navItems.map((item) => {
           const selected = item.view === activeView;
           return (
@@ -629,7 +719,7 @@ function Sidebar({
         })}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 lg:mt-5 lg:grid-cols-1">
+      <div className="mt-3 grid grid-cols-2 gap-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 lg:mt-5 lg:grid-cols-1">
         <StatusLine
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
           label="API"

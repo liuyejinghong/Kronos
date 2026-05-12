@@ -1,9 +1,11 @@
 """Route tests for the local Kronos Agent Web API."""
+# ruff: noqa: RUF001
 
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+import shutil
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -20,13 +22,26 @@ from kronos.agent.types import (
 )
 from kronos.web import create_app
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 
 def _client(tmp_path: Path) -> TestClient:
     app = create_app(project_root=tmp_path)
     return TestClient(app)
+
+
+def _copy_memory_docs(tmp_path: Path) -> None:
+    source_root = Path(__file__).resolve().parents[3]
+    for relative_path in [
+        "MEMORY.md",
+        "DECISIONS.md",
+        "TODO.md",
+        "docs/PROJECT_STATUS.md",
+        "docs/ROADMAP.md",
+        "docs/PRODUCT_CONTROL_PANEL.md",
+        "docs/agent-harness/PROGRESS_LOG.md",
+    ]:
+        target = tmp_path / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source_root / relative_path, target)
 
 
 def test_agent_status_returns_current_supervisor_status(tmp_path: Path) -> None:
@@ -168,6 +183,228 @@ def test_agent_run_report_route_returns_readable_markdown(tmp_path: Path) -> Non
     assert payload["run_id"] == "web-run"
     assert payload["title_zh"] == "Web Run Agent 报告"
     assert "进入候选改造" in payload["content_md"]
+
+
+def test_agent_memory_summary_route_returns_acceptance_first_state(tmp_path: Path) -> None:
+    _copy_memory_docs(tmp_path)
+    client = _client(tmp_path)
+
+    response = client.get("/api/agent/memory/summary")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["state"]["current_version"] == "0.4.10"
+    assert payload["state"]["next_version"] == "0.4.11"
+    assert "Agent 记忆与交接控制台" in payload["state"]["current_acceptance_target_zh"]
+    assert "产品 review" in payload["state"]["next_action_zh"]
+    assert "还没有成功证据" not in payload["state"]["latest_successful_run_zh"]
+    assert "20260509T134805Z-paper" in payload["state"]["latest_successful_run_zh"]
+    assert payload["handoff"]["prompt_md"].startswith("# Kronos Agent Handoff")
+    assert payload["check"]["blocking_count"] == 0
+
+
+def test_agent_memory_check_route_flags_missing_docs(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+
+    response = client.get("/api/agent/memory/check")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "blocking"
+    assert payload["blocking_count"] >= 1
+
+
+def test_paper_status_route_returns_not_started_without_run(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+
+    response = client.get("/api/paper/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "not_started"
+    assert payload["environment"] == "testnet"
+    assert payload["run_id"] is None
+    assert payload["latest_orders"] == []
+    assert "preflight" in payload["next_action_zh"]
+
+
+def test_paper_status_route_returns_latest_run_evidence(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "reports" / "paper"
+    run_dir = paper_dir / "web-paper-run"
+    run_dir.mkdir(parents=True)
+    status_payload = {
+        "run_id": "web-paper-run",
+        "status": "completed",
+        "environment": "testnet",
+        "run_dir": str(run_dir),
+        "report_path": str(run_dir / "paper_report.md"),
+        "symbol": "BTCUSDT",
+        "side": "BUY",
+        "testnet_only": True,
+    }
+    (paper_dir / "current_status.json").write_text(
+        json.dumps(status_payload, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (run_dir / "paper_orders.jsonl").write_text(
+        json.dumps(
+            {
+                "order_id": "testnet-order-1",
+                "client_order_id": "kronos-web-paper-run",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "order_type": "MARKET",
+                "quantity": 0.001,
+                "status": "FILLED",
+                "environment": "testnet",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (run_dir / "paper_fills.jsonl").write_text(
+        json.dumps(
+            {
+                "order_id": "testnet-order-1",
+                "trade_id": "trade-1",
+                "symbol": "BTCUSDT",
+                "side": "BUY",
+                "price": 50000.0,
+                "quantity": 0.001,
+                "commission": 0.01,
+                "commission_asset": "USDT",
+                "fill_time": "2026-05-09T00:00:00+00:00",
+                "environment": "testnet",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (run_dir / "paper_report.md").write_text(
+        "# Binance 测试网模拟盘报告\n\n- 测试网订单 ID：testnet-order-1\n",
+        encoding="utf-8",
+    )
+    client = _client(tmp_path)
+
+    status_response = client.get("/api/paper/status")
+    report_response = client.get("/api/paper/runs/web-paper-run/report")
+
+    assert status_response.status_code == 200
+    status = status_response.json()
+    assert status["status"] == "completed"
+    assert status["run_id"] == "web-paper-run"
+    assert status["report_available"] is True
+    assert status["latest_orders"][0]["order_id"] == "testnet-order-1"
+    assert status["latest_fills"][0]["trade_id"] == "trade-1"
+    assert "实盘" in status["next_action_zh"]
+    assert report_response.status_code == 200
+    assert report_response.json()["title_zh"] == "Binance 测试网模拟盘报告"
+
+
+def test_paper_run_report_route_redacts_secret_like_markdown(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "reports" / "paper"
+    run_dir = paper_dir / "failed-paper-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "paper_report.md").write_text(
+        (
+            "# Binance 测试网模拟盘报告\n\n"
+            "- 错误：api_secret=super-secret signature=abc123 token=token123\n"
+            "- URL：https://testnet.binance.vision/api/v3/order?signature=abc123&token=token123\n"
+        ),
+        encoding="utf-8",
+    )
+    client = _client(tmp_path)
+
+    response = client.get("/api/paper/runs/failed-paper-run/report")
+
+    assert response.status_code == 200
+    raw = response.text
+    payload = response.json()
+    assert payload["title_zh"] == "Binance 测试网模拟盘报告"
+    assert "api_secret=<redacted>" in payload["content_md"]
+    assert "signature=<redacted>" in payload["content_md"]
+    assert "token=<redacted>" in payload["content_md"]
+    assert "https://testnet.binance.vision/api/v3/order?<redacted>" in payload["content_md"]
+    assert "super-secret" not in raw
+    assert "abc123" not in raw
+    assert "token123" not in raw
+
+
+def test_paper_status_route_returns_failed_state_without_secret_leak(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "reports" / "paper"
+    run_dir = paper_dir / "failed-paper-run"
+    run_dir.mkdir(parents=True)
+    (paper_dir / "current_status.json").write_text(
+        json.dumps(
+            {
+                "run_id": "failed-paper-run",
+                "status": "failed",
+                "environment": "testnet",
+                "run_dir": str(run_dir),
+                "failure_reason": "api_key=sk-real-secret-1234 Binance 测试网连接失败",
+                "testnet_only": True,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "paper_errors.jsonl").write_text(
+        json.dumps(
+            {
+                "run_id": "failed-paper-run",
+                "environment": "testnet",
+                "reason": "api_secret=super-secret signature=abc123 token=token123",
+                "created_at": "2026-05-09T00:00:00+00:00",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    client = _client(tmp_path)
+
+    response = client.get("/api/paper/status")
+
+    assert response.status_code == 200
+    raw = response.text
+    payload = response.json()
+    assert payload["status"] == "failed"
+    assert payload["latest_errors"][0]["reason"] == (
+        "api_secret=<redacted> signature=<redacted> token=<redacted>"
+    )
+    assert "sk-real-secret-1234" not in raw
+    assert "super-secret" not in raw
+    assert "abc123" not in raw
+
+
+def test_paper_status_route_redacts_failure_reason_without_error_ledger(tmp_path: Path) -> None:
+    paper_dir = tmp_path / "reports" / "paper"
+    run_dir = paper_dir / "failed-paper-run"
+    run_dir.mkdir(parents=True)
+    (paper_dir / "current_status.json").write_text(
+        json.dumps(
+            {
+                "run_id": "failed-paper-run",
+                "status": "failed",
+                "environment": "testnet",
+                "run_dir": str(run_dir),
+                "failure_reason": "api_key=sk-real-secret-1234 Binance 测试网连接失败",
+                "testnet_only": True,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    client = _client(tmp_path)
+
+    response = client.get("/api/paper/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["latest_errors"][0]["reason"] == (
+        "api_key=<redacted> Binance 测试网连接失败"
+    )
+    assert "sk-real-secret-1234" not in response.text
 
 
 def test_llm_settings_masks_provider_secret(tmp_path: Path) -> None:
