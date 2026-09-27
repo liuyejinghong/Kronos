@@ -156,6 +156,12 @@ def _filter_rebalance_signals(signals: pd.DataFrame, config: BacktestConfig) -> 
     filtered["rebalance_bucket"] = rebalance_bucket
     filtered = filtered.sort_values(["rebalance_bucket", "timestamp", "symbol"])
     filtered = filtered.groupby(["rebalance_bucket", "symbol"], as_index=False).tail(1)
+    # Align each bucket's kept signals to one timestamp (the bucket's latest
+    # signal time). Per-symbol data gaps otherwise leave legs of the same
+    # rebalance flat-footed for a bar and can drop legs entirely
+    # (audit FSR-032 engine overwrite). Moving signals later within the
+    # bucket stays PIT-safe.
+    filtered["timestamp"] = filtered.groupby("rebalance_bucket")["timestamp"].transform("max")
     return filtered.drop(columns=["rebalance_bucket"]).reset_index(drop=True)
 
 
@@ -177,7 +183,10 @@ def _schedule_targets(
         if next_index >= len(timestamps):
             continue
         effective_ts = timestamps[next_index]
-        weights = pd.Series(0.0, index=symbols, dtype=float)
+        # Merge groups that land on the same effective bar instead of
+        # overwriting: per-symbol signal timestamps inside one rebalance
+        # bucket can differ by a bar (audit FSR-032 engine overwrite).
+        weights = scheduled.get(effective_ts, pd.Series(0.0, index=symbols, dtype=float))
         for _, row in group.iterrows():
             weights[str(row["symbol"])] = float(row["target_weight"])
         scheduled[effective_ts] = weights

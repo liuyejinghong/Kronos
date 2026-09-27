@@ -114,7 +114,7 @@ def run_strategy_smoke_test(
 
     timeframe = config.universe.timeframe
     factor = create_r_breaker(**config.params.model_dump())
-    min_rows = factor.warmup_bars + 2
+    min_rows = factor.warmup_for_timeframe(timeframe) + 2
 
     results: list[StrategySmokeResult] = []
     for symbol in config.universe.symbols:

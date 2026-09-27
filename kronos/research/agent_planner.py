@@ -666,6 +666,10 @@ def _evidence_next_action(decisions: list[AgentEvidenceDecision]) -> str:
     retired = [item for item in decisions if item.decision == "retire_candidate"]
     if retired:
         return "本轮专项证据没有支持切片，建议进入退休评审。"
+    deeper = [item for item in decisions if item.decision == "deeper_research"]
+    if deeper:
+        names = "、".join(item.candidate_title for item in deeper)
+        return f"{names} 进入深研复验（workbench / walk-forward），但仍不能进入组合或实盘。"
     return "本轮专项证据需要补数据后再判断。"
 
 

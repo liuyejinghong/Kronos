@@ -30,7 +30,6 @@ class BacktestConfig(BaseModel):
     fee_bps: float = 4.0
     slippage_bps: float = 5.0
     apply_funding: bool = False
-    signal_forward_fill: bool = False
     execution_delay_bars: int = 1
     periods_per_year: int | None = None
     worst_period_window: int = 5

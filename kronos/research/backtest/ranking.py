@@ -42,8 +42,13 @@ def build_target_weights(signals: pd.DataFrame, config: BacktestConfig) -> pd.Da
                     "side": "short",
                 })
         else:
-            longs = clean.nlargest(config.top_n, "signal")
-            shorts = clean.nsmallest(config.top_n, "signal")
+            # Split the cross-section by rank so the long and short legs can
+            # never contain the same symbol. With top_n >= universe/2 the old
+            # nlargest/nsmallest overlapped and the short row overwrote the
+            # long row in the engine (audit FSR-005).
+            half = max(min(config.top_n, len(clean) // 2), 1)
+            longs = clean.nlargest(half, "signal")
+            shorts = clean.drop(longs.index).nsmallest(half, "signal")
             long_weight = 1.0 / len(longs) if len(longs) else 0.0
             short_weight = -1.0 / len(shorts) if len(shorts) else 0.0
             for _, row in longs.iterrows():

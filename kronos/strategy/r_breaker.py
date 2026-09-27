@@ -15,6 +15,7 @@ from typing import Any, ClassVar
 import pandas as pd
 
 from kronos.common.types import FactorFamily
+from kronos.data.storage.query import TIMEFRAME_MINUTES
 from kronos.factor.base import BaseFactor
 from kronos.factor.schemas import FactorMeta
 
@@ -62,6 +63,17 @@ class RBreakerFactor(BaseFactor):
             "volatility_multiplier": self.volatility_multiplier,
         }
 
+    def warmup_for_timeframe(self, timeframe: str) -> int:
+        """Bars needed before the first trustworthy signal at a timeframe.
+
+        The strategy needs one full prior day of bars (previous-day OHLC)
+        plus the ATR lookback, so the warm-up must scale with the bar
+        interval instead of assuming 1m bars (audit FSR-022).
+        """
+        minutes = TIMEFRAME_MINUTES.get(timeframe, 1)
+        bars_per_day = max(1440 // minutes, 1)
+        return self.atr_period + bars_per_day + 1
+
     @property
     def meta(self) -> FactorMeta:
         return FactorMeta(
@@ -88,6 +100,15 @@ class RBreakerFactor(BaseFactor):
 
         if df.empty:
             return pd.Series(dtype=float)
+
+        # Scale warm-up to the actual bar interval (audit FSR-022); the
+        # base-class enforcement runs after _compute returns.
+        if len(df) >= 2 and "event_time" in df.columns:
+            diffs = df["event_time"].diff().dropna()
+            if len(diffs) > 0:
+                interval_ms = float(diffs.median())
+                if interval_ms > 0:
+                    self.warmup_bars = self.atr_period + max(int(86_400_000 / interval_ms), 1) + 1
 
         idx = df.index
         df = df.copy()

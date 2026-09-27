@@ -116,3 +116,66 @@ class TestEngineRun:
         engine = Engine(BacktestConfig(timeframe="1h", rebalance_frequency="1h", mode="short_only", top_n=1))
         result = engine.run(_signals(), _market_data())
         assert (result.weights["actual_weight"] <= 0).all()
+
+
+# --- 2026-09-27 audit regression tests (FSR-005 / engine overwrite) ---
+
+
+def _three_symbol_market_data() -> pd.DataFrame:
+    base = 1_700_000_000_000
+    rows: list[dict[str, int | float | str]] = []
+    for index, ts in enumerate(base + step * 3_600_000 for step in range(5)):
+        for symbol, price in (("BTCUSDT", 100.0), ("ETHUSDT", 50.0), ("SOLUSDT", 20.0)):
+            rows.append({
+                "event_time": ts,
+                "available_at": ts,
+                "symbol": symbol,
+                "open": price + index,
+                "high": price + index + 1.0,
+                "low": price + index - 1.0,
+                "close": price + index,
+                "volume": 100.0,
+                "funding_rate": 0.0,
+            })
+    return pd.DataFrame(rows)
+
+
+class TestAuditFixes:
+    def test_market_neutral_small_universe_keeps_both_legs(self) -> None:
+        """top_n >= universe must not collapse into a short-only book (FSR-005)."""
+        base = 1_700_000_000_000
+        signals = pd.DataFrame([
+            {"timestamp": base, "symbol": s, "signal": v}
+            for s, v in (("BTCUSDT", 2.0), ("ETHUSDT", 1.0), ("SOLUSDT", -2.0))
+        ])
+        engine = Engine(
+            BacktestConfig(timeframe="1h", rebalance_frequency="1h", mode="market_neutral", top_n=20)
+        )
+        result = engine.run(signals, _three_symbol_market_data())
+
+        tw = result.target_weights
+        assert not tw.empty
+        assert not tw.duplicated(subset=["timestamp", "symbol"]).any()
+        assert tw[tw["target_weight"] > 0]["target_weight"].sum() == pytest.approx(1.0)
+        assert tw[tw["target_weight"] < 0]["target_weight"].sum() == pytest.approx(-1.0)
+
+    def test_misaligned_signal_timestamps_merge_not_overwrite(self) -> None:
+        """Signals one bar apart inside one 4h bucket must both survive."""
+        base = 1_700_000_000_000
+        signals = pd.DataFrame([
+            {"timestamp": base, "symbol": "BTCUSDT", "signal": 2.0},
+            {"timestamp": base + 3_600_000, "symbol": "ETHUSDT", "signal": -2.0},
+        ])
+        data = _three_symbol_market_data()
+        data = data[data["symbol"].isin(["BTCUSDT", "ETHUSDT"])].reset_index(drop=True)
+        engine = Engine(
+            BacktestConfig(timeframe="1h", rebalance_frequency="4h", mode="market_neutral", top_n=5)
+        )
+        result = engine.run(signals, data)
+
+        tw = result.target_weights
+        frame = tw
+        btc = frame[frame["symbol"] == "BTCUSDT"]["target_weight"].sum()
+        eth = frame[frame["symbol"] == "ETHUSDT"]["target_weight"].sum()
+        assert btc == pytest.approx(1.0), frame
+        assert eth == pytest.approx(-1.0), frame
