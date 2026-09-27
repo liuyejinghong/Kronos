@@ -321,10 +321,10 @@ def test_paper_run_report_route_redacts_secret_like_markdown(tmp_path: Path) -> 
     raw = response.text
     payload = response.json()
     assert payload["title_zh"] == "Binance 测试网模拟盘报告"
-    assert "api_secret=<redacted>" in payload["content_md"]
-    assert "signature=<redacted>" in payload["content_md"]
-    assert "token=<redacted>" in payload["content_md"]
-    assert "https://testnet.binance.vision/api/v3/order?<redacted>" in payload["content_md"]
+    assert "api_secret=[REDACTED]" in payload["content_md"]
+    assert "signature=[REDACTED]" in payload["content_md"]
+    assert "token=[REDACTED]" in payload["content_md"]
+    assert "https://testnet.binance.vision/api/v3/order?[REDACTED]" in payload["content_md"]
     assert "super-secret" not in raw
     assert "abc123" not in raw
     assert "token123" not in raw
@@ -370,7 +370,7 @@ def test_paper_status_route_returns_failed_state_without_secret_leak(tmp_path: P
     payload = response.json()
     assert payload["status"] == "failed"
     assert payload["latest_errors"][0]["reason"] == (
-        "api_secret=<redacted> signature=<redacted> token=<redacted>"
+        "api_secret=[REDACTED] signature=[REDACTED] token=[REDACTED]"
     )
     assert "sk-real-secret-1234" not in raw
     assert "super-secret" not in raw
@@ -402,7 +402,7 @@ def test_paper_status_route_redacts_failure_reason_without_error_ledger(tmp_path
     assert response.status_code == 200
     payload = response.json()
     assert payload["latest_errors"][0]["reason"] == (
-        "api_key=<redacted> Binance 测试网连接失败"
+        "api_key=[REDACTED] Binance 测试网连接失败"
     )
     assert "sk-real-secret-1234" not in response.text
 
@@ -490,6 +490,8 @@ def test_approvals_route_returns_empty_pending_list(tmp_path: Path) -> None:
 
 def test_approval_resolve_records_agent_event(tmp_path: Path) -> None:
     client = _client(tmp_path)
+    run_dir = tmp_path / "reports" / "agent_runtime" / "approval-run"
+    run_dir.mkdir(parents=True)
 
     response = client.post(
         "/api/approvals/approval-1/resolve",
@@ -508,3 +510,20 @@ def test_approval_resolve_records_agent_event(tmp_path: Path) -> None:
     raw = events_path.read_text(encoding="utf-8")
     assert "approval_resolved" in raw
     assert "同意进入下一步模拟验证。" in raw
+
+
+def test_approval_resolve_for_unknown_run_is_rejected(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+
+    response = client.post(
+        "/api/approvals/approval-1/resolve",
+        json={
+            "run_id": "never-existed",
+            "task_id": "task-1",
+            "approved": True,
+            "reason_zh": "伪造审批。",
+        },
+    )
+
+    assert response.status_code == 404
+    assert not (tmp_path / "reports" / "agent_runtime" / "never-existed").exists()
