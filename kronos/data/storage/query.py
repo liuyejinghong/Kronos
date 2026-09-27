@@ -58,8 +58,10 @@ def _parse_datetime_to_ms(value: str | int | None) -> int | None:
         return None
     if isinstance(value, int):
         return value
-    dt = datetime.fromisoformat(value).replace(tzinfo=UTC)
-    return int(dt.timestamp() * 1000)
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return int(dt.astimezone(UTC).timestamp() * 1000)
 
 
 def _glob_pattern(base_path: Path, symbol: str, dataset: str) -> str:
@@ -160,14 +162,14 @@ def load(
             """
 
         result: pd.DataFrame = con.execute(sql, params).fetchdf()
-    except duckdb.IOException:
+    except duckdb.IOException as exc:
         if not _parquet_files_exist(base_path, symbol, dataset):
             log.warning("query.no_data", symbol=symbol, dataset=dataset)
             return pd.DataFrame()
         raise DataError(
             f"Failed to read parquet data for {symbol}/{dataset}: "
             f"files exist but DuckDB could not read them (possible corruption)"
-        )
+        ) from exc
     finally:
         con.close()
 

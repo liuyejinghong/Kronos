@@ -99,12 +99,7 @@ docs/V03_*.md
 docs/EXTERNAL_*.md
 scripts/harness_memory_check.py
 docs/external-research/
-web/node_modules/
-web/.next/
-pytz.py
-reports/
-logs/
-data/
+fsr-reports/
 # 内部开发文档（保留本地，不上传 git）
 docs/ACCEPTANCE*.md
 docs/AGENT_*.md

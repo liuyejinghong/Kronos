@@ -27,6 +27,23 @@ def _now_ms() -> int:
     return int(time.time() * 1000)
 
 
+# Module-level throttle state: enforces the configured minimum interval
+# between any two HTTP requests issued by this loader (pagination included).
+# ponytail: single-process throttle, no lock; add one if syncs ever run concurrently.
+_last_request_monotonic = 0.0
+
+
+def _throttle(request_interval_ms: int) -> None:
+    """Sleep just enough to keep `request_interval_ms` between requests."""
+    global _last_request_monotonic
+    if request_interval_ms > 0:
+        elapsed = time.monotonic() - _last_request_monotonic
+        remaining = request_interval_ms / 1000 - elapsed
+        if remaining > 0:
+            time.sleep(remaining)
+    _last_request_monotonic = time.monotonic()
+
+
 def _request_with_retry(
     url: str,
     params: dict[str, Any],
@@ -40,22 +57,25 @@ def _request_with_retry(
         url: Request URL.
         params: Query parameters.
         max_retries: Maximum retry attempts.
-        request_interval_ms: Minimum interval between requests in ms.
+        request_interval_ms: Minimum interval between requests in ms
+            (applied to every request, pagination included).
 
     Returns:
         Parsed JSON response (expected to be a list).
 
     Raises:
-        IngestionError: If all retries fail.
+        IngestionError: If all retries fail or the request is rejected.
     """
     for attempt in range(max_retries + 1):
-        if attempt > 0:
-            time.sleep(request_interval_ms / 1000)
+        _throttle(request_interval_ms)
         try:
             resp = httpx.get(url, params=params, timeout=30.0)
 
             if resp.status_code == 429:
-                retry_after = int(resp.headers.get("Retry-After", 0))
+                try:
+                    retry_after = min(int(resp.headers.get("Retry-After", 0)), 60)
+                except ValueError:
+                    retry_after = 0
                 wait = max(retry_after, 2**attempt)
                 log.warning(
                     "api.rate_limited",
@@ -71,9 +91,16 @@ def _request_with_retry(
             return result
 
         except httpx.HTTPStatusError as e:
+            status = e.response.status_code
+            # Permanent client-side rejections (4xx other than throttle/timeout)
+            # will not succeed on retry — fail immediately with the body.
+            if 400 <= status < 500 and status not in (408, 429):
+                raise IngestionError(
+                    f"API rejected request ({status}): {e} body={e.response.text[:200]}"
+                ) from e
             if attempt < max_retries:
                 wait = 2**attempt
-                log.warning("api.error", status=e.response.status_code, attempt=attempt, wait_s=wait)
+                log.warning("api.error", status=status, attempt=attempt, wait_s=wait)
                 time.sleep(wait)
             else:
                 raise IngestionError(f"API request failed after {max_retries} retries: {e}") from e
@@ -85,6 +112,14 @@ def _request_with_retry(
                 time.sleep(wait)
             else:
                 raise IngestionError(f"Connection failed after {max_retries} retries: {e}") from e
+
+        except ValueError as e:
+            # Non-JSON body on a 2xx response.
+            if attempt < max_retries:
+                log.warning("api.bad_payload", error=str(e), attempt=attempt)
+                time.sleep(2**attempt)
+            else:
+                raise IngestionError(f"API returned a non-JSON response: {e}") from e
 
     raise IngestionError(f"Request failed after {max_retries} retries")
 
@@ -315,6 +350,13 @@ def fetch_open_interest(
     """
     url = f"{BASE_URL}/futures/data/openInterestHist"
     now = _now_ms()
+    # The venue only serves ~30 days of OI history; clamp the requested start
+    # into that window so a legitimate older `since` is not treated as an error.
+    oi_window_ms = 30 * 24 * 3600 * 1000
+    if start_time is not None and start_time < now - oi_window_ms:
+        clamped = now - oi_window_ms
+        log.warning("oi.start_clamped_to_api_window", symbol=symbol, requested=start_time, effective=clamped)
+        start_time = clamped
     # OI available_at offset: 5m = 300_000ms
     period_minutes: dict[str, int] = {
         "5m": 5,
@@ -341,18 +383,12 @@ def fetch_open_interest(
         if end_time is not None:
             params["endTime"] = end_time
 
-        data: list[dict[str, Any]] = []
-        try:
-            data = _request_with_retry(
-                url,
-                params,
-                max_retries=max_retries,
-                request_interval_ms=request_interval_ms,
-            )
-        except IngestionError:
-            if not all_rows:
-                log.warning("oi.history_limited", symbol=symbol)
-            break
+        data = _request_with_retry(
+            url,
+            params,
+            max_retries=max_retries,
+            request_interval_ms=request_interval_ms,
+        )
 
         if not data:
             if not all_rows:

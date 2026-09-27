@@ -6,15 +6,18 @@ import json
 import time
 from typing import TYPE_CHECKING, Any
 
+from pydantic import BaseModel, ValidationError
+
+from kronos.common.errors import IngestionError
 from kronos.common.log import get_logger
 from kronos.data.loaders.binance_usdm import (
     fetch_funding_rates,
     fetch_klines,
     fetch_open_interest,
 )
-from kronos.data.schemas.candle import CANDLE_DEDUP_KEY
-from kronos.data.schemas.funding import FUNDING_DEDUP_KEY
-from kronos.data.schemas.oi import OI_DEDUP_KEY
+from kronos.data.schemas.candle import CANDLE_DEDUP_KEY, CandleRecord
+from kronos.data.schemas.funding import FUNDING_DEDUP_KEY, FundingRecord
+from kronos.data.schemas.oi import OI_DEDUP_KEY, OIRecord
 from kronos.data.storage.parquet_store import (
     cleanup_temp_files,
     write_records_partitioned,
@@ -25,6 +28,24 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 log = get_logger("kronos.data.sync")
+
+
+def _validate_rows(
+    rows: list[dict[str, Any]],
+    model: type[BaseModel],
+    *,
+    symbol: str,
+    dataset: str,
+) -> None:
+    """Reject malformed records before they reach the curated store."""
+    for row in rows:
+        try:
+            model.model_validate(row)
+        except ValidationError as e:
+            raise IngestionError(
+                f"Schema validation failed for {symbol}/{dataset} "
+                f"event_time={row.get('event_time')}: {e.errors()[:3]}"
+            ) from e
 
 
 def _save_raw(
@@ -38,7 +59,7 @@ def _save_raw(
 
     raw_dir = _Path(base_path) / "raw" / symbol / dataset
     raw_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = int(time.time())
+    timestamp = int(time.time() * 1000)
     raw_file = raw_dir / f"{timestamp}.ndjson"
 
     with open(raw_file, "w") as f:
@@ -99,7 +120,9 @@ def sync_klines(
         log.info("sync.no_new_data", symbol=symbol, dataset="klines_1m")
         return 0
 
-    _save_raw(table.to_pylist(), base_path, symbol, "klines_1m")
+    rows = table.to_pylist()
+    _validate_rows(rows, CandleRecord, symbol=symbol, dataset="klines_1m")
+    _save_raw(rows, base_path, symbol, "klines_1m")
 
     paths = write_records_partitioned(
         table, base_path, symbol, "klines_1m", CANDLE_DEDUP_KEY,
@@ -145,7 +168,9 @@ def sync_funding(
         log.info("sync.no_new_data", symbol=symbol, dataset="funding")
         return 0
 
-    _save_raw(table.to_pylist(), base_path, symbol, "funding")
+    rows = table.to_pylist()
+    _validate_rows(rows, FundingRecord, symbol=symbol, dataset="funding")
+    _save_raw(rows, base_path, symbol, "funding")
 
     paths = write_records_partitioned(
         table, base_path, symbol, "funding", FUNDING_DEDUP_KEY,
@@ -191,7 +216,9 @@ def sync_oi(
         log.info("sync.no_new_data", symbol=symbol, dataset="oi")
         return 0
 
-    _save_raw(table.to_pylist(), base_path, symbol, "oi")
+    rows = table.to_pylist()
+    _validate_rows(rows, OIRecord, symbol=symbol, dataset="oi")
+    _save_raw(rows, base_path, symbol, "oi")
 
     paths = write_records_partitioned(
         table, base_path, symbol, "oi", OI_DEDUP_KEY,
