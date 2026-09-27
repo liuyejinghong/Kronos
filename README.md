@@ -14,17 +14,55 @@ Kronos 是一个本地优先的加密货币量化研究系统。它提供从数�
 
 **前置条件**：Python 3.12+、[uv](https://docs.astral.sh/uv/)、git
 
+第一次安装建议先放到一个干净目录里：
+
 ```bash
-git clone https://github.com/liuyejinghong/Kronos.git && cd Kronos
+mkdir -p ~/kronos-trial
+cd ~/kronos-trial
+git clone https://github.com/liuyejinghong/Kronos.git
+cd Kronos
 uv sync --dev
 uv run kronos quickstart
 uv run kronos report latest
+```
+
+如果第一步提示 `destination path 'Kronos' already exists and is not an empty directory`，说明当前目录下已经有一个同名 `Kronos` 文件夹，不是 Kronos 安装坏了。你可以二选一：
+
+```bash
+cd Kronos
+```
+
+继续使用已有项目；或者换一个新名字重新下载：
+
+```bash
+git clone https://github.com/liuyejinghong/Kronos.git Kronos-trial
+cd Kronos-trial
 ```
 
 一键完成：生成数据 → 注册 R-breaker 策略 → 跑回测 → 出结果。`kronos report latest` 会先给一张结果卡：用了什么数据、评估了什么、这次结论能不能信、下一步做什么。策略想法可以用 `kronos strategy draft --prompt "..."` 起草成 TOML，再按三步推进：检查配置、空跑确认、进入候选池。英文：`kronos quickstart --lang en`。
 
 进阶使用：`kronos agent start`（交互式对话 Agent）。
 Docker 用户：`docker compose up`。
+
+更新和卸载：
+
+```bash
+uv run kronos update                # 拉取最新代码并同步依赖
+uv run kronos uninstall             # 只预览卸载计划，不删除文件
+uv run kronos uninstall --confirm   # 确认卸载
+```
+
+本仓库带有公开仓库保护检查，提交 / 推送前可运行：
+
+```bash
+uv run python scripts/public_repo_guard.py
+```
+
+也可以启用推送前自动检查（本地 Git 配置，每台机器执行一次）：
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ---
 
@@ -47,6 +85,8 @@ Docker 用户：`docker compose up`。
 uv run kronos data status                          # 数据覆盖状态
 uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # 同步公开行情，不需要 API Key
 uv run kronos quickstart                            # 一键快速开始
+uv run kronos update                                # 更新 Kronos
+uv run kronos uninstall                             # 预览卸载计划
 uv run kronos report latest                         # 直接查看最新报告摘要
 uv run kronos report observation-plan               # 从研究报告生成只读观察计划
 uv run kronos paper credentials status              # 查看 Binance 测试网凭证状态
@@ -82,7 +122,7 @@ docker compose run --rm kronos uv run kronos agent start
 
 Docker 首次构建时会出现依赖下载和安装输出。只要最后出现结果卡，就是正常流程；第一次建议先运行 `report latest`，读懂结论后再进入 Agent。
 
-当前版本在测试网模拟盘 Web 状态之后，新增 Agent 记忆与交接控制台：Web 工作台侧边栏「记忆」会展示当前版本、验收对象、最新成功运行、来源文档、最近决策、经验教训、一键交接包和记忆漂移检查。v0.4.9 已完成一次真实 Binance testnet 端到端验收，并能在 Web 工作台只读展示 paper 状态、最近订单、成交和报告。真实 testnet 下单仍需要用户显式配置测试网凭证和合格观察候选；成交证据来自 testnet trade 明细，失败会写入本地状态、报告和错误账本。系统不会触碰真实资金或主网实盘。`paper` 只接受观察计划生成器产出的机器摘要，停止后再次启动需要显式 `--reset-stopped`。
+当前版本支持本地研究报告、策略草案、Web 工作台、Agent 记忆视图和 Binance testnet 模拟盘状态查看。真实 testnet 下单需要用户显式配置测试网凭证和合格观察候选；系统不会触碰真实资金或主网实盘。
 
 ---
 
@@ -106,4 +146,6 @@ Web 层  (kronos/web)     → FastAPI 后端、Next.js 前端
 | [`CLAUDE.md`](CLAUDE.md) | 开发指南（命令、架构、不变量） |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | 路线图 |
 | [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) | 项目状态 |
+| [`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`](docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md) | 产品与策略系统说明 |
+| [`docs/USER_PERSONAS.md`](docs/USER_PERSONAS.md) | 用户画像 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 变更记录 |

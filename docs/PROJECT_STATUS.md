@@ -4,6 +4,8 @@
 
 ## 一句话判断
 
+2026-05-12 用户现场复核暴露一个新手 onboarding 漏测：此前模拟新用户验收覆盖了 fresh clone / Docker quickstart，但没有覆盖“当前目录已经存在非空 `Kronos` 文件夹”的第一步冲突。README 已补充恢复说明；v0.4.11 已开始补基础生命周期命令，当前已新增 `kronos update` 和 `kronos uninstall`，卸载默认只预览，必须 `--confirm` 才删除。
+
 v0.4.8 在只读观察计划之后，新增 Binance 模拟盘 / 测试网模拟盘最小闭环：用户可以配置 Binance testnet API Key / Secret，运行 `paper preflight`，再用 `paper start/status/stop` 验证测试网订单链路。自动化验证默认用 mock testnet 适配器，不会碰真实网络。
 
 v0.4.6 把 fresh Docker 新用户体验继续压短，并修复 Dockerfile 禁用 `uv` 缓存导致的慢构建问题。v0.4.5 则把结果卡往前推成解释卡：`quickstart` 和 `report latest` 先给结果卡，`report replay` / `report regime` / `report observation` 再把关键交易、市场状态分段和只读观察边界接出来。
@@ -149,10 +151,13 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 ## 当前推荐顺序
 
 1. 对 v0.4.10 Agent 记忆控制台做产品 review，确认首屏、交接包和漂移检查是否符合用户预期。
-2. 规划 v0.4.11：把 Agent 失败记忆约束接入候选生成和研究决策，避免重复提出已失败方向。
+2. 规划 v0.4.11：优先把新手安装恢复、重置试用数据和完全卸载 CLI 做成闭环；Agent 失败记忆约束顺延到后续研究决策版本。
 3. 主网实盘执行仍不推进；testnet 成交只证明链路，不证明策略可实盘。
 
 ## 版本事实源
+
+> 注：下列 `docs/RELEASE_*`、`openspec/`、`docs/reviews/`、评测 / 验收记录为内部
+> 开发过程资料，仅保留在本地开发环境，不随公开仓库分发。
 
 - 版本号：`VERSION`、`pyproject.toml`、README badge、`CHANGELOG.md`
 - 当前待办：`TODO.md`
@@ -179,6 +184,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - v0.4.10 版本需求：`docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md`
 - v0.4.10 OpenSpec：`openspec/changes/p4-agent-memory-control/`
 - v0.4.10 多画像模拟用户验收：`docs/KRONOS_V0410_PERSONA_ACCEPTANCE_20260511.md`
+- v0.4.11 待补版本需求：`docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md`
+- v0.4.11 待补 OpenSpec：`openspec/changes/p4-onboarding-cleanup/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`
 - v0.4.3 版本需求：`docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md`

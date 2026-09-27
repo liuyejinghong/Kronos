@@ -2,6 +2,8 @@
 
 > 更新：2026-05-11 | 版本：0.4.10 | 下一版本：0.4.11
 > 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
+> 注：表中引用的 `docs/RELEASE_*`、`openspec/`、`docs/reviews/`、`docs/agent-harness/`
+> 及各类评测 / 验收记录为内部开发过程资料，仅保留在本地开发环境，不随公开仓库分发。
 
 ## v0.3.2 已完成
 
@@ -208,6 +210,18 @@
 | 91 | `done` 生成一键 Agent 交接包，帮助新会话 / 新模型恢复上下文 | `/api/agent/memory/handoff` |
 | 92 | `done` 增加记忆漂移检查：版本冲突、缺索引、必备段落缺失和疑似 secret | `/api/agent/memory/check` + `tests/unit/agent/test_memory_control.py` |
 | 93 | `done` 记忆控制台首版只读优先，不自动覆盖长期记忆 | `docs/KRONOS_V0410_PERSONA_ACCEPTANCE_20260511.md` |
+
+---
+
+## v0.4.11 待规划 — 新手安装 / 卸载闭环
+
+> 产品目标：把“第一次安装、已有目录冲突、重置试用数据、完全卸载”做成小白可恢复路径。开始开发前必须补齐版本需求文档和 OpenSpec。
+
+| # | 事项 | 索引 |
+|---|------|------|
+| 94 | `wip` v0.4.11 版本需求与 OpenSpec：安装失败恢复、已有目录提示、数据重置、完全卸载 CLI | `docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md` + `openspec/changes/p4-onboarding-cleanup/` |
+| 95 | `todo` 新用户验收矩阵补充“当前目录已有 Kronos 文件夹”场景，不能只验证 fresh clone 空目录 | README 已补临时说明；待补正式验收文档 |
+| 96 | `wip` 设计 `kronos update` / `kronos uninstall` 命令：先 dry-run，再显式确认删除 repo 数据、Docker volume、`~/.kronos`、secret store | `cli/main.py` + `tests/integration/test_cli.py` |
 
 ---
 

@@ -39,6 +39,67 @@ def test_cli_version_matches_package_version() -> None:
     assert result.stdout.strip() == expected_version
 
 
+def test_update_dry_run_lists_steps() -> None:
+    result = runner.invoke(app, ["update", "--dry-run"])
+
+    assert result.exit_code == 0, result.output
+    assert "Kronos Update" in result.stdout
+    assert "git pull --ff-only" in result.stdout
+    assert "uv sync --dev" in result.stdout
+    assert "dry_run: no files changed" in result.stdout
+
+
+def test_uninstall_dry_run_lists_safe_plan() -> None:
+    result = runner.invoke(app, ["uninstall"])
+
+    assert result.exit_code == 0, result.output
+    assert "Kronos Uninstall" in result.stdout
+    assert "dry_run: no files deleted" in result.stdout
+    assert "Secret store" in result.stdout
+    assert "User data" in result.stdout
+
+
+def test_uninstall_confirm_keep_project_removes_runtime_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project = tmp_path / "Kronos"
+    (project / "kronos").mkdir(parents=True)
+    (project / "cli").mkdir()
+    (project / "VERSION").write_text("0.4.11\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text("[project]\nname = 'kronos'\n", encoding="utf-8")
+    (project / "cli" / "main.py").write_text("", encoding="utf-8")
+    runtime_paths = [
+        project / ".venv",
+        project / "data",
+        project / "reports",
+        project / ".kronos-secrets",
+    ]
+    for path in runtime_paths:
+        path.mkdir()
+        (path / "placeholder.txt").write_text("x", encoding="utf-8")
+    user_data = tmp_path / "home" / ".kronos"
+    user_data.mkdir(parents=True)
+    (user_data / "config.toml").write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("cli.main._PROJECT_ROOT", project)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
+
+    result = runner.invoke(app, [
+        "uninstall",
+        "--confirm",
+        "--keep-project",
+        "--keep-user-data",
+        "--skip-docker",
+    ])
+
+    assert result.exit_code == 0, result.output
+    assert project.exists()
+    assert user_data.exists()
+    for path in runtime_paths:
+        assert not path.exists()
+
+
 def _register_test_candidates() -> None:
     clear_candidates()
     for i, (cid, family, title, impl) in enumerate([

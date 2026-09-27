@@ -1,6 +1,9 @@
 # Kronos Roadmap
 
-更新时间：2026-05-09
+更新时间：2026-05-12
+
+> 注：文中引用的 `docs/RELEASE_*`、`openspec/`、`docs/reviews/` 等版本需求、
+> OpenSpec 与评审资料为内部开发过程资料，仅保留在本地开发环境，不随公开仓库分发。
 
 ## 目标
 
@@ -16,7 +19,7 @@ Kronos 的路线图目标是把系统推进成 **加密货币策略研究 Agent*
 
 Qlib 风格能力是工具底座，RD-Agent 风格能力是当前 MVP 主线。
 
-Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。v0.4.8 Binance 模拟盘真实成交见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。v0.4.9 测试网证据与 Web 状态可见性见 `docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md` 和 `openspec/changes/p4-testnet-web-status/`。v0.4.10 Agent 记忆与交接控制台见 `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` 和 `openspec/changes/p4-agent-memory-control/`。
+Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`。研发准入级架构借鉴评审见 `docs/AGENT_MVP_TECH_SELECTION_REVIEW.md`。Agent/Web/OpenSpec 准入见 `openspec/changes/p0-agent-runtime-web-workbench/`。已有资产复用和归档边界见 `docs/AGENT_MVP_ASSET_INVENTORY.md`。v0.4.3 策略起草的版本需求与 OpenSpec 入口见 `docs/RELEASE_0.4.3_STRATEGY_AUTHORING.md` 和 `openspec/changes/p4-strategy-authoring/`。v0.4.4 Docker 首次体验语义收口见 `docs/reviews/DOCKER_PERSONA_UX_FIX_PLAN_20260507.md` 和 `openspec/changes/p4-docker-first-use-result-card/`。v0.4.5 解释路径与只读观察边界见 `docs/RELEASE_0.4.5_RESEARCH_INTERPRETABILITY.md` 和 `openspec/changes/p4-research-interpretation-path/`。v0.4.7 只读观察计划见 `docs/RELEASE_0.4.7_PAPER_OBSERVATION_PLAN.md` 和 `openspec/changes/p4-paper-observation-plan/`。v0.4.8 Binance 模拟盘真实成交见 `docs/RELEASE_0.4.8_TESTNET_PAPER_TRADING.md` 和 `openspec/changes/p4-testnet-paper-trading/`。v0.4.9 测试网证据与 Web 状态可见性见 `docs/RELEASE_0.4.9_TESTNET_WEB_STATUS.md` 和 `openspec/changes/p4-testnet-web-status/`。v0.4.10 Agent 记忆与交接控制台见 `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` 和 `openspec/changes/p4-agent-memory-control/`。v0.4.11 暂定为新手安装 / 卸载闭环，正式开发前需要补齐 `docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md` 和 `openspec/changes/p4-onboarding-cleanup/`。
 
 ## 路线图原则
 
@@ -401,7 +404,7 @@ Agent 架构和技术选型记录见 `docs/AGENT_ARCHITECTURE_TECH_SELECTION.md`
 ## 当前推荐顺序
 
 1. 对 v0.4.10 Agent 记忆与交接控制台做产品 review。
-2. 规划 v0.4.11：把失败记忆约束接入 Agent 候选生成和研究决策。
+2. 规划 v0.4.11：把新手安装恢复、重置试用数据和完全卸载 CLI 做成可验收闭环。
 3. 主网实盘执行仍暂缓；testnet 成交只证明链路，不证明策略可实盘。
 
 ## 暂缓事项

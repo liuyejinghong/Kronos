@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
@@ -25,6 +27,7 @@ _LANG_OPTION = typer.Option(
     help="Display language: zh (简体中文) or en (English).",
 )
 _VERSION_FILE = Path(__file__).resolve().parents[1] / "VERSION"
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 app = typer.Typer(
     name="kronos",
@@ -123,6 +126,44 @@ def _strategy_path_hint(path: str) -> str | None:
             "usually /root/.kronos/strategies/r_breaker.toml."
         )
     return None
+
+
+def _run_command(command: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, cwd=cwd, check=False, capture_output=True, text=True)
+
+
+def _command_exists(command: str) -> bool:
+    return shutil.which(command) is not None
+
+
+def _is_kronos_project(path: Path) -> bool:
+    return (
+        (path / "pyproject.toml").exists()
+        and (path / "VERSION").exists()
+        and (path / "kronos").is_dir()
+        and (path / "cli" / "main.py").exists()
+    )
+
+
+def _repo_local_uninstall_paths(project_root: Path) -> list[tuple[str, Path, str]]:
+    return [
+        ("Python virtualenv", project_root / ".venv", "local development environment"),
+        ("Runtime data", project_root / "data", "market/sample data"),
+        ("Reports", project_root / "reports", "research and paper reports"),
+        ("Logs", project_root / "logs", "local logs"),
+        ("Secret store", project_root / ".kronos-secrets", "local credentials"),
+        ("Web dependencies", project_root / "web" / "node_modules", "frontend dependencies"),
+        ("Web build cache", project_root / "web" / ".next", "frontend build cache"),
+    ]
+
+
+def _remove_path(path: Path) -> None:
+    if not path.exists():
+        return
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
 
 
 def _resolve_candidate_specs(candidates: str | None) -> tuple[list[CandidateFactorSpec], set[str]]:
@@ -1811,6 +1852,164 @@ def agent_start(
     from kronos.agent.console import start_agent_console
 
     start_agent_console(config_path=config)
+
+
+@app.command("update")
+def update_command(
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview the update steps without changing files.",
+    ),
+    allow_dirty: bool = typer.Option(
+        False,
+        "--allow-dirty",
+        help="Allow update even when local files are modified.",
+    ),
+    no_sync: bool = typer.Option(
+        False,
+        "--no-sync",
+        help="Skip dependency synchronization after pulling code.",
+    ),
+) -> None:
+    """Update this local Kronos checkout and sync dependencies."""
+    project_root = _PROJECT_ROOT
+    typer.echo("--- Kronos Update ---")
+    typer.echo(f"project: {project_root}")
+
+    if not _is_kronos_project(project_root):
+        typer.echo("This command must run from a valid Kronos project checkout.", err=True)
+        raise typer.Exit(code=1)
+    if not (project_root / ".git").exists():
+        typer.echo("This Kronos copy is not a Git checkout, so it cannot self-update.", err=True)
+        typer.echo("Download a fresh copy from GitHub, or update using your package manager.", err=True)
+        raise typer.Exit(code=1)
+    if not _command_exists("git"):
+        typer.echo("Git is not installed or not on PATH. Install Git first.", err=True)
+        raise typer.Exit(code=1)
+    if not no_sync and not _command_exists("uv"):
+        typer.echo("uv is not installed or not on PATH. Install uv first, or use --no-sync.", err=True)
+        raise typer.Exit(code=1)
+
+    status = _run_command(["git", "status", "--short"], cwd=project_root)
+    if status.returncode != 0:
+        typer.echo(status.stderr.strip() or "Cannot read Git status.", err=True)
+        raise typer.Exit(code=1)
+    if status.stdout.strip() and not allow_dirty:
+        if dry_run:
+            typer.echo("warning: local files have changes; a real update would be blocked.")
+        else:
+            typer.echo("Local files have changes, so update is blocked to avoid overwriting work.", err=True)
+            typer.echo("Commit or back up your changes, then run `kronos update` again.", err=True)
+            typer.echo(
+                "Advanced: use `kronos update --allow-dirty` if you know what you are doing.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+    commands = [["git", "pull", "--ff-only"]]
+    if not no_sync:
+        commands.append(["uv", "sync", "--dev"])
+
+    typer.echo("steps:")
+    for command in commands:
+        typer.echo(f"  - {' '.join(command)}")
+
+    if dry_run:
+        typer.echo("dry_run: no files changed")
+        return
+
+    for command in commands:
+        typer.echo(f"\n$ {' '.join(command)}")
+        result = _run_command(command, cwd=project_root)
+        if result.stdout.strip():
+            typer.echo(result.stdout.strip())
+        if result.stderr.strip():
+            typer.echo(result.stderr.strip(), err=True)
+        if result.returncode != 0:
+            typer.echo("update: failed", err=True)
+            raise typer.Exit(code=result.returncode)
+
+    typer.echo("\nupdate: complete")
+    typer.echo("next: run `kronos --version` or `kronos quickstart`.")
+
+
+@app.command("uninstall")
+def uninstall_command(
+    confirm: bool = typer.Option(
+        False,
+        "--confirm",
+        help="Actually delete the planned files. Without this flag, only preview.",
+    ),
+    keep_project: bool = typer.Option(
+        False,
+        "--keep-project",
+        help="Keep the Kronos source checkout and remove only local runtime files.",
+    ),
+    keep_user_data: bool = typer.Option(
+        False,
+        "--keep-user-data",
+        help="Keep ~/.kronos user strategies, candidates, drafts, and config.",
+    ),
+    skip_docker: bool = typer.Option(
+        False,
+        "--skip-docker",
+        help="Skip Docker compose cleanup.",
+    ),
+) -> None:
+    """Preview or remove the local Kronos installation."""
+    project_root = _PROJECT_ROOT
+    user_data = Path.home() / ".kronos"
+
+    typer.echo("--- Kronos Uninstall ---")
+    typer.echo(f"project: {project_root}")
+
+    if not _is_kronos_project(project_root):
+        typer.echo("This command must run from a valid Kronos project checkout.", err=True)
+        raise typer.Exit(code=1)
+
+    planned: list[tuple[str, Path, str]] = []
+    planned.extend(_repo_local_uninstall_paths(project_root))
+    if not keep_user_data:
+        planned.append(("User data", user_data, "strategies, candidates, drafts, and config"))
+    if not keep_project:
+        planned.append(("Project source", project_root, "Kronos source checkout"))
+
+    typer.echo("plan:")
+    for label, path, note in planned:
+        exists = "exists" if path.exists() else "missing"
+        typer.echo(f"  - {label}: {path} [{exists}] — {note}")
+
+    if skip_docker:
+        typer.echo("docker: skipped")
+    else:
+        typer.echo("docker: will run `docker compose down -v` if Docker is available")
+
+    if not confirm:
+        typer.echo()
+        typer.echo("dry_run: no files deleted")
+        typer.echo("to uninstall: kronos uninstall --confirm")
+        typer.echo("to keep strategies/config: kronos uninstall --confirm --keep-user-data")
+        return
+
+    if not skip_docker:
+        if _command_exists("docker"):
+            docker_result = _run_command(["docker", "compose", "down", "-v"], cwd=project_root)
+            if docker_result.stdout.strip():
+                typer.echo(docker_result.stdout.strip())
+            if docker_result.stderr.strip():
+                typer.echo(docker_result.stderr.strip(), err=True)
+            if docker_result.returncode != 0:
+                typer.echo("docker cleanup failed; continuing with local file cleanup.", err=True)
+        else:
+            typer.echo("docker: not installed, skipped")
+
+    for _label, path, _note in planned:
+        if path == project_root and keep_project:
+            continue
+        _remove_path(path)
+
+    typer.echo("uninstall: complete")
 
 
 @app.command("quickstart")
