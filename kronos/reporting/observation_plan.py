@@ -80,6 +80,18 @@ def generate_observation_plan(
     )
 
 
+def eligibility_from_summary(summary: dict[str, Any], source_report_name: str) -> dict[str, str]:
+    """Re-derive the eligibility verdict from a summary payload.
+
+    Single source of truth for the paper-trading gate: producers embed the
+    verdict into plan metadata, but consumers must re-derive it from the
+    hash-protected summary bytes instead of trusting those self-attested
+    fields.
+    """
+    context = _extract_context(Path(source_report_name), summary)
+    return _eligibility_verdict(context)
+
+
 def _extract_context(source_report: Path, summary: dict[str, Any] | None) -> dict[str, Any]:
     if summary is None:
         return {

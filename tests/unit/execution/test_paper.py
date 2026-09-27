@@ -514,3 +514,144 @@ def test_status_empty_credentials_are_not_configured(tmp_path: Path) -> None:
     assert status.configured is False
     assert status.masked_value is None
     assert status.masked_secret is None
+
+
+# --- 2026-09-27 audit regression tests (FSR-002/003/004/020/028) ---
+
+
+def test_tampered_metadata_verdict_fields_are_rejected(tmp_path: Path) -> None:
+    from kronos.execution.paper import _plan_is_observation_candidate
+
+    plan = _write_ineligible_plan(tmp_path)
+    metadata_path = plan.with_suffix(".json")
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    # Flip every self-attested decision field while keeping the hash-protected
+    # source/summary files untouched.
+    payload["status"] = "只读观察候选"
+    payload["eligible_for_testnet_paper"] = True
+    payload["span_days"] = 120.0
+    payload["promoted"] = 1
+    payload["data_kind"] = "local"
+    metadata_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    assert _plan_is_observation_candidate(plan) is False
+
+    eligible = _write_candidate_plan(tmp_path)
+    assert _plan_is_observation_candidate(eligible) is True
+
+
+def test_stop_latch_survives_failed_start(tmp_path: Path) -> None:
+    plan = _write_candidate_plan(tmp_path)
+    store = _secret_store(tmp_path)
+    set_testnet_credentials(api_key="k", api_secret="s", secret_store=store)
+    out = tmp_path / "reports" / "paper"
+
+    stop_paper_run(out)
+    with pytest.raises(PaperTradingError, match="BUY or SELL"):
+        start_paper_run(
+            plan_path=plan,
+            output_base_path=out,
+            secret_store=store,
+            side="LONG",
+            quantity=0.01,
+        )
+    # The failed start must not have cleared the stop latch.
+    with pytest.raises(PaperTradingError, match="reset-stopped"):
+        start_paper_run(
+            plan_path=plan,
+            output_base_path=out,
+            secret_store=store,
+        )
+
+
+def test_stray_order_from_failed_run_blocks_new_start(tmp_path: Path) -> None:
+    from kronos.execution.paper import TestnetOrder
+
+    plan = _write_candidate_plan(tmp_path)
+    store = _secret_store(tmp_path)
+    set_testnet_credentials(api_key="k", api_secret="s", secret_store=store)
+    out = tmp_path / "reports" / "paper"
+    out.mkdir(parents=True)
+    (out / "current_status.json").write_text(
+        json.dumps({
+            "status": "failed",
+            "run_id": "20260101T000000Z-paper",
+            "symbol": "BTCUSDT",
+        }),
+        encoding="utf-8",
+    )
+
+    class StrayLiveClient(BinanceUSDMMockTestnetClient):
+        def query_order_by_client_id(self, *, symbol: str, client_order_id: str) -> TestnetOrder | None:
+            return TestnetOrder(
+                order_id="stray-1",
+                client_order_id=client_order_id,
+                symbol=symbol,
+                side="BUY",
+                order_type="MARKET",
+                quantity=0.01,
+                status="NEW",
+            )
+
+    with pytest.raises(PaperTradingError, match="仍存在订单"):
+        start_paper_run(
+            plan_path=plan,
+            output_base_path=out,
+            secret_store=store,
+            client=StrayLiveClient(),
+        )
+
+
+def test_cancelled_stray_order_allows_start_and_adapter_is_recorded(tmp_path: Path) -> None:
+    from kronos.execution.paper import TestnetOrder
+
+    plan = _write_candidate_plan(tmp_path)
+    store = _secret_store(tmp_path)
+    set_testnet_credentials(api_key="k", api_secret="s", secret_store=store)
+    out = tmp_path / "reports" / "paper"
+    out.mkdir(parents=True)
+    (out / "current_status.json").write_text(
+        json.dumps({
+            "status": "failed",
+            "run_id": "20260101T000000Z-paper",
+            "symbol": "BTCUSDT",
+        }),
+        encoding="utf-8",
+    )
+
+    class StrayCancelledClient(BinanceUSDMMockTestnetClient):
+        def query_order_by_client_id(self, *, symbol: str, client_order_id: str) -> TestnetOrder | None:
+            return TestnetOrder(
+                order_id="stray-1",
+                client_order_id=client_order_id,
+                symbol=symbol,
+                side="BUY",
+                order_type="MARKET",
+                quantity=0.01,
+                status="CANCELED",
+            )
+
+    result = start_paper_run(
+        plan_path=plan,
+        output_base_path=out,
+        secret_store=store,
+        client=StrayCancelledClient(),
+        quantity=0.001,
+    )
+    assert result.status == "completed"
+    status = read_paper_status(out)
+    assert isinstance(status, dict)
+    assert status["adapter"] == "mock-testnet"
+
+
+def test_corrupt_status_file_is_tolerated(tmp_path: Path) -> None:
+    out = tmp_path / "reports" / "paper"
+    out.mkdir(parents=True)
+    (out / "current_status.json").write_text("{not json", encoding="utf-8")
+
+    assert read_paper_status(out) is None
+    path = stop_paper_run(out)
+    assert path.exists()
+    status = read_paper_status(out)
+    assert isinstance(status, dict)
+    assert status["status"] == "stopped"

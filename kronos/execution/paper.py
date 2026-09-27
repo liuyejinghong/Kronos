@@ -6,16 +6,24 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, NoReturn, Protocol
+from typing import TYPE_CHECKING, Any, NoReturn, Protocol
 from urllib.parse import urlencode
 
 import httpx
 
 from kronos.agent.secrets import LocalSecretStore, SecretMaskedStatus
+from kronos.common.log import get_logger
+from kronos.reporting.observation_plan import eligibility_from_summary
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+log = get_logger("kronos.execution.paper")
 
 BINANCE_TESTNET_PROVIDER = "binance-testnet"
 BINANCE_USDM_TESTNET_BASE_URL = "https://testnet.binancefuture.com"
@@ -132,6 +140,11 @@ class TestnetClient(Protocol):
     ) -> TestnetOrder:
         """Submit a Binance testnet market order."""
 
+    def query_order_by_client_id(
+        self, *, symbol: str, client_order_id: str
+    ) -> TestnetOrder | None:
+        """Return the venue-side order for a client order id, if any."""
+
     def query_fill(self, *, symbol: str, order_id: str) -> TestnetFill | None:
         """Return fill evidence for a testnet order when available."""
 
@@ -170,6 +183,12 @@ class BinanceUSDMMockTestnetClient:
         )
         self._orders[order.order_id] = order
         return order
+
+    def query_order_by_client_id(self, *, symbol: str, client_order_id: str) -> TestnetOrder | None:
+        for order in self._orders.values():
+            if order.client_order_id == client_order_id:
+                return order
+        return None
 
     def query_fill(self, *, symbol: str, order_id: str) -> TestnetFill | None:
         order = self._orders.get(order_id)
@@ -273,6 +292,30 @@ class BinanceUSDMTestnetClient:
             side=str(payload.get("side") or side.upper()),
             order_type=str(payload.get("type") or "MARKET"),
             quantity=quantity,
+            status=str(payload.get("status") or "UNKNOWN"),
+        )
+
+    def query_order_by_client_id(self, *, symbol: str, client_order_id: str) -> TestnetOrder | None:
+        try:
+            payload = self._signed_request_payload(
+                "GET",
+                "/fapi/v1/order",
+                {"symbol": symbol.upper(), "origClientOrderId": client_order_id},
+            )
+        except PaperTradingError as exc:
+            # -2013: order does not exist at the venue.
+            if "-2013" in str(exc):
+                return None
+            raise
+        if not isinstance(payload, dict) or payload.get("orderId") is None:
+            return None
+        return TestnetOrder(
+            order_id=str(payload["orderId"]),
+            client_order_id=str(payload.get("clientOrderId") or client_order_id),
+            symbol=str(payload.get("symbol") or symbol.upper()),
+            side=str(payload.get("side") or ""),
+            order_type=str(payload.get("type") or ""),
+            quantity=float(payload.get("origQty") or 0.0),
             status=str(payload.get("status") or "UNKNOWN"),
         )
 
@@ -423,7 +466,9 @@ def run_paper_preflight(
             if selected_client is None and credentials is not None:
                 selected_client = _build_real_client(credentials)
             if selected_client is not None:
-                selected_client.ping_account()
+                account = selected_client.ping_account()
+                if isinstance(account, dict) and account.get("canTrade") is False:
+                    blockers.append("Binance 测试网账户当前不允许交易（canTrade=false）。")
         except Exception as exc:  # pragma: no cover - real client boundary
             blockers.append(f"Binance 测试网连接失败: {exc}")
 
@@ -499,6 +544,13 @@ def start_paper_run(
         fail("; ".join(preflight.blockers) or "paper preflight failed.")
 
     selected_client = client or _build_real_client(credentials)
+    adapter_label = _adapter_label(selected_client)
+    _reject_stray_previous_order(
+        selected_client,
+        fail=fail,
+        output_base_path=output_base_path,
+        symbol=symbol,
+    )
     try:
         price = selected_client.ticker_price(symbol)
     except Exception as exc:
@@ -603,6 +655,7 @@ def start_paper_run(
         "order": asdict(order),
         "fill": asdict(fill) if fill is not None else None,
         "testnet_only": True,
+        "adapter": adapter_label,
     }
     _write_json(run_dir / "paper_run.json", run_payload)
     _write_json(status_path, run_payload)
@@ -624,7 +677,11 @@ def read_paper_status(
     status_path = Path(output_base_path) / "current_status.json"
     if not status_path.exists():
         return None
-    raw = json.loads(status_path.read_text(encoding="utf-8"))
+    try:
+        raw = json.loads(status_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        log.warning("paper.status_corrupt_skipped", path=str(status_path))
+        return None
     return raw if isinstance(raw, dict) else None
 
 
@@ -647,6 +704,42 @@ def _build_real_client(credentials: BinanceTestnetCredentials | None) -> Binance
     return BinanceUSDMTestnetClient(credentials)
 
 
+def _adapter_label(client: TestnetClient) -> str:
+    return "mock-testnet" if isinstance(client, BinanceUSDMMockTestnetClient) else "testnet"
+
+
+def _reject_stray_previous_order(
+    client: TestnetClient,
+    *,
+    fail: Callable[[str], NoReturn],
+    output_base_path: str | Path,
+    symbol: str,
+) -> None:
+    """Block a new run while the venue still holds an order from a failed run.
+
+    A failed local run does not prove the venue rejected the order; an
+    unknown outcome must be reconciled before another submission is allowed.
+    """
+    previous = read_paper_status(output_base_path)
+    if not isinstance(previous, dict) or previous.get("status") != "failed":
+        return
+    prev_run_id = previous.get("run_id")
+    if not isinstance(prev_run_id, str) or not prev_run_id:
+        return
+    prev_symbol = str(previous.get("symbol") or symbol)
+    stray_client_id = f"kronos-{prev_run_id}"[:36]
+    try:
+        stray = client.query_order_by_client_id(symbol=prev_symbol, client_order_id=stray_client_id)
+    except Exception as exc:
+        fail(f"Binance 测试网对账查询失败: {exc}")
+    if stray is not None and stray.status.upper() in {"NEW", "PARTIALLY_FILLED", "FILLED"}:
+        fail(
+            "上一个失败的 run 在交易所仍存在订单"
+            f"（clientOrderId={stray_client_id}, status={stray.status}）。"
+            "请先在 Binance testnet 处理该订单，再重新启动。"
+        )
+
+
 def _plan_is_observation_candidate(path: Path) -> bool:
     metadata_path = path.with_suffix(".json")
     if not metadata_path.exists():
@@ -659,17 +752,23 @@ def _plan_is_observation_candidate(path: Path) -> bool:
         return False
     if payload.get("artifact_type") != "kronos.paper_observation_plan":
         return False
-    if payload.get("eligible_for_testnet_paper") is not True:
+    schema_version = payload.get("schema_version")
+    if schema_version is not None and int(schema_version) != 1:
         return False
-    if payload.get("status") != "只读观察候选":
+    if not _metadata_hashes_match(payload, metadata_path):
         return False
-    if payload.get("data_kind") == "synthetic":
+    # The decision fields in this metadata file are self-attested and editable.
+    # Re-derive the gate verdict from the hash-protected summary instead of
+    # trusting them (audit FSR-002).
+    summary_path = _resolve_metadata_path(str(payload.get("summary_path") or ""), metadata_path)
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
         return False
-    if float(payload.get("span_days") or 0.0) < 90:
+    if not isinstance(summary, dict):
         return False
-    if int(payload.get("promoted") or 0) <= 0:
-        return False
-    return _metadata_hashes_match(payload, metadata_path)
+    verdict = eligibility_from_summary(summary, str(payload.get("source_report") or "report.md"))
+    return verdict.get("status") == "只读观察候选"
 
 
 def _metadata_hashes_match(payload: dict[str, Any], metadata_path: Path) -> bool:
@@ -769,6 +868,12 @@ def _write_failed_run(
     stopped_guard: bool = False,
 ) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
+    # A failed run must not clear the stop latch written by a previous stop
+    # or guard rejection (audit FSR-003).
+    prior_status = read_paper_status(status_path.parent)
+    prior_stopped = isinstance(prior_status, dict) and (
+        prior_status.get("status") == "stopped" or prior_status.get("stopped_guard") is True
+    )
     payload = {
         "run_id": run_id,
         "status": "failed",
@@ -783,7 +888,7 @@ def _write_failed_run(
         "fill": None,
         "failure_reason": reason,
         "testnet_only": True,
-        "stopped_guard": stopped_guard,
+        "stopped_guard": stopped_guard or prior_stopped,
     }
     _append_jsonl(run_dir / "paper_errors.jsonl", {
         "run_id": run_id,
@@ -811,7 +916,9 @@ def _append_jsonl(path: Path, item: dict[str, Any]) -> None:
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _new_run_id(suffix: str) -> str:
