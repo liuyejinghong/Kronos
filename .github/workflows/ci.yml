@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        run: uv sync --dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy kronos cli
+
+      - name: Public repo guard
+        run: uv run python scripts/public_repo_guard.py
+
+      - name: Tests with coverage floor
+        run: uv run pytest -m "not e2e" --cov=kronos --cov-report=term-missing --cov-fail-under=80
+        env:
+          KRONOS_SECRET_STORE_PATH: /tmp/kronos-ci-secrets/agent_secrets.json
+          KRONOS_CANDIDATES_PATH: /tmp/kronos-ci-candidates.json

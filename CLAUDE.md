@@ -45,7 +45,8 @@ uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2024-01-01
 
 Web frontend (separate `web/` directory):
 ```
-cd web && npm run dev             # Next.js dev server on :3000? or :3001?
+kronos web                         # FastAPI 后端: 127.0.0.1:8000（受支持启动路径）
+cd web && npm run dev -- -H 127.0.0.1   # Next.js dev server, loopback-only (API has no auth; do not expose to LAN)
 cd web && npm run typecheck       # tsc --noEmit
 cd web && npm run lint            # eslint
 cd web && PORT=3001 npm run dev   # if 3000 is taken
@@ -69,9 +70,9 @@ Kronos is a crypto-native quantitative research and trading system. It follows a
 - **Validation:** `kronos/factor/validation/` includes an Alphalens adapter, IC-based metrics, configurable thresholds, and a pipeline that runs validation + walkforward as dual gates before promotion.
 - **Diagnostics:** `kronos/factor/diagnostics/` computes IC/ICIR series, grouped returns, turnover, decay, correlation.
 
-### Layer 3 — Portfolio & Risk (`kronos/portfolio/`, `kronos/risk/`)
-- Rule-based allocator: ranking, position cap, leverage cap, strategy-level score mixing, volatility-target scaling.
-- Risk engine sits between portfolio construction and execution, emits structured notifications.
+### Layer 3 — Portfolio & Risk (`kronos/portfolio/`, `kronos/risk/`) — 预留未接线
+- Tests-only Phase-3 scaffolding（见 ROADMAP 阶段 D 闸门）: rule-based allocator、风险引擎、通知。
+- 尚无生产调用方；接入前不要在 README/文档中当作可用能力呈现。
 
 ### Research (`kronos/research/`)
 - **Backtest:** Full backtest engine with config, ranking, weights, returns, costs, trade ledger, metrics, and Freqtrade cross-validation bridge.
@@ -96,7 +97,7 @@ Kronos is a crypto-native quantitative research and trading system. It follows a
 - SSE endpoint for real-time agent timeline streaming.
 
 ### CLI (`cli/main.py`)
-- Typer with 4 subcommand groups: `kronos data`, `kronos research`, `kronos run`, `kronos agent`.
+- Typer with 8 command groups: `data`, `research`, `run`, `agent`, `report`, `strategy`, `paper` + 顶层 `quickstart` / `update` / `uninstall` / `web`。
 - Configuration loaded via `load_config()` from TOML files in `configs/`.
 
 ### Web Frontend (`web/`)

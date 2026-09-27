@@ -22,6 +22,7 @@ cd ~/kronos-trial
 git clone https://github.com/liuyejinghong/Kronos.git
 cd Kronos
 uv sync --dev
+uv run kronos web                                    # start the local Web workbench API (127.0.0.1:8000)
 uv run kronos quickstart
 uv run kronos report latest
 ```

@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from kronos.common.config import load_config
+from kronos.common.config import KronosConfig, load_config
+from kronos.common.errors import ConfigError
 from kronos.common.i18n import init_i18n, t
 from kronos.common.log import setup_logging
 
@@ -86,11 +87,23 @@ def _global(
 
 
 def _parse_since(since: str | None) -> int | None:
-    """Convert a date string to epoch-ms."""
+    """Convert a date string (YYYY-MM-DD) to epoch-ms."""
     if since is None:
         return None
-    dt = datetime.strptime(since, "%Y-%m-%d").replace(tzinfo=UTC)
+    try:
+        dt = datetime.strptime(since, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError as e:
+        raise typer.BadParameter(f"Invalid --since date {since!r}: expected YYYY-MM-DD.") from e
     return int(dt.timestamp() * 1000)
+
+
+def _load_config_or_exit(config: str | None) -> KronosConfig:
+    """Load config, turning an explicit-but-broken config into a clean CLI error."""
+    try:
+        return load_config(config)
+    except ConfigError as e:
+        typer.echo(f"配置加载失败: {e}", err=True)
+        raise typer.Exit(code=1) from e
 
 
 def _split_csv(value: str | None) -> list[str]:
@@ -146,15 +159,20 @@ def _is_kronos_project(path: Path) -> bool:
 
 
 def _repo_local_uninstall_paths(project_root: Path) -> list[tuple[str, Path, str]]:
-    return [
+    from kronos.agent.secrets import resolve_secret_store_path
+
+    paths: list[tuple[str, Path, str]] = [
         ("Python virtualenv", project_root / ".venv", "local development environment"),
         ("Runtime data", project_root / "data", "market/sample data"),
         ("Reports", project_root / "reports", "research and paper reports"),
         ("Logs", project_root / "logs", "local logs"),
-        ("Secret store", project_root / ".kronos-secrets", "local credentials"),
         ("Web dependencies", project_root / "web" / "node_modules", "frontend dependencies"),
         ("Web build cache", project_root / "web" / ".next", "frontend build cache"),
     ]
+    for secret_path in (project_root / ".kronos-secrets", resolve_secret_store_path()):
+        if secret_path.resolve() not in {p.resolve() for _, p, _ in paths}:
+            paths.append(("Secret store", secret_path, "local credentials"))
+    return paths
 
 
 def _remove_path(path: Path) -> None:
@@ -224,7 +242,7 @@ def data_sync(
     ),
 ) -> None:
     """Sync market data from Binance USDM."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.data.loaders.exchange_info import (
@@ -338,6 +356,9 @@ def report_replay(
         report = latest.path
     else:
         report = Path(report_path)
+        if not report.is_file():
+            typer.echo(f"Report not found: {report}", err=True)
+            raise typer.Exit(code=1)
 
     typer.echo("--- Backtest Replay Report ---")
     for line in summarize_report(report, max_lines=max_lines):
@@ -378,6 +399,9 @@ def report_regime(
             raise typer.Exit(code=1)
     else:
         report = Path(report_path)
+        if not report.is_file():
+            typer.echo(f"Report not found: {report}", err=True)
+            raise typer.Exit(code=1)
 
     typer.echo("--- Market Regime Evidence ---")
     typer.echo("## 分市场状态证据")
@@ -425,6 +449,9 @@ def report_observation(
             raise typer.Exit(code=1)
     else:
         report = Path(report_path)
+        if not report.is_file():
+            typer.echo(f"Report not found: {report}", err=True)
+            raise typer.Exit(code=1)
 
     typer.echo("--- Read-Only Observation Boundary ---")
     selected_heading = _detect_report_heading(report, ("## 只读观察边界", "## 模拟盘边界"))
@@ -635,6 +662,10 @@ def paper_status(
     typer.echo(f"run_id: {status.get('run_id', '-')}")
     typer.echo(f"status: {status.get('status', '-')}")
     typer.echo(f"environment: {status.get('environment', 'testnet')}")
+    if status.get("adapter"):
+        typer.echo(f"adapter: {status['adapter']}")
+    if status.get("failure_reason"):
+        typer.echo(f"failure_reason: {status['failure_reason']}")
     if status.get("order"):
         order = status["order"]
         typer.echo(f"testnet_order_id: {order.get('order_id', '-')}")
@@ -728,7 +759,7 @@ def data_status(
     ),
 ) -> None:
     """Show data coverage and status."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.data.storage.query import coverage
@@ -786,7 +817,7 @@ def research_promote_candidates(
     ),
 ) -> None:
     """Run a local-data candidate factor promotion batch."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.common.errors import DataError
@@ -887,7 +918,7 @@ def research_workbench(
     ),
 ) -> None:
     """Run the fixed product-facing research workbench flow."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.common.errors import DataError
@@ -1005,7 +1036,7 @@ def research_auto_run(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Run one automatic research cycle and write a PM-readable daily report."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.common.errors import DataError
@@ -1139,7 +1170,7 @@ def run_today(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Run today's default Kronos MVP flow and write a system status report."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.factor.bootstrap import registry
@@ -1233,7 +1264,7 @@ def agent_propose(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Generate the next RD-Agent-style hypotheses and experiments."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.research import run_research_agent_planner
@@ -1271,7 +1302,7 @@ def agent_status(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Show the current local Agent runtime status."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.agent.supervisor import AgentSupervisor
@@ -1327,7 +1358,7 @@ def agent_run_once(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Run one bounded Agent cycle: plan, execute approved tools, and conclude."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.agent.planner import run_agent_once
@@ -1380,7 +1411,7 @@ def agent_conclude(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Read deterministic evidence and produce Agent next-step decisions."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.research import run_research_agent_decision
@@ -1435,7 +1466,7 @@ def research_watchlist_evidence(
     config: str = typer.Option("configs/dev.toml", help="Path to config file."),
 ) -> None:
     """Run a focused evidence review for one watchlist candidate."""
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.common.errors import DataError
@@ -1760,7 +1791,7 @@ def strategy_smoke_test(
     from kronos.strategy.config import load_strategy_config
     from kronos.strategy.smoke import run_strategy_smoke_test
 
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     try:
@@ -1803,7 +1834,7 @@ def strategy_register(
     from kronos.strategy.config import load_strategy_config, register_strategy_config
     from kronos.strategy.smoke import run_strategy_smoke_test
 
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     try:
@@ -1846,7 +1877,7 @@ def agent_start(
 ) -> None:
     """Launch the interactive Agent console."""
     init_i18n(cli_lang=lang)
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     from kronos.agent.console import start_agent_console
@@ -2037,7 +2068,7 @@ def quickstart(
 ) -> None:
     """One-command bootstrap: generate sample data and run a minimal research cycle."""
     init_i18n(cli_lang=lang)
-    cfg = load_config(config)
+    cfg = _load_config_or_exit(config)
     setup_logging(level=cfg.runtime.log_level, json_output=cfg.runtime.log_json)
 
     base_path = Path(cfg.data.base_path)
@@ -2142,3 +2173,29 @@ def quickstart(
     typer.echo()
     import os as _os
     typer.echo(t("quickstart.next_steps_docker") if _os.path.exists("/.dockerenv") else t("quickstart.next_steps"))
+
+
+@app.command("web")
+def web_command(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Bind address for the Web workbench API. Default is local-only.",
+    ),
+    port: int = typer.Option(8000, "--port", help="Port for the Web workbench API."),
+) -> None:
+    """Start the local Kronos Web workbench API server."""
+    import uvicorn
+
+    from kronos.web.app import create_app
+
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        typer.echo(
+            "warning: the Web API has no authentication; binding to a non-loopback "
+            "address exposes reports and the secret-writing settings endpoint to your network.",
+            err=True,
+        )
+    typer.echo(f"Kronos Web API: http://{host}:{port}/api/health")
+    typer.echo(f"API docs:       http://{host}:{port}/api/docs")
+    typer.echo("Frontend (optional): cd web && npm run dev -- -H 127.0.0.1")
+    uvicorn.run(create_app(), host=host, port=port)

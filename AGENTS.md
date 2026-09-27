@@ -35,7 +35,7 @@ Do not implement version work from a bare TODO item unless the user explicitly
 asks for an emergency patch.
 
 ## Project Structure & Module Organization
-`kronos/` contains the application code, organized by domain: `data/` for ingestion and storage, `factor/` for factor definitions and materialization, and placeholders such as `execution/`, `risk/`, and `portfolio/` for later phases. `cli/main.py` exposes the Typer-based `kronos` CLI. Runtime config lives in `configs/` (`dev.toml`, `backtest.toml`). Tests are split into `tests/unit`, `tests/integration`, and `tests/e2e`. Planning and design records live under `openspec/changes/`, with broader project docs in `docs/`.
+`kronos/` contains the application code, organized by domain: `data/` for ingestion and storage, `factor/` for factor definitions and materialization, `execution/` holds the Binance testnet paper-trading control plane, while `risk/` and `portfolio/` remain tests-only Phase-3 placeholders. `cli/main.py` exposes the Typer-based `kronos` CLI. Runtime config lives in `configs/` (`dev.toml`, `backtest.toml`). Tests are split into `tests/unit`, `tests/integration`, and `tests/e2e`. Planning and design records live under `openspec/changes/`, with broader project docs in `docs/`.
 
 ## Build, Test, and Development Commands
 Use `uv` for local development.

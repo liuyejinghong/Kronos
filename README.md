@@ -74,7 +74,7 @@ git config core.hooksPath .githooks
 | **因子平台** | 17 个内置因子、5 个家族、自定义因子注册、完整验证管线、Alphalens 集成 |
 | **回测引擎** | 信号调度、成本模型、Freqtrade 交叉验证 |
 | **AI Agent** | 多角色 LLM 驱动研究（DeepSeek-V4）、自动假设生成、工具执行、结论沉淀 |
-| **Web 工作台** | 候选池看板、Agent 时间线、报告阅读、测试网模拟盘状态、Agent 记忆控制台、模型配置、审批中心 |
+| **Web 工作台** | 候选池看板、Agent 时间线、报告阅读、测试网模拟盘状态、Agent 记忆控制台、模型配置；`kronos web` 一键启动，前端可选 |
 | **实验管理** | run_id 贯穿全链路、JSONL 账本、DuckDB 查询、知识库（SQLite + FTS） |
 
 ---
@@ -85,6 +85,7 @@ git config core.hooksPath .githooks
 uv run kronos data status                          # 数据覆盖状态
 uv run kronos data sync --symbols BTCUSDT,ETHUSDT --since 2026-01-01  # 同步公开行情，不需要 API Key
 uv run kronos quickstart                            # 一键快速开始
+uv run kronos web                                    # 启动本地 Web 工作台 API（127.0.0.1:8000）
 uv run kronos update                                # 更新 Kronos
 uv run kronos uninstall                             # 预览卸载计划
 uv run kronos report latest                         # 直接查看最新报告摘要

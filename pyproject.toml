@@ -27,6 +27,12 @@ dependencies = [
 [project.scripts]
 kronos = "cli.main:app"
 
+[tool.hatch.build.targets.wheel]
+packages = ["kronos", "cli"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"VERSION" = "/VERSION"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",

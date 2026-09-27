@@ -45,7 +45,6 @@ class DataConfig(BaseModel):
 class FactorConfig(BaseModel):
     """[factor] section."""
 
-    cache_enabled: bool = True
     default_forward_periods: list[int] = Field(default_factory=lambda: [1, 5, 20])
 
 
@@ -69,7 +68,7 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
     """Load configuration from a TOML file with auto-discovery fallback.
 
     Resolution order:
-    1. Explicit *path* argument
+    1. Explicit *path* argument (must exist — missing explicit paths raise)
     2. ``KRONOS_CONFIG`` environment variable
     3. ``./configs/dev.toml``
     4. ``../configs/dev.toml`` (walk parent dirs up to {_MAX_CONFIG_WALK} levels)
@@ -77,11 +76,13 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
     6. Built-in defaults (no file needed)
 
     Returns:
-        Parsed KronosConfig.  Never raises for missing files — falls back to
-        defaults with a log message instead.
+        Parsed KronosConfig. Auto-discovered config files that are missing
+        fall back to defaults; an explicitly passed path that is missing is
+        an error, not a silent fallback.
 
     Raises:
-        ConfigError: If a config file exists but contains invalid TOML.
+        ConfigError: If a config file is explicitly given but missing, or
+            exists but contains invalid TOML.
     """
     config_path = Path(path) if path is not None else _discover_config()
 
@@ -90,13 +91,11 @@ def load_config(path: Path | str | None = None) -> KronosConfig:
 
     if not config_path.exists():
         if path is not None:
-            discovered = _discover_config()
-            if discovered is not None:
-                config_path = discovered
-            else:
-                return KronosConfig()
-        else:
-            return KronosConfig()
+            raise ConfigError(
+                f"Config file not found: {config_path}. "
+                "An explicitly provided --config path must exist; refusing to silently fall back to defaults."
+            )
+        return KronosConfig()
 
     try:
         with open(config_path, "rb") as f:

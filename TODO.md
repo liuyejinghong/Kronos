@@ -213,15 +213,23 @@
 
 ---
 
-## v0.4.11 待规划 — 新手安装 / 卸载闭环
+## v0.4.11 — 新手安装 / 卸载闭环（开发中）
 
-> 产品目标：把“第一次安装、已有目录冲突、重置试用数据、完全卸载”做成小白可恢复路径。开始开发前必须补齐版本需求文档和 OpenSpec。
+> 产品目标：把“第一次安装、已有目录冲突、重置试用数据、完全卸载”做成小白可恢复路径。
+> 规划文档（本地）：`docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md` + `openspec/changes/p4-onboarding-cleanup/`。
 
 | # | 事项 | 索引 |
 |---|------|------|
-| 94 | `wip` v0.4.11 版本需求与 OpenSpec：安装失败恢复、已有目录提示、数据重置、完全卸载 CLI | `docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md` + `openspec/changes/p4-onboarding-cleanup/` |
+| 94 | `done` v0.4.11 版本需求与 OpenSpec：安装失败恢复、已有目录提示、数据重置、完全卸载 CLI | `docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md` + `openspec/changes/p4-onboarding-cleanup/`（本地） |
 | 95 | `todo` 新用户验收矩阵补充“当前目录已有 Kronos 文件夹”场景，不能只验证 fresh clone 空目录 | README 已补临时说明；待补正式验收文档 |
-| 96 | `wip` 设计 `kronos update` / `kronos uninstall` 命令：先 dry-run，再显式确认删除 repo 数据、Docker volume、`~/.kronos`、secret store | `cli/main.py` + `tests/integration/test_cli.py` |
+| 96 | `done` `kronos update` / `kronos uninstall` 命令：先 dry-run，再显式确认删除 repo 数据、Docker volume、`~/.kronos`、secret store | `cli/main.py` + `tests/integration/test_cli.py` |
+
+## 维护批次 — 2026-09-27 全谱审计修复（已完成，见 `fsr-reports/Kronos/`）
+
+| # | 事项 | 索引 |
+|---|------|------|
+| 97 | `done` 修复审计 32 项发现中的 24 项：Web 启动命令、paper 闸门/闭锁/对账、数据层可靠性、共享脱敏、秘密路径权威、wheel 打包、LICENSE、CI 等 | `CHANGELOG.md [Unreleased]` + `fsr-reports/Kronos/INDEX.md` |
+| 98 | `todo` 延后需产品决策：promote 指标语义统一（FSR-006）、合成/真实数据 provenance 全链路（FSR-010）、Web 前端重构方向（用户评估中） | `fsr-reports/Kronos/2026-09-27-full-spectrum-review.md` |
 
 ---
 

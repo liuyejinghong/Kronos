@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`kronos web` 命令**：一条命令启动本地 Web 工作台 API（默认绑定 `127.0.0.1:8000`），此前 Web 后端没有任何受支持的启动路径。
+- **LICENSE 文件**：补齐 README 声称的 MIT 许可证。
+- **GitHub Actions CI**：push / PR 自动跑 ruff、mypy、公开仓库守卫和带 80% 覆盖率下限的测试。
+
+### Fixed
+
+- **paper 闸门完整性**：`paper start` 消费端现在从受哈希保护的 summary 重推导观察计划判定，不再信任 metadata 中可编辑的自证字段；篡改判定字段会被拒绝。
+- **stop 闭锁**：失败的 `paper start` 不再清除停止闭锁，重启仍需显式 `--reset-stopped`。
+- **订单对账**：启动前按 clientOrderId 对账上一个失败 run 在交易所的遗留订单，未知结果不再被当作拒单。
+- **mock/真实 provenance**：paper run 产物记录 `adapter` 字段（`testnet` / `mock-testnet`），CLI status 一并展示。
+- **时区解析**：带 ISO 时区偏移的 since/until/as_of 正确转换，不再静默偏移（此前 +08:00 会偏 8 小时）。
+- **OI 摄取**：请求起点钳制到交易所 30 天窗口并显式报错，不再静默吞错留下永久数据洞。
+- **限速**：`request_interval_ms` 现在真正约束分页请求间隔；非数字 Retry-After、永久 4xx 不再浪费重试。
+- **schema 校验接线**：摄取管线逐行校验 Pydantic schema，畸变行被拒绝而非入库。
+- **derivatives 因子**：funding/OI/清算因子按事件（去重后）滚动而非按 bar 行滚动，1m 周期不再退化为边界伪信号。
+- **R-breaker warmup**：warmup 随实际 bar 周期缩放，长周期配置不再被错拦、退化参数不再错放。
+- **回测引擎**：market_neutral 在小宇宙下不再退化为纯空头；同一再平衡桶内错位的信号对齐到同一时间戳，不再互相覆盖/中途踏空。
+- **显式 --config**：指向不存在的文件时明确报错，不再静默回退默认配置。
+- **CLI 友好错误**：`--since` 非法格式、报告文件缺失、配置损坏改为清晰报错而非裸 traceback；`paper status` 显示失败原因和 adapter。
+- **状态文件容错**：`current_status.json` 损坏不再瘫痪 status/stop；agent 事件时间线单行损坏跳过而非 500。
+- **canTrade 检查**：preflight 现在校验测试网账户 canTrade 状态。
+
+### Security
+
+- **共享脱敏**：新增 `kronos/common/redaction.py` 单一权威，字符串行（markdown 报告）、`sk-` 密钥、Bearer、JSON 形式统一覆盖；paper Web 路由同步接入。
+- **秘密路径单一权威**：`resolve_secret_store_path()` 统一 CLI / Web / 卸载的凭证存储路径解析（显式 > 环境变量 > 项目根 > CWD），写入改为原子替换。
+
+### Changed
+
+- **审批中心**：resolve 端点校验 run 存在性，不再为不存在的 run 写入审批事件；列表端点如实返回空。
+- **卸载透明度**：卸载预览枚举环境变量迁移过的秘密存储位置。
+- **wheel 打包**：`cli/` 与 `VERSION` 纳入 wheel，非可编辑安装的 `kronos` 入口可用（已实测）。
+- **配置清理**：删除无消费者的 `cache_enabled`、`[agent.llm.deepseek]` 死配置节和 `signal_forward_fill` 死字段。
+- **.gitignore**：锚定 `/data/` 等路径并去重，`kronos/data/` 重新回到 ruff / 新文件跟踪范围。
+- **deeper_research 文案**：Agent 结论与下一步建议不再互相矛盾，知识库不再存入错误结论。
+
 ## [0.4.10] — 2026-05-11
 
 ### Added
