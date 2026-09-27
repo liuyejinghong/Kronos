@@ -15,6 +15,33 @@ SECRET_STORE_PATH_ENV = "KRONOS_SECRET_STORE_PATH"
 DEFAULT_SECRET_STORE_PATH = Path(SECRET_STORE_DIRNAME) / SECRET_STORE_FILENAME
 
 
+def resolve_secret_store_path(explicit: str | Path | None = None) -> Path:
+    """Single authority for the secret store location.
+
+    Precedence: explicit argument > KRONOS_SECRET_STORE_PATH > the Kronos
+    project root (nearest ancestor with pyproject.toml + kronos/) > CWD.
+    Every caller (CLI, Web, uninstall) must route through this function so
+    they all agree on where credentials live.
+    """
+    if explicit is not None:
+        return Path(explicit)
+    env = os.environ.get(SECRET_STORE_PATH_ENV)
+    if env:
+        return Path(env)
+    project_root = _find_project_root()
+    if project_root is not None:
+        return project_root / SECRET_STORE_DIRNAME / SECRET_STORE_FILENAME
+    return Path(DEFAULT_SECRET_STORE_PATH)
+
+
+def _find_project_root(start: Path | None = None) -> Path | None:
+    current = (start or Path.cwd()).resolve()
+    for candidate in (current, *current.parents):
+        if (candidate / "pyproject.toml").is_file() and (candidate / "kronos").is_dir():
+            return candidate
+    return None
+
+
 class SecretStoreError(ValueError):
     """Raised when a secret operation is invalid."""
 
@@ -40,8 +67,7 @@ class LocalSecretStore:
     """
 
     def __init__(self, path: str | Path | None = None) -> None:
-        configured_path = path or os.environ.get(SECRET_STORE_PATH_ENV) or DEFAULT_SECRET_STORE_PATH
-        self.path = Path(configured_path)
+        self.path = resolve_secret_store_path(path)
 
     def set_secret(
         self,
@@ -120,10 +146,12 @@ class LocalSecretStore:
 
     def _write_payload(self, payload: dict[str, dict[str, str]]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
+        tmp = self.path.with_name(self.path.name + ".tmp")
+        tmp.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False),
             encoding="utf-8",
         )
+        os.replace(tmp, self.path)
         with suppress(OSError):
             self.path.chmod(0o600)
 

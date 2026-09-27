@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
+from kronos.common.redaction import redact_text
 from kronos.execution.paper import read_paper_status
 from kronos.web.app import WebAppContext, get_context
 from kronos.web.routes._mappers import validate_run_id
@@ -24,10 +24,6 @@ from kronos.web.schemas import (
 router = APIRouter(prefix="/api/paper", tags=["paper"])
 
 _LEDGER_LIMIT = 5
-_SECRET_PATTERN = re.compile(
-    r"(?i)\b(api[_-]?key|apikey|api[_-]?secret|secret|signature|token)([=:]\s*)([^&\s]+)"
-)
-_URL_QUERY_PATTERN = re.compile(r"(https?://[^\s?]+)\?[^\s]+")
 
 
 @router.get("/status", response_model=PaperStatusResponse)
@@ -275,9 +271,7 @@ def _optional_float(value: Any) -> float | None:
 
 
 def _safe_text(value: object) -> str:
-    text = str(value)
-    text = _URL_QUERY_PATTERN.sub(r"\1?<redacted>", text)
-    return _SECRET_PATTERN.sub(r"\1\2<redacted>", text)
+    return redact_text(str(value))
 
 
 def _is_inside(path: Path, base: Path) -> bool:

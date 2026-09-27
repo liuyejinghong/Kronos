@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from kronos.agent.types import AgentEvent
+from kronos.common.redaction import is_secret_like_key as _is_secret_like_key
+from kronos.common.redaction import redact_obj
 
 EVENT_TIMELINE_FILENAME = "agent_events.jsonl"
+# Re-exported for backwards compatibility with existing imports.
 REDACTED_SECRET = "[REDACTED]"
 SECRET_KEY_PARTS = (
     "api_key",
@@ -47,13 +50,23 @@ class AgentEventWriter:
         return self.events_path
 
     def read_events(self) -> list[AgentEvent]:
-        """Read all events in write order."""
+        """Read all events in write order, skipping corrupt lines."""
         if not self.events_path.exists():
             return []
         events: list[AgentEvent] = []
         for line in self.events_path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
+            if not line.strip():
+                continue
+            try:
                 events.append(AgentEvent.model_validate_json(line))
+            except ValueError:
+                # One corrupt line must not take down the whole timeline
+                # (audit FSR-028).
+                import structlog
+
+                structlog.get_logger("kronos.agent.events").warning(
+                    "events.corrupt_line_skipped", path=str(self.events_path)
+                )
         return events
 
 
@@ -73,19 +86,10 @@ def replace_events(events: list[AgentEvent], *, run_dir: str | Path) -> Path:
 
 
 def redact_secret_like_values(value: Any) -> Any:
-    if isinstance(value, dict):
-        redacted: dict[str, Any] = {}
-        for key, item in value.items():
-            if is_secret_like_key(key):
-                redacted[key] = REDACTED_SECRET
-            else:
-                redacted[key] = redact_secret_like_values(item)
-        return redacted
-    if isinstance(value, list):
-        return [redact_secret_like_values(item) for item in value]
-    return value
+    # Delegates to the shared authority: string leaves are redacted too
+    # (markdown report lines are lists of strings).
+    return redact_obj(value)
 
 
 def is_secret_like_key(key: str) -> bool:
-    normalized = key.lower().replace("-", "_")
-    return any(part in normalized for part in SECRET_KEY_PARTS)
+    return _is_secret_like_key(key)

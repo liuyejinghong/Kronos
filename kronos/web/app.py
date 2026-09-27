@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 
+from kronos.agent.secrets import resolve_secret_store_path
 from kronos.web.schemas import HealthResponse
 
 
@@ -37,7 +38,7 @@ def create_app(
         project_root=root,
         runtime_path=Path(runtime_path or root / "reports" / "agent_runtime"),
         research_path=Path(research_path or root / "reports" / "research"),
-        secret_store_path=Path(secret_store_path or root / ".kronos-secrets" / "agent_secrets.json"),
+        secret_store_path=Path(secret_store_path or resolve_secret_store_path()),
         material_store_path=Path(
             material_store_path or root / "reports" / "agent_materials" / "materials.jsonl"
         ),
