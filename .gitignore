@@ -92,6 +92,7 @@ docs/*E2E*.md
 docs/*ATTEMPT*.md
 docs/PRODUCT_DESIGN_REVIEW*.md
 docs/RELEASE_*.md
+!docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md
 docs/TESTNET_*.md
 docs/FRESH_*.md
 docs/NOVICE_*.md

@@ -34,6 +34,11 @@ BLOCKED_DOC_PATTERNS = (
     "UX_REVIEW",
     "V03_",
 )
+# Owner-approved public exceptions: version planning docs that are
+# deliberately published for external review.
+ALLOWED_EXACT = {
+    "docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md",
+}
 
 
 def _tracked_files() -> list[str]:
@@ -50,6 +55,8 @@ def _tracked_files() -> list[str]:
 
 
 def _is_blocked(path: str) -> bool:
+    if path in ALLOWED_EXACT:
+        return False
     if path in BLOCKED_EXACT:
         return True
     if path.startswith(BLOCKED_PREFIXES):
