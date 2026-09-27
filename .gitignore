@@ -65,6 +65,7 @@ progress.md
 Dockerfile.fresh*
 
 # IDE / 工具
+.cursor/
 .claude/
 .deepseek/
 .opencode/
@@ -77,8 +78,27 @@ Dockerfile.fresh*
 # 临时文件
 pytz.py
 
-# OpenSpec（本地规划用）
+# 内部 Agent / 开发过程资料（本地保留，不推公开仓库）
+MEMORY.md
+DECISIONS.md
 openspec/
+docs/agent-harness/
+docs/reviews/
+docs/*UX_EVALUATION*.md
+docs/*UX_REVIEW*.md
+docs/*PERSONA_ACCEPTANCE*.md
+docs/*ACCEPTANCE*.md
+docs/*E2E*.md
+docs/*ATTEMPT*.md
+docs/PRODUCT_DESIGN_REVIEW*.md
+docs/RELEASE_*.md
+docs/TESTNET_*.md
+docs/FRESH_*.md
+docs/NOVICE_*.md
+docs/V03_*.md
+docs/EXTERNAL_*.md
+scripts/harness_memory_check.py
+docs/external-research/
 web/node_modules/
 web/.next/
 pytz.py

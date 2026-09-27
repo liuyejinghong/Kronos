@@ -14,6 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. `TODO.md`、`docs/PROJECT_STATUS.md`、`docs/ROADMAP.md`、
    `docs/PRODUCT_CONTROL_PANEL.md`：当前产品真实状态。
 
+第 1–3 项和 `docs/PRODUCT_CONTROL_PANEL.md` 属于内部工作文件，仅存在于本地
+开发环境，公开仓库 fresh clone 中没有这些文件。存在则加载，缺失则跳过，
+不要把缺失当成错误。
+
 不要只依赖聊天记录判断当前状态。任何会影响后续 agent 的长期事实、决策、经验教训或交接点，都要写回对应记忆文件。禁止把明文 API Key、密码、交易所凭证、token 或其他秘密写入记忆文件。
 
 ## Version Planning Gate

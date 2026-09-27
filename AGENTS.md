@@ -11,6 +11,11 @@ repository-local memory stack:
 4. `TODO.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and
    `docs/PRODUCT_CONTROL_PANEL.md` — current product truth.
 
+Items 1–3 and `docs/PRODUCT_CONTROL_PANEL.md` are internal working files kept
+only in the local development environment; a fresh public clone does not
+include them. Load each one when it exists and skip missing ones without
+treating absence as an error.
+
 Do not rely on chat history alone. If a change creates durable knowledge, update
 the appropriate memory file before final handoff. Never store secrets, raw API
 keys, passwords, exchange credentials, or private tokens in memory files.

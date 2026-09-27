@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+if command -v uv >/dev/null 2>&1; then
+  uv run python scripts/public_repo_guard.py
+elif command -v python3 >/dev/null 2>&1; then
+  python3 scripts/public_repo_guard.py
+else
+  echo "Public repo guard failed: uv or python3 is required." >&2
+  exit 1
+fi
