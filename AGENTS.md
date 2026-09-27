@@ -1,61 +1,85 @@
-# Repository Guidelines
+# Kronos — Agent Onboarding
 
-## Persistent Agent Harness
-Before planning, editing, or reporting current project state, load the
-repository-local memory stack:
+> 本项目是一个本地优先的加密货币策略研究 Agent：常驻研究员通过对话与 owner 协作，Web 工作台是主界面，CLI 只是 Agent 的工具接口。当前产品边界止于研究与 Binance testnet 模拟盘；实盘是远期目标，带最重的人工闸门。交易研究运行时的变更可能影响策略判断与 testnet 订单；先理解产品定位、不变量和安全边界，再行动。
 
-1. `MEMORY.md` — durable project memory, lessons, and handoff state.
-2. `DECISIONS.md` — architecture/product/process decisions and rejected
-   alternatives.
-3. `docs/agent-harness/PROGRESS_LOG.md` — recent harness and handoff progress.
-4. `TODO.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and
-   `docs/PRODUCT_CONTROL_PANEL.md` — current product truth.
+## 协作原则
 
-Items 1–3 and `docs/PRODUCT_CONTROL_PANEL.md` are internal working files kept
-only in the local development environment; a fresh public clone does not
-include them. Load each one when it exists and skip missing ones without
-treating absence as an error.
+默认中文。代码、变量名、commit message 用英文。
 
-Do not rely on chat history alone. If a change creates durable knowledge, update
-the appropriate memory file before final handoff. Never store secrets, raw API
-keys, passwords, exchange credentials, or private tokens in memory files.
+先说结论，用清楚自然的语言解释必要依据，避免重复汇报、套话和过度格式化。
 
-## Version Planning Gate
-Before starting development for any new version, create and index the full
-development plan first:
+围绕真实目标选择最简单、直接、可验证的方案。不为假想需求增加复杂度，但必须指出真实可达的缺陷。局部方案被质疑时修正该部分，保留未受影响的成果。
 
-1. `docs/RELEASE_<version>_<topic>.md` with product goal, scope, non-goals,
-   risks, tests, and completion criteria.
-2. `openspec/changes/<change-id>/proposal.md`, `design.md`, `tasks.md`, and
-   `specs/*/spec.md`.
-3. Index links in `TODO.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and
-   `docs/PRODUCT_CONTROL_PANEL.md`.
+在已有授权内持续完成任务，常规实现选择自行决定，可以查清的事实先调查。只有缺少会实质改变目标或授权的决定时才询问，并继续推进不受影响的工作。中途追问或纠正不等于取消原目标。
 
-Do not implement version work from a bare TODO item unless the user explicitly
-asks for an emergency patch.
+面向用户的交付物只呈现受众需要的信息；实现过程和调试记录留在工程沟通中。保留理解结论所必需的方法、限制与风险。
 
-## Project Structure & Module Organization
-`kronos/` contains the application code, organized by domain: `data/` for ingestion and storage, `factor/` for factor definitions and materialization, `execution/` holds the Binance testnet paper-trading control plane, while `risk/` and `portfolio/` remain tests-only Phase-3 placeholders. `cli/main.py` exposes the Typer-based `kronos` CLI. Runtime config lives in `configs/` (`dev.toml`, `backtest.toml`). Tests are split into `tests/unit`, `tests/integration`, and `tests/e2e`. Planning and design records live under `openspec/changes/`, with broader project docs in `docs/`.
+## 核心工程原则
 
-## Build, Test, and Development Commands
-Use `uv` for local development.
+1. **架构与领域优先**：先明确产品目标、领域边界、模块职责、依赖方向、数据流和状态所有权，再进入编码；不得以短期实现便利破坏产品不变量和整体设计。设计覆盖本次变更的完整链路与失败路径，实现保持克制：不做推测性抽象，通常在第二个真实用例出现后再提取共同语义，单一场景直接实现。
 
-- `uv sync --dev`: create/update the Python 3.12 environment with dev tools.
-- `uv run kronos data status --config configs/dev.toml`: run the CLI against local dev config.
-- `uv run pytest`: run the full test suite.
-- `uv run pytest -m "not e2e"`: run unit and integration tests only.
-- `uv run pytest --cov=kronos --cov-report=term-missing`: verify the 80% coverage floor.
-- `uv run ruff check . && uv run ruff format .`: lint and format the repo.
-- `uv run mypy kronos cli`: run strict type checks.
+2. **保持模块清晰**：模块应高内聚、低耦合，通过精简且稳定的接口封装内部复杂度，使职责、命名和依赖清晰自然。按单一职责组织代码，`kronos/` 按领域分层（data / factor / research / strategy / execution / agent / web），CLI 接线留在 `cli/`，可复用业务逻辑进 `kronos/`。单个文件接近或超过 500 行时应检查模块边界（`cli/main.py` 已超标，新增职责不再堆入），不得仅为满足行数机械拆分，也不得破坏原本需要一致提交的事务边界。
 
-## Coding Style & Naming Conventions
-Target Python 3.12, 4-space indentation, and a 100-character line length. Ruff enforces import order and core lint rules; mypy runs in strict mode, so new functions should be fully typed. Use `snake_case` for modules, functions, and variables, `PascalCase` for classes and Pydantic models, and `UPPER_SNAKE_CASE` for constants. Keep CLI wiring in `cli/`; place reusable business logic in `kronos/`.
+3. **明确边界与数据流**：外部协议、领域状态、持久化记录和界面展示不得隐式混用。外部输入（交易所响应、用户 prompt、TOML 配置）在边界完成校验；语义不同的模型显式转换，语义一致的不可变类型可以复用。避免跨层共享可变状态，每份关键状态必须有明确的权威来源和修改责任方（如 paper 状态以 `current_status.json` 为权威，记忆以 `MEMORY.md`/`DECISIONS.md` 为权威）。
 
-## Testing Guidelines
-Pytest is the test runner, with `pytest-cov` for coverage and Hypothesis available for property tests. Name test files `test_*.py` and mirror the code area they cover, for example `tests/unit/test_sync.py`. Prefer unit tests for pure transformations, integration tests for CLI/storage flows, and `tests/e2e` for acceptance scenarios. Maintain at least 80% coverage for `kronos/`.
+4. **安全与隔离默认开启**：密钥和凭据只存 SecretStore（路径经 `resolve_secret_store_path()` 统一解析），不得进入代码、日志、响应或记忆文件；报告、记忆和 API 输出统一过共享脱敏。本地优先单用户产品不为假想的多人场景强加鉴权框架，但任何网络暴露（Web 绑定非回环地址）必须显式警告并经 owner 同意。
 
-## Commit & Pull Request Guidelines
-Recent history uses concise Conventional Commit subjects such as `feat: add Binance USDM adapter...`. Keep commits focused and imperative. Pull requests should summarize the user-visible change, note any config or data-layout impact, link the relevant issue or OpenSpec change, and include verification output for `ruff`, `mypy`, and `pytest`.
+5. **面向并发与故障设计**：涉及并发或外部副作用时，明确幂等性、竞态、事务边界、超时、取消、重试和资源释放。testnet 订单先持久化身份（clientOrderId）再发送；发送结果未知或进程重启后，只能查询和核对原订单，不得换身份重发。状态文件写入原子、读取容错，单行损坏不瘫痪整体功能。不得通过无边界重试、吞错或隐式共享状态掩盖问题。
 
-## Security & Configuration Tips
-Do not commit secrets or exchange credentials. Keep local overrides in TOML config files under `configs/`, and treat generated market data as runtime state, not source-controlled assets.
+6. **保障完整前端体验**：Web 是产品主界面。控制渲染成本、异步状态和并发请求，保持清晰的 UI 结构。用户流程（尤其对话入口与结论卡）覆盖加载、空状态、错误、重试、反馈和可访问性。研究任务必须区分请求受理、执行中、结果未知和结果确认，不得将请求成功等同于研究完成；重试服从后端任务身份与幂等契约。
+
+7. **复用稳定的业务语义**：优先复用已有模块和能力，不仅因代码外形相似就抽象。重复实现存在重要的独立演进约束、容易被误合并时，说明保留原因。新增依赖前检查对应模块的依赖声明、现有实现、官方文档和类型定义；标准库或已有依赖满足需求时优先使用，确需引入时选择成熟且维护良好的库。
+
+8. **保留必要的维护上下文**：对非显然设计决策、兼容约束、已知缺陷和临时方案，记录原因、影响范围、风险及移除条件。需要后续处理的技术债务关联可追踪任务，不留下缺少上下文的 TODO。关键产品与架构决策写入 `DECISIONS.md`；每项事实维护一个权威入口，其他位置引用，避免重复归档。
+
+9. **确保变更可验证、可观测、可恢复**：验证与风险相称，使运行状态可观察、故障可定位，并明确兼容条件和恢复路径。完成必要检查后，只有新变化、失败或具体疑点才扩大验证。错误与日志保留必要诊断上下文，不泄露敏感信息。testnet 副作用发生后，不得通过删除状态文件假装回滚，必须依据真实订单、成交和账户事实恢复一致性；离线核对不得表述为 testnet 验证。
+
+10. **删除优于无期限兼容**：内部路径重构完成后，确认调用方已迁移、恢复用途已解除，应删除过时实现；不为保留旧代码新增兼容层、deprecated shim 或无明确退出条件的双写。稳定接口、持久化数据格式（候选池、报告 schema、状态文件）属于契约，兼容性须单独评估。
+
+## 项目不变量（违反即停）
+
+以下是上述原则在本项目中的具体约束，发生冲突时以本节为准。
+
+1. 价值时刻必须从对话或 Web 可达；只以新 CLI 命令交付的用户价值是形态错误。CLI 为脚本化 / Agent 调用设计，不为"人记命令"设计。
+2. 主网 / 实盘执行需要 owner 显式授权，无例外。testnet 订单受配置上限（名义金额等）约束，且必须可审计（clientOrderId 溯源、错误账本）。
+3. Agent 研究是有界任务：假设立项即带可证伪判据，查重后才研究，生命周期到终态即结案，无新证据维度连续多轮自动冻结；每轮必须产出 artifact；token / 调用预算超限要写明收工。
+4. 不给无依据的策略建议：Agent 结论必须可溯源到报告、实验 artifact 或失败记录。
+5. 数据语义：三时间戳 PIT 模型（event_time / available_at / ingested_at）不得绕过；合成数据必须标注，不得混入真实数据结论。
+6. 长期记忆（MEMORY.md / DECISIONS.md）只读优先，不自动覆盖；任何文件不存 secrets、API key 或交易所凭证。
+7. 内部开发资料（记忆栈、openspec、评审 / 验收文档、fsr-reports）不进公开仓库；推送前跑 `scripts/public_repo_guard.py`。
+
+## 当前状态与事实来源
+
+本文件不维护当前版本和进行中的工作状态。本地内部文件与公开 clone 内容经常不同（记忆栈等仅存本地）。
+
+- 当前任务与阻断：`TODO.md` 顶部。
+- 最近变更：`CHANGELOG.md`；版本号：`VERSION` / `pyproject.toml`。
+- 产品方向与决策：`DECISIONS.md`（D-20260927-014/015/016 为产品重对齐基线）。
+- 本地记忆栈（公开 clone 没有；存在则读，缺失则跳过）：`MEMORY.md`、`DECISIONS.md`、`docs/agent-harness/PROGRESS_LOG.md`。产生持久知识时在交付前写回对应记忆文件。
+- 产品真相镜像：`TODO.md`、`docs/PROJECT_STATUS.md`、`docs/ROADMAP.md`，状态变化时保持对齐。
+- 审计账本：`fsr-reports/Kronos/`（本地）。
+- 接手先核对 `git status` 与 `origin/main`；工作区不干净时不把它当权威来源。
+
+## 任务路由与变更检查
+
+按任务需要读取，不要求每次全读。
+
+- 开发与验证：`uv sync --dev`；`uv run pytest -m "not e2e"`；`uv run ruff check .`；`uv run mypy kronos cli`；覆盖率下限 80%（CI 强制）。运行本次变更所需检查，前端变更执行对应构建检查。
+- 开发任何新版本：先过版本规划门——release doc + OpenSpec 先行并索引，bare TODO 不构成开工授权；规划参考 `docs/RELEASE_*.md`（本地）。
+- 测试约定：`tests/unit` / `tests/integration` / `tests/e2e`；涉凭证测试必须用 `KRONOS_SECRET_STORE_PATH` 隔离；e2e 只打公开行情接口，任何测试不下单。
+- Schema、持久状态和数据变更（候选池、报告格式、状态文件）：明确兼容、恢复及存量数据处理方案。检查通过不等于获得数据迁移授权。
+- Web：后端 `uv run kronos web`（127.0.0.1:8000）；前端 `cd web && npm run dev -- -H 127.0.0.1`。
+- paper / testnet 操作：任何真实 testnet 动作（配置凭证、下单）需 owner 显式授权；本地验证用 `--mock-testnet`。
+
+## 变更三边界
+
+1. 版本开发先有 release doc + OpenSpec 再写代码；紧急补丁需 owner 明示。
+2. 推送前 `uv run python scripts/public_repo_guard.py` 必须通过；内部资料与 secrets 不 commit；生成数据（data / reports / logs）是运行态，不入库。
+3. 任何变更不得削弱 testnet-only 边界与研究闸门（观察计划、preflight、stop 闭锁、订单对账）。
+
+## 证据与诚实
+
+- 区分已验证事实、假设和未核验内容；不知道就说不知道，不编造引用、版本或状态。
+- 会变化的事实现查现标出处；高风险判断先检查最强反例，再给结论。
+- 明确本阶段完成了什么、证据覆盖什么、仍缺什么，不把测试通过、testnet 成交和回测盈利混为一谈。
+- 项目约束冲突时，本文件优先于历史文档与 chat 记忆；产品方向以 `DECISIONS.md` 最近决策为准。发现 owner 定义过时，先修正职责与事实源，不绕过现有责任链。
