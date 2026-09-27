@@ -4,8 +4,7 @@
 from __future__ import annotations
 
 import json
-import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi.testclient import TestClient
 
@@ -22,26 +21,93 @@ from kronos.agent.types import (
 )
 from kronos.web import create_app
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def _client(tmp_path: Path) -> TestClient:
     app = create_app(project_root=tmp_path)
     return TestClient(app)
 
 
-def _copy_memory_docs(tmp_path: Path) -> None:
-    source_root = Path(__file__).resolve().parents[3]
-    for relative_path in [
-        "MEMORY.md",
-        "DECISIONS.md",
-        "TODO.md",
-        "docs/PROJECT_STATUS.md",
-        "docs/ROADMAP.md",
-        "docs/PRODUCT_CONTROL_PANEL.md",
-        "docs/agent-harness/PROGRESS_LOG.md",
-    ]:
-        target = tmp_path / relative_path
+
+_MEMORY_FILES = {
+    "MEMORY.md": """# Kronos Persistent Memory
+
+## Boot Protocol
+
+- Read AGENTS.md first, then this file.
+
+## Current Kronos State
+
+- v0.4.10 acceptance follows the real testnet run `20260509T134805Z-paper`.
+
+## Durable Operating Lessons
+
+- Literal UX evidence matters.
+
+## Memory Write Triggers
+
+- Update after meaningful state changes.
+
+## Verification Loop
+
+- Run the relevant local check before claiming completion.
+""",
+    "DECISIONS.md": """# Kronos Decision Log
+
+## D-20260509-006 - Plan Agent Memory Control for v0.4.10 after testnet Web status
+
+Status: accepted
+
+Decision: Agent Memory Control ships after v0.4.9, read-only first.
+
+Rejected: auto-overwrite long-term memory | unsafe without human gates.
+""",
+    "TODO.md": """# Kronos TODO
+
+> 更新：2026-05-11 | 版本：0.4.10 | 下一版本：0.4.11
+> 状态：`done` 已完成 · `todo` 待办 · `wip` 进行中
+
+## v0.4.10 已完成
+
+> 产品目标：Agent 记忆与交接控制台。
+
+| # | 事项 | 索引 |
+|---|------|------|
+| 90 | `done` 记忆控制台 | `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` + `openspec/changes/p4-agent-memory-control` |
+""",
+    "docs/PROJECT_STATUS.md": """# Kronos Project Status
+
+当前版本：0.4.10 | 下一版本：0.4.11
+
+v0.4.10 已完成 **Agent 记忆与交接控制台**。上一条真实 testnet E2E 为 `20260509T134805Z-paper`。
+
+- v0.4.10 版本需求：`docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md`
+- v0.4.10 OpenSpec：`openspec/changes/p4-agent-memory-control`
+""",
+    "docs/ROADMAP.md": """# Kronos Roadmap
+
+更新时间：2026-05-11
+
+v0.4.10 Agent 记忆与交接控制台见 `docs/RELEASE_0.4.10_AGENT_MEMORY_CONTROL.md` 和 `openspec/changes/p4-agent-memory-control`。
+""",
+    "docs/PRODUCT_CONTROL_PANEL.md": "# 产品控制面板\n\nv0.4.10 记忆控制台只读优先。\n",
+    "docs/agent-harness/PROGRESS_LOG.md": """# Progress Log
+
+## Remaining risks
+
+- none recorded
+""",
+}
+
+
+def _copy_memory_docs(root):
+    """Write a self-contained synthetic memory repo (CI has no local-only docs)."""
+    for relative_path, content in _MEMORY_FILES.items():
+        target = root / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source_root / relative_path, target)
+        target.write_text(content, encoding="utf-8")
 
 
 def test_agent_status_returns_current_supervisor_status(tmp_path: Path) -> None:

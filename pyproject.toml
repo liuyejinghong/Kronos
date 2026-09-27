@@ -43,6 +43,7 @@ dev = [
     "pre-commit>=3.0",
     "alphalens-reloaded>=0.4",
     "pandas-stubs>=3.0.0.260204",
+    "pytz>=2026.4",
 ]
 
 [tool.ruff]
