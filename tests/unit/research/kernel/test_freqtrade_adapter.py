@@ -175,7 +175,7 @@ def test_stage_case_declared_absent_writes_no_funding_file(tmp_path: Path) -> No
 def test_stage_case_validates_funding_events(tmp_path: Path) -> None:
     case_in = golden_case_input("G01")
     span_start = case_in.bars_15m[0][0]
-    off_hour = [(span_start + 60_000, 0.0001)]
+    off_hour = [(span_start + 90_000, 0.0001)]  # +90s: beyond the jitter tolerance
     with pytest.raises(runner.FundingDataError, match="hour boundary"):
         runner.stage_case(
             _spec(case_in, funding_events=off_hour), tmp_path, strategy_source=_source(case_in)
@@ -193,6 +193,69 @@ def test_stage_case_validates_funding_events(tmp_path: Path) -> None:
     assert staged.funding_expected is True
     payload = json.loads(staged.funding_path.read_text(encoding="utf-8"))
     assert payload == [[float(good[0][0]), 0.0001]]
+
+
+def test_stage_case_normalizes_venue_jitter(
+    tmp_path: Path, fake_venv: Path
+) -> None:
+    """Real venue stamps arrive 0-26ms past the hour; they must be normalized.
+
+    Binance USDM funding stamps observed on real data (P21): +0..26 ms jitter,
+    e.g. 08:00:00.014.  Stamps within the +60s tolerance are floored to their
+    hour bucket so freqtrade's funding/mark join picks them up; the backtest
+    then runs and reconciles normally.
+    """
+    case_in = golden_case_input("G01")
+    span_start = case_in.bars_15m[0][0]
+    hour = span_start + 16 * 3_600_000  # 06-01 16:00 UTC, outside any trade window
+    jittered = [(hour + 2, 0.0001), (hour + 3_600_000 + 26, 0.0001), (hour + 60_000, 0.0001)]
+    staged = runner.stage_case(
+        _spec(case_in, funding_events=jittered), tmp_path, strategy_source=_source(case_in)
+    )
+    payload = json.loads(staged.funding_path.read_text(encoding="utf-8"))
+    # +2ms and +60s collapse onto their hour buckets; the +26ms stamp sits in
+    # the NEXT hour bucket and is floored there too
+    assert payload == [
+        [float(hour), 0.0001],
+        [float(hour + 3_600_000), 0.0001],
+    ]
+
+    # a full adapter run over a jittered-event window succeeds (mocked kernel)
+    case_with_jitter = golden_case_input("G01").model_copy(
+        update={"funding_events": [(hour + 14, 0.0001)]}
+    )
+    adapter = StrategyBacktestAdapter(venv_dir=fake_venv)
+    with patch(
+        "kronos.research.verdict.kernel.freqtrade_runner.subprocess.run",
+        side_effect=fake_freqtrade_run(FIXTURE_ZIP),
+    ):
+        ledger = adapter.run_backtest(case_with_jitter, workdir=tmp_path / "wd")
+    # the single fixture trade books no funding (its window contains no event)
+    trade = ledger.closed_trades[0]
+    assert trade.total_fees == pytest.approx(0.166 * (60100.0 + 60000.0) * 0.0004)
+    funding_records = [r for r in ledger.records if r.event == "funding"]
+    assert funding_records == []
+
+
+def test_runspec_normalizes_and_dedupes_funding() -> None:
+    case_in = golden_case_input("G01")
+    hour = case_in.bars_15m[0][0] + 8 * 3_600_000
+    spec = runner.RunSpec(
+        bars_15m=case_in.bars_15m,
+        bars_1m=case_in.bars_1m,
+        funding_events=[(hour + 14, 0.0001), (hour + 26, 0.0001), (hour + 3_600_000 + 2, 0.0002)],
+        atr_period=2,
+        volatility_multiplier=1.0,
+    )
+    assert spec.funding_events == [(hour, 0.0001), (hour + 3_600_000, 0.0002)]
+    with pytest.raises(runner.FundingDataError, match="conflicting funding rates"):
+        runner.RunSpec(
+            bars_15m=case_in.bars_15m,
+            bars_1m=case_in.bars_1m,
+            funding_events=[(hour + 14, 0.0001), (hour + 26, 0.0002)],
+            atr_period=2,
+            volatility_multiplier=1.0,
+        )
 
 
 def test_stage_case_rejects_bad_bars(tmp_path: Path) -> None:

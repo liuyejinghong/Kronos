@@ -198,6 +198,18 @@ def create_app(
     local_token = os.environ.get(KRONOS_WEB_TOKEN_ENV) or secrets.token_urlsafe(32)
     app.state.kronos_local_token = local_token
 
+    # P14b: real pipeline worker (ensure_data / evaluate_strategy) polling the
+    # shared runtime store in-process; daemon thread stops with the process.
+    from kronos.conversation.pipeline_wiring import attach_worker
+
+    attach_worker(
+        app.state,
+        base_path=context.data_path,
+        state_dir=context.state_path,
+        snapshots_dir=context.snapshots_path,
+        venv_dir=context.freqtrade_venv_path,
+    )
+
     @app.get("/api/session-token", response_model=LocalSessionTokenResponse)
     def local_session_token() -> LocalSessionTokenResponse:
         """Issue the local write token to same-origin readers only.
