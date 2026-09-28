@@ -1,16 +1,23 @@
 import { MessagesSquare } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
-import { ChatStreamPlaceholder } from "@/components/conversation/chat-stream-placeholder";
-import { StrategySummaryCard } from "@/components/conversation/strategy-summary-card";
-import { TaskProgressArea } from "@/components/conversation/task-progress-area";
-import { VerdictCardArea } from "@/components/conversation/verdict-card-area";
+import { ConversationHome } from "@/components/conversation/conversation-home";
 
 /**
- * 首页：策略对话（占位骨架）。
- * 静态页面——不请求任何后端接口；真实对话、任务轮询与结论数据由 P16/P17 接入。
+ * 首页：策略对话（P16）。
+ *
+ * 服务端组件只读 `?demo=1`（演示模式：渲染静态样例，不请求后端）；
+ * 真实会话引导、消息收发、任务轮询与结论获取全部在
+ * components/conversation/conversation-home.tsx（client）中完成。
  */
-export default function ConversationHomePage() {
+export default async function ConversationHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const demoMode = params.demo === "1";
+
   return (
     <AppShell>
       <div className="grid min-w-0 gap-4">
@@ -27,15 +34,7 @@ export default function ConversationHomePage() {
           </p>
         </header>
 
-        <StrategySummaryCard summary={null} />
-
-        <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,1fr)]">
-          <ChatStreamPlaceholder />
-          <div className="grid min-w-0 content-start gap-4">
-            <TaskProgressArea tasks={[]} />
-            <VerdictCardArea verdict={null} />
-          </div>
-        </div>
+        <ConversationHome demoMode={demoMode} />
       </div>
     </AppShell>
   );
