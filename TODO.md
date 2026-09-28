@@ -240,8 +240,8 @@
 
 | # | 事项 | 索引 |
 |---|------|------|
-| 99 | `wip` v0.5.0 规划：目标已对齐——策略判断闭环单版本交付（工具层 + Web 内嵌对话 + 结论卡），策略只接 R-breaker；Agent 架构市场调研沉淀于同文档，框架选型挂起待续调研 | `docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（本地） |
-| 100 | `todo` 悬而未决跟踪：RD-Agent(Q) 源码级评估、TradingAgents 反思记忆结构、常驻调度器进程模型、token 成本模型、多 agent 角色粒度 | 同上文档 §3.4 |
+| 99 | `wip` v0.5.0 规划基线已定：外部独立评审整体采纳 + P0 四项裁决（阈值变体 / 有界 Web 重构 / Freqtrade 优先验证 / 双层结论+拒判）；下一步 M0 语义门（StrategySpec 冻结、金标准案例、内核对照、契约）→ OpenSpec → 版本规划门 | `docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）+ 本地 DECISIONS.md D-20260928-001 |
+| 100 | `todo` P1 开放问题于 M0 期间收敛：风险偏好参照、90 天窗口定义（完整 UTC 日 vs 滚动）、模型上下文外发边界、owner 正式使用机器、testnet 自主边界政策化 | 同上文档附录 B |
 
 ---
 
