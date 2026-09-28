@@ -240,8 +240,8 @@
 
 | # | 事项 | 索引 |
 |---|------|------|
-| 99 | `wip` v0.5.0：规划基线（外部评审采纳）+ P0 裁决 + OpenSpec 开发包（23 个子代理包，M0–M4 编排）已就绪；当前卡点 = M0 出口需 owner 批准协议/内核选型/契约，及 P1 五问 | 规划：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）；OpenSpec：`openspec/changes/p5-strategy-verdict-loop/`（本地）；D-20260928-001 |
-| 100 | `todo` P1 五问于 M0 期间收敛：风险偏好参照、90 天窗口定义、模型上下文外发边界、owner 正式使用机器、testnet 自主边界政策化 | 同上附录 B |
+| 99 | `wip` v0.5.0：规划基线（外部评审采纳）+ P0/P1 全部裁决 + OpenSpec 开发包（23 个子代理包，M0–M4 编排）就绪；当前卡点仅剩 M0 出口的 owner 批准 | 规划：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）；OpenSpec：`openspec/changes/p5-strategy-verdict-loop/`（本地）；D-20260928-001/002 |
+| 100 | `done` P1 五问已裁决（2026-09-28）：只判研究价值 / 完整 UTC 日 / 15m+1h / 模型换 GLM 智谱（外发边界与预算初值按建议）/ 本机 Mac 为准 / testnet 政策化现在做（阶段 2-3 生效） | D-20260928-002 |
 
 ---
 
