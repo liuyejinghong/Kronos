@@ -67,6 +67,17 @@ FREQTRADE_PIN: Final[str] = f"freqtrade=={FREQTRADE_VERSION}"
 DEFAULT_TIMEOUT_S: Final[float] = 120.0
 TF15_MS: Final[int] = 900_000
 HOUR_MS: Final[int] = 3_600_000
+FUNDING_JITTER_TOL_MS: Final[int] = 60_000
+"""Funding stamps up to this many ms past an hour are floored to the hour.
+
+Real venue funding timestamps carry small positive jitter past the settlement
+hour (0-26 ms measured on Binance USDM real data, P21), while freqtrade's
+funding/mark join matches exact hour stamps.  Stamps within the tolerance are
+normalized to their hour bucket; stamps further off the hour are rejected
+(fail closed) because freqtrade would silently drop them.  Normalization only
+relabels stamps of events the venue already reported — it never creates or
+removes events, so missing funding stays a hard error.
+"""
 STDERR_TAIL_CHARS: Final[int] = 4000
 _PROBE_TIMEOUT_S: Final[float] = 60.0
 
@@ -128,6 +139,14 @@ def to_ft_pair(symbol: str) -> str:
 def ft_file_stem(pair: str) -> str:
     """Freqtrade data file stem for a pair (``BTC/USDT:USDT`` -> ``BTC_USDT_USDT``)."""
     return pair.replace("/", "_").replace(":", "_")
+
+
+def _floor_to_hour_within_jitter(ts_ms: int) -> int:
+    """Floor ``ts_ms`` to its hour bucket when within the jitter tolerance."""
+    remainder = ts_ms % HOUR_MS
+    if remainder <= FUNDING_JITTER_TOL_MS:
+        return ts_ms - remainder
+    return ts_ms
 
 
 def _validate_bars(bars: Sequence[Bar], name: str) -> None:
@@ -303,6 +322,30 @@ class RunSpec:
     funding_declared_absent: bool = False
     ccxt_proxy: str | None = None
 
+    def __post_init__(self) -> None:
+        # Real venue funding stamps carry small positive jitter past the hour
+        # (0-26 ms observed on Binance USDM, P21 real-data measurement), while
+        # freqtrade's funding/mark join matches exact hour stamps.  Floor
+        # near-boundary stamps to their hour bucket; anything further off the
+        # hour is left untouched and rejected by stage_case (fail closed).
+        # Normalization only relabels stamps within tolerance of an existing
+        # event — it can never conjure an event, so absence stays an error.
+        normalized: list[FundingEvent] = []
+        seen: dict[int, float] = {}
+        for raw_ts, rate in self.funding_events:
+            ts = _floor_to_hour_within_jitter(int(raw_ts))
+            previous = seen.get(ts)
+            if previous is not None:
+                if previous != rate:
+                    raise FundingDataError(
+                        f"conflicting funding rates for hour bucket {ts}: "
+                        f"{previous!r} vs {rate!r}"
+                    )
+                continue  # exact duplicate (e.g. two jittered stamps, one bucket)
+            seen[ts] = rate
+            normalized.append((ts, float(rate)))
+        object.__setattr__(self, "funding_events", normalized)
+
     @property
     def ft_pair(self) -> str:
         return to_ft_pair(self.symbol)
@@ -385,8 +428,9 @@ def stage_case(spec: RunSpec, workdir: Path, *, strategy_source: str) -> StagedR
         for ts, _rate in events:
             if ts % HOUR_MS != 0:
                 raise FundingDataError(
-                    f"funding event at {ts} is not on an hour boundary; freqtrade would "
-                    "silently drop it in the funding/mark join"
+                    f"funding event at {ts} is not on an hour boundary (beyond the "
+                    f"+{FUNDING_JITTER_TOL_MS}ms venue-jitter tolerance); freqtrade "
+                    "would silently drop it in the funding/mark join"
                 )
             if not span_start <= ts <= span_end:
                 raise FundingDataError(f"funding event at {ts} falls outside the data span")
