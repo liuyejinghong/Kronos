@@ -16,6 +16,8 @@
  * response models field-for-field (snake_case JSON).
  */
 
+import { withLocalToken } from "@/lib/api-headers";
+
 /** Same-origin proxy base; overridable for non-proxy deployments. */
 export const CONVERSATION_API_BASE =
   process.env.NEXT_PUBLIC_KRONOS_API_BASE_URL ?? "/api/kronos";
@@ -200,14 +202,16 @@ async function parseErrorDetail(response: Response): Promise<string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // P19 本地安全边界：写请求必须携带本地会话令牌头（安全方法原样透传）。
+  const secured = await withLocalToken(CONVERSATION_API_BASE, init);
   let response: Response;
   try {
     response = await fetch(`${CONVERSATION_API_BASE}${path}`, {
       cache: "no-store",
-      ...init,
+      ...secured,
       headers: {
         "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
+        ...(secured?.headers ?? {}),
       },
     });
   } catch (cause) {

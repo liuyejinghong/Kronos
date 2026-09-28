@@ -14,6 +14,7 @@ import {
   type ProviderReadiness,
   type ProviderSecretStatus,
 } from "@/lib/api";
+import { withLocalToken } from "@/lib/api-headers";
 
 export type { LLMSettings, ProviderReadiness, ProviderSecretStatus };
 
@@ -52,11 +53,14 @@ export const BUDGET_DEFAULT_ROWS: BudgetLimitRow[] = [
 ];
 
 async function settingsFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  // P19 本地安全边界：写请求需携带本地会话令牌；连通性测试虽是 GET，
+  // 但有付费副作用，后端要求令牌头，因此 safeMethods 也附加。
+  const secured = await withLocalToken(API_BASE, init, { safeMethods: true });
   const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
+    ...secured,
     headers: {
       "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
+      ...(secured?.headers ?? {}),
     },
   });
 
@@ -71,7 +75,16 @@ async function settingsFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export const settingsApi = {
   llmSettings: kronosApi.llmSettings,
   providerStatus: kronosApi.providerStatus,
-  updateProviderSecret: kronosApi.updateProviderSecret,
+  // P19：Key 保存是写请求，改走 settingsFetch 以携带本地会话令牌头
+  // （原 kronosApi.updateProviderSecret 不经过共享令牌助手）。
+  updateProviderSecret: (provider: string, apiKey: string) =>
+    settingsFetch<ProviderSecretStatus>(
+      `/settings/llm/providers/${encodeURIComponent(provider)}/secret`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ api_key: apiKey }),
+      },
+    ),
   probeProvider: (provider: string) =>
     settingsFetch<ProviderProbe>(
       `/settings/llm/providers/${encodeURIComponent(provider)}/probe`,

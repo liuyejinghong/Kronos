@@ -1,3 +1,5 @@
+import { withLocalToken } from "@/lib/api-headers";
+
 export const API_BASE = process.env.NEXT_PUBLIC_KRONOS_API_BASE_URL ?? "/api/kronos";
 export const DEFAULT_RUN_ID =
   process.env.NEXT_PUBLIC_KRONOS_DEFAULT_RUN_ID ?? "latest";
@@ -284,11 +286,12 @@ export type ApprovalResolveResponse = {
 };
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const secured = await withLocalToken(API_BASE, init);
   const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
+    ...secured,
     headers: {
       "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
+      ...(secured.headers ?? {}),
     },
   });
 

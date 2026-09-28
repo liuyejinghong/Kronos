@@ -11,7 +11,7 @@ from kronos.agent.llm import GLM_PROVIDER_NAME, GLMLLMProvider
 from kronos.agent.roles import GLM_MODELS, AgentRoleRegistry
 from kronos.agent.secrets import LocalSecretStore
 from kronos.conversation.llm_client import GLMChatMessage, GLMClient, GLMClientError
-from kronos.web.app import get_context
+from kronos.web.app import get_context, local_security_enabled
 from kronos.web.schemas import (
     AvailableModelResponse,
     LLMSecretUpdateRequest,
@@ -30,6 +30,31 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 #: bounded token budget and timeout so the settings page cannot hang.
 _PROBE_MAX_TOKENS: Final[int] = 256
 _PROBE_TIMEOUT_SECONDS: Final[float] = 20.0
+
+#: P19 hardening: the probe is a GET with a PAID side effect, so the method
+#: based write screening cannot see it as a write. A cross-site simple GET
+#: (e.g. an ``<img>`` tag) could still trigger it, so this route additionally
+#: requires the local session token header — a custom header makes it a
+#: non-simple request that cross-site pages cannot forge without CORS.
+_PROBE_TOKEN_HEADER: Final[str] = "X-Kronos-Local-Token"
+_PROBE_TOKEN_DETAIL: Final[str] = (
+    "本地安全校验失败：连通性测试会消耗一次模型调用，需要本地会话令牌。"
+)
+
+
+def _require_local_probe_token(request: Request) -> None:
+    """403 unless the probe carries this process's local session token.
+
+    Tied to the same enforcement switch as the write-screening middleware:
+    with ``KRONOS_WEB_LOCAL_SECURITY`` off (pre-P19 integration tests) the
+    requirement is skipped; production always checks. The wired frontend
+    sends the header through ``lib/api-settings.ts`` (safeMethods included).
+    """
+    if not local_security_enabled():
+        return
+    token = getattr(request.app.state, "kronos_local_token", None)
+    if not isinstance(token, str) or request.headers.get(_PROBE_TOKEN_HEADER) != token:
+        raise HTTPException(status_code=403, detail=_PROBE_TOKEN_DETAIL)
 
 
 @router.get("/llm", response_model=LLMSettingsResponse)
@@ -129,6 +154,7 @@ def probe_provider(provider: str, request: Request) -> ProviderProbeResponse:
     reply content is discarded and only reachability plus latency are
     reported. Without a key no network traffic happens at all.
     """
+    _require_local_probe_token(request)
     normalized_provider = _supported_provider(provider)
 
     context = get_context(request)
