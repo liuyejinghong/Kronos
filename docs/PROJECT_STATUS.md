@@ -186,6 +186,8 @@ Kronos 不应默认面向完全小白。当前主用户是两类人：
 - v0.4.10 多画像模拟用户验收：`docs/KRONOS_V0410_PERSONA_ACCEPTANCE_20260511.md`
 - v0.4.11 版本需求（本地）：`docs/RELEASE_0.4.11_ONBOARDING_CLEANUP.md`
 - v0.4.11 OpenSpec（本地）：`openspec/changes/p4-onboarding-cleanup/`
+- v0.5.0 规划基线（公开，外部评审采纳版）：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`
+- v0.5.0 OpenSpec（本地，23 包子代理编排）：`openspec/changes/p5-strategy-verdict-loop/`
 - 2026-09-27 全谱审计与修复记录（本地）：`fsr-reports/Kronos/`
 - 策略系统设计：`docs/PRODUCT_DESIGN_STRATEGY_SYSTEM.md`
 - 审查与修复方案：`docs/reviews/`

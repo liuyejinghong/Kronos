@@ -240,8 +240,8 @@
 
 | # | 事项 | 索引 |
 |---|------|------|
-| 99 | `wip` v0.5.0 规划基线已定：外部独立评审整体采纳 + P0 四项裁决（阈值变体 / 有界 Web 重构 / Freqtrade 优先验证 / 双层结论+拒判）；下一步 M0 语义门（StrategySpec 冻结、金标准案例、内核对照、契约）→ OpenSpec → 版本规划门 | `docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）+ 本地 DECISIONS.md D-20260928-001 |
-| 100 | `todo` P1 开放问题于 M0 期间收敛：风险偏好参照、90 天窗口定义（完整 UTC 日 vs 滚动）、模型上下文外发边界、owner 正式使用机器、testnet 自主边界政策化 | 同上文档附录 B |
+| 99 | `wip` v0.5.0：规划基线（外部评审采纳）+ P0 裁决 + OpenSpec 开发包（23 个子代理包，M0–M4 编排）已就绪；当前卡点 = M0 出口需 owner 批准协议/内核选型/契约，及 P1 五问 | 规划：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）；OpenSpec：`openspec/changes/p5-strategy-verdict-loop/`（本地）；D-20260928-001 |
+| 100 | `todo` P1 五问于 M0 期间收敛：风险偏好参照、90 天窗口定义、模型上下文外发边界、owner 正式使用机器、testnet 自主边界政策化 | 同上附录 B |
 
 ---
 
