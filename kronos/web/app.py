@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -21,6 +21,9 @@ class WebAppContext:
     secret_store_path: Path
     material_store_path: Path
     paper_path: Path
+    #: State directory for the v0.5.0 conversation runtime (conversations /
+    #: tasks / budget SQLite stores); created lazily by the service.
+    state_path: Path = field(default_factory=lambda: Path("state"))
 
 
 def create_app(
@@ -31,6 +34,7 @@ def create_app(
     secret_store_path: str | Path | None = None,
     material_store_path: str | Path | None = None,
     paper_path: str | Path | None = None,
+    state_path: str | Path | None = None,
 ) -> FastAPI:
     """Create the local FastAPI app for the Kronos Agent workbench."""
     root = Path(project_root or ".").resolve()
@@ -43,6 +47,7 @@ def create_app(
             material_store_path or root / "reports" / "agent_materials" / "materials.jsonl"
         ),
         paper_path=Path(paper_path or root / "reports" / "paper"),
+        state_path=Path(state_path or root / "state"),
     )
 
     app = FastAPI(
@@ -61,6 +66,7 @@ def create_app(
     from kronos.web.routes.agent import router as agent_router
     from kronos.web.routes.approvals import router as approvals_router
     from kronos.web.routes.candidates import router as candidates_router
+    from kronos.web.routes.conversation import router as conversation_router
     from kronos.web.routes.events import router as events_router
     from kronos.web.routes.materials import router as materials_router
     from kronos.web.routes.memory import router as memory_router
@@ -75,6 +81,7 @@ def create_app(
     app.include_router(materials_router)
     app.include_router(paper_router)
     app.include_router(approvals_router)
+    app.include_router(conversation_router)
     return app
 
 

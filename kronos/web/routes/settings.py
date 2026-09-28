@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
-from kronos.agent.llm import DEEPSEEK_PROVIDER_NAME, DeepSeekLLMProvider
-from kronos.agent.roles import DEEPSEEK_MODELS, AgentRoleRegistry
+from kronos.agent.llm import GLM_PROVIDER_NAME, GLMLLMProvider
+from kronos.agent.roles import GLM_MODELS, AgentRoleRegistry
 from kronos.agent.secrets import LocalSecretStore
 from kronos.web.app import get_context
 from kronos.web.schemas import (
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 def get_llm_settings(request: Request) -> LLMSettingsResponse:
     """Return masked LLM provider and role settings."""
     context = get_context(request)
-    secret_status = LocalSecretStore(context.secret_store_path).get_status("deepseek")
+    secret_status = LocalSecretStore(context.secret_store_path).get_status(GLM_PROVIDER_NAME)
     roles = AgentRoleRegistry().list_roles()
     return LLMSettingsResponse(
         providers=[
@@ -53,7 +53,7 @@ def get_llm_settings(request: Request) -> LLMSettingsResponse:
                 label_zh=model["label_zh"],
                 label_en=model["label_en"],
             )
-            for model in DEEPSEEK_MODELS
+            for model in GLM_MODELS
         ],
     )
 
@@ -67,7 +67,7 @@ def get_provider_status(provider: str, request: Request) -> ProviderReadinessRes
     normalized_provider = _supported_provider(provider)
 
     context = get_context(request)
-    status = DeepSeekLLMProvider(
+    status = GLMLLMProvider(
         secret_store=LocalSecretStore(context.secret_store_path)
     ).check_status(model_name=_model_name_for_provider(normalized_provider))
     return ProviderReadinessResponse(
@@ -123,6 +123,6 @@ def _normalize_provider(provider: str) -> str:
 
 def _supported_provider(provider: str) -> str:
     normalized_provider = _normalize_provider(provider)
-    if normalized_provider != DEEPSEEK_PROVIDER_NAME:
+    if normalized_provider != GLM_PROVIDER_NAME:
         raise HTTPException(status_code=404, detail="Unsupported provider.")
     return normalized_provider

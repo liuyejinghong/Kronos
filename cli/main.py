@@ -1714,7 +1714,7 @@ def strategy_draft(
     use_ai: bool = typer.Option(
         False,
         "--use-ai",
-        help="Use configured DeepSeek to assist parsing. Rules-only drafting is used by default.",
+        help="Use configured GLM (Zhipu) to assist parsing. Rules-only drafting is used by default.",
     ),
 ) -> None:
     """Draft a strategy TOML package from a natural-language idea."""

@@ -18,31 +18,31 @@ def test_local_secret_store_returns_masked_status_without_raw_secret(tmp_path: P
     store = LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json")
     raw_key = "sk-test-secret-123456"
 
-    status = store.set_secret(provider="deepseek", api_key=raw_key)
+    status = store.set_secret(provider="glm", api_key=raw_key)
 
     assert status.configured is True
     assert status.masked_value is not None
     assert raw_key not in status.model_dump_json()
     assert status.masked_value.endswith("3456")
-    assert store.get_secret("deepseek") == raw_key
+    assert store.get_secret("glm") == raw_key
 
 
 def test_local_secret_store_rejects_empty_secret(tmp_path: Path) -> None:
     store = LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json")
 
     with pytest.raises(SecretStoreError):
-        store.set_secret(provider="deepseek", api_key="")
+        store.set_secret(provider="glm", api_key="")
 
 
 def test_local_secret_store_can_delete_secret(tmp_path: Path) -> None:
     store = LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json")
-    store.set_secret(provider="deepseek", api_key="sk-test-secret-123456")
+    store.set_secret(provider="glm", api_key="sk-test-secret-123456")
 
-    status = store.delete_secret("deepseek")
+    status = store.delete_secret("glm")
 
     assert status.configured is False
     assert status.masked_value is None
-    assert store.get_secret("deepseek") is None
+    assert store.get_secret("glm") is None
 
 
 def test_local_secret_store_uses_env_path_when_no_explicit_path(
@@ -53,7 +53,7 @@ def test_local_secret_store_uses_env_path_when_no_explicit_path(
     monkeypatch.setenv(SECRET_STORE_PATH_ENV, str(env_path))
 
     store = LocalSecretStore()
-    store.set_secret(provider="deepseek", api_key="sk-test-secret-123456")
+    store.set_secret(provider="glm", api_key="sk-test-secret-123456")
 
     assert env_path.exists()
     assert store.path == env_path

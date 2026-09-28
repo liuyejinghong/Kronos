@@ -1,4 +1,4 @@
-"""Tests for Agent LLM provider interfaces and DeepSeek adapter."""
+"""Tests for Agent LLM provider interfaces and GLM (Zhipu) adapter."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 
 from kronos.agent.events import read_events
 from kronos.agent.llm import (
-    DEEPSEEK_PROVIDER_NAME,
-    DeepSeekLLMProvider,
-    DeepSeekProviderConfig,
+    GLM_PROVIDER_NAME,
+    GLMLLMProvider,
+    GLMProviderConfig,
     LLMCallStatus,
     LLMMessage,
     LLMMessageRole,
@@ -72,7 +72,7 @@ def _request() -> LLMRequest:
     return LLMRequest(
         role_id=AgentRoleId("researcher"),
         prompt_version=AgentPromptVersionId("researcher-prompt-v1"),
-        model_provider=DEEPSEEK_PROVIDER_NAME,
+        model_provider=GLM_PROVIDER_NAME,
         model_name="custom-agent-model",
         messages=[
             LLMMessage(role=LLMMessageRole.SYSTEM, content="你是量化研究员。"),
@@ -90,8 +90,8 @@ def _request() -> LLMRequest:
     )
 
 
-def test_deepseek_provider_returns_waiting_configuration_without_key(tmp_path: Path) -> None:
-    provider = DeepSeekLLMProvider(
+def test_glm_provider_returns_waiting_configuration_without_key(tmp_path: Path) -> None:
+    provider = GLMLLMProvider(
         secret_store=LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json"),
     )
 
@@ -107,14 +107,16 @@ def test_deepseek_provider_returns_waiting_configuration_without_key(tmp_path: P
     assert status.masked_api_key is None
 
 
-def test_deepseek_provider_uses_configured_model_and_masks_status(tmp_path: Path) -> None:
+def test_glm_provider_uses_configured_model_and_masks_status(tmp_path: Path) -> None:
     raw_key = "sk-test-secret-123456"
     secret_store = LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json")
-    secret_store.set_secret(provider=DEEPSEEK_PROVIDER_NAME, api_key=raw_key)
+    secret_store.set_secret(provider=GLM_PROVIDER_NAME, api_key=raw_key)
     fake_http = FakeHTTPClient()
-    provider = DeepSeekLLMProvider(
+    provider = GLMLLMProvider(
         secret_store=secret_store,
-        config=DeepSeekProviderConfig(base_url="https://api.deepseek.com", timeout_seconds=7.0),
+        config=GLMProviderConfig(
+            base_url="https://open.bigmodel.cn/api/paas/v4", timeout_seconds=7.0
+        ),
         http_client=fake_http,
     )
 
@@ -124,16 +126,20 @@ def test_deepseek_provider_uses_configured_model_and_masks_status(tmp_path: Path
     assert response.status == LLMCallStatus.COMPLETED
     assert response.content == "模型结论"
     assert response.raw_usage == {"prompt_tokens": 10, "completion_tokens": 3}
-    assert fake_http.requests[0]["url"] == "https://api.deepseek.com/chat/completions"
+    assert (
+        fake_http.requests[0]["url"]
+        == "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    )
     assert fake_http.requests[0]["json"]["model"] == "custom-agent-model"
     assert fake_http.requests[0]["timeout"] == 7.0
     assert raw_key not in status.model_dump_json()
     assert status.masked_api_key is not None
     assert status.masked_api_key.endswith("3456")
+    assert status.provider == GLM_PROVIDER_NAME
 
 
 def test_llm_invocation_event_records_trace_fields_without_secret(tmp_path: Path) -> None:
-    provider = DeepSeekLLMProvider(
+    provider = GLMLLMProvider(
         secret_store=LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json"),
     )
     response = provider.complete(_request())
@@ -147,14 +153,14 @@ def test_llm_invocation_event_records_trace_fields_without_secret(tmp_path: Path
     assert event.event_type == AgentEventType.ERROR_REPORTED
     assert event.role_id == "researcher"
     assert event.prompt_version == "researcher-prompt-v1"
-    assert event.model_provider == DEEPSEEK_PROVIDER_NAME
+    assert event.model_provider == GLM_PROVIDER_NAME
     assert event.model_name == "custom-agent-model"
     assert event.metadata["llm_status"] == "waiting_configuration"
     assert "api_key" not in event.model_dump_json()
 
 
 def test_write_llm_invocation_event_appends_to_timeline(tmp_path: Path) -> None:
-    provider = DeepSeekLLMProvider(
+    provider = GLMLLMProvider(
         secret_store=LocalSecretStore(tmp_path / ".kronos-secrets" / "agent_secrets.json"),
     )
     response = provider.complete(_request())

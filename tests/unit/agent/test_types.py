@@ -302,8 +302,8 @@ def test_role_prompt_and_model_refs_are_traceable() -> None:
         role_kind=AgentRoleKind.RESEARCHER,
         name_zh="研究员",
         prompt_version=prompt.prompt_version,
-        model_provider="deepseek",
-        model_name="deepseek-chat",
+        model_provider="glm",
+        model_name="glm-4.6",
     )
     invocation = ModelInvocationRef(
         invocation_id=AgentModelInvocationId("model-call-1"),
@@ -316,8 +316,8 @@ def test_role_prompt_and_model_refs_are_traceable() -> None:
     )
 
     assert role.prompt_version == "researcher-v1"
-    assert invocation.model_provider == "deepseek"
-    assert invocation.model_name == "deepseek-chat"
+    assert invocation.model_provider == "glm"
+    assert invocation.model_name == "glm-4.6"
 
 
 def test_agent_output_contains_required_decision_contract() -> None:

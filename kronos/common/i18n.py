@@ -706,16 +706,16 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Maybe next time",
     },
     "conv.model_config_title": {
-        "zh": "要使用 AI 驱动的策略分析，需要 DeepSeek API Key。",
-        "en": "AI-driven strategy analysis requires a DeepSeek API Key.",
+        "zh": "要使用 AI 驱动的策略分析，需要 GLM（智谱）API Key。",
+        "en": "AI-driven strategy analysis requires a Zhipu GLM API Key.",
     },
     "conv.model_config_how": {
-        "zh": "获取方式: 访问 platform.deepseek.com → API Keys → 创建 → 复制 Key",
-        "en": "Get one: visit platform.deepseek.com → API Keys → Create → Copy key",
+        "zh": "获取方式: 访问 open.bigmodel.cn → API Keys → 创建 → 复制 Key",
+        "en": "Get one: visit open.bigmodel.cn → API Keys → Create → Copy key",
     },
     "conv.model_config_or": {
-        "zh": "然后通过 Web 工作台的设置页面保存，或者运行: kronos agent configure --provider deepseek --api-key YOUR_KEY",
-        "en": "Then save via Web workbench Settings, or run: kronos agent configure --provider deepseek --api-key YOUR_KEY",
+        "zh": "然后通过 Web 工作台的设置页面保存，或者运行: kronos agent configure --provider glm --api-key YOUR_KEY",
+        "en": "Then save via Web workbench Settings, or run: kronos agent configure --provider glm --api-key YOUR_KEY",
     },
     "conv.continue_anyway": {
         "zh": "先不管，继续用确定性分析",

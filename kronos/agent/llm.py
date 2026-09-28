@@ -1,4 +1,10 @@
-"""LLM provider interface and DeepSeek OpenAI-compatible adapter."""
+"""LLM provider interface and GLM (Zhipu) OpenAI-compatible adapter.
+
+Provider ruling D-20260928-002: the LLM provider is GLM (Zhipu,
+OpenAI-compatible endpoint at ``https://open.bigmodel.cn/api/paas/v4``);
+the previous DeepSeek wiring is retired rather than kept as a second
+provider.
+"""
 
 from __future__ import annotations
 
@@ -28,8 +34,11 @@ from kronos.agent.types import (
     ModelInvocationRef,
 )
 
-DEEPSEEK_PROVIDER_NAME = "deepseek"
-DEEPSEEK_DEFAULT_BASE_URL = "https://api.deepseek.com"
+GLM_PROVIDER_NAME = "glm"
+#: Zhipu (BigModel) OpenAI-compatible endpoint. The chat completions path is
+#: appended by :func:`_chat_completions_url` (docs.bigmodel.cn, OpenAI
+#: compatibility guide: https://docs.bigmodel.cn/cn/guide/develop/openai/introduction.md).
+GLM_DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
 
 
 class LLMMessageRole(StrEnum):
@@ -102,12 +111,12 @@ class LLMProviderMaskedStatus(BaseModel):
     message_zh: str = Field(min_length=1)
 
 
-class DeepSeekProviderConfig(BaseModel):
-    """DeepSeek OpenAI-compatible provider configuration."""
+class GLMProviderConfig(BaseModel):
+    """GLM (Zhipu) OpenAI-compatible provider configuration."""
 
     model_config = ConfigDict(extra="forbid")
 
-    base_url: str = DEEPSEEK_DEFAULT_BASE_URL
+    base_url: str = GLM_DEFAULT_BASE_URL
     timeout_seconds: float = Field(default=30.0, gt=0)
     max_retries: int = Field(default=0, ge=0)
 
@@ -150,37 +159,37 @@ class _SecretStore(Protocol):
         """Return provider secret value for backend-only calls."""
 
 
-class DeepSeekLLMProvider:
-    """DeepSeek adapter using the OpenAI-compatible chat completions contract."""
+class GLMLLMProvider:
+    """GLM adapter using the OpenAI-compatible chat completions contract."""
 
     def __init__(
         self,
         *,
         secret_store: _SecretStore,
-        config: DeepSeekProviderConfig | None = None,
+        config: GLMProviderConfig | None = None,
         http_client: _HttpClient | None = None,
     ) -> None:
         self.secret_store = secret_store
-        self.config = config or DeepSeekProviderConfig()
+        self.config = config or GLMProviderConfig()
         self.http_client = http_client or httpx.Client()
 
     def check_status(self, *, model_name: str | None = None) -> LLMProviderMaskedStatus:
-        """Return masked DeepSeek configuration status without making a paid call."""
-        secret_status = self.secret_store.get_status(DEEPSEEK_PROVIDER_NAME)
+        """Return masked GLM configuration status without making a paid call."""
+        secret_status = self.secret_store.get_status(GLM_PROVIDER_NAME)
         configured = secret_status.configured
         return LLMProviderMaskedStatus(
-            provider=DEEPSEEK_PROVIDER_NAME,
+            provider=GLM_PROVIDER_NAME,
             status=LLMCallStatus.COMPLETED if configured else LLMCallStatus.WAITING_CONFIGURATION,
             configured=configured,
             masked_api_key=secret_status.masked_value,
             base_url=self.config.base_url,
             model_name=model_name,
-            message_zh="DeepSeek API Key 已配置。" if configured else "DeepSeek API Key 尚未配置。",
+            message_zh="GLM (Zhipu) API Key 已配置。" if configured else "GLM (Zhipu) API Key 尚未配置。",
         )
 
     def complete(self, request: LLMRequest) -> LLMResponse:
-        """Run one non-streaming DeepSeek chat completion request."""
-        api_key = self.secret_store.get_secret(DEEPSEEK_PROVIDER_NAME)
+        """Run one non-streaming GLM chat completion request."""
+        api_key = self.secret_store.get_secret(GLM_PROVIDER_NAME)
         started_at = perf_counter()
         if api_key is None:
             return self._response(
@@ -189,7 +198,7 @@ class DeepSeekLLMProvider:
                 started_at=started_at,
                 error_ref=AgentErrorRef(
                     error_code="llm_provider_not_configured",
-                    message_zh="DeepSeek API Key 尚未配置。",
+                    message_zh="GLM (Zhipu) API Key 尚未配置。",
                     category=AgentErrorCategory.SECRET_CONFIGURATION,
                     impact_zh="需要模型参与的 Agent 角色会停在待配置状态.",
                     recoverable=True,
@@ -233,7 +242,7 @@ class DeepSeekLLMProvider:
             started_at=started_at,
             error_ref=AgentErrorRef(
                 error_code="llm_provider_call_failed",
-                message_zh="DeepSeek 模型调用失败。",
+                message_zh="GLM 模型调用失败。",
                 category=AgentErrorCategory.MODEL_PROVIDER,
                 impact_zh="本轮模型分析无法完成, 不能进入后续 Agent 评分.",
                 recoverable=True,
@@ -368,7 +377,7 @@ def _extract_content(payload: Any) -> str:
     content = message.get("content", "")
     if isinstance(content, str) and content:
         return content
-    # Fallback: reasoning models (e.g. DeepSeek-V4-Pro) put output in reasoning_content
+    # Fallback: reasoning models (e.g. GLM thinking variants) put output in reasoning_content
     reasoning = message.get("reasoning_content", "")
     if isinstance(reasoning, str) and reasoning:
         return reasoning

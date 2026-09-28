@@ -13,13 +13,13 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from kronos.agent.llm import (
-    DEEPSEEK_PROVIDER_NAME,
-    DeepSeekLLMProvider,
+    GLM_PROVIDER_NAME,
+    GLMLLMProvider,
     LLMMessage,
     LLMMessageRole,
     LLMRequest,
 )
-from kronos.agent.roles import DEEPSEEK_V4_PRO
+from kronos.agent.roles import GLM_STRONG_MODEL
 from kronos.agent.secrets import LocalSecretStore
 from kronos.agent.types import AgentPromptVersionId, AgentRoleId
 from kronos.strategy.config import StrategyConfig, default_r_breaker_config, write_strategy_config
@@ -396,16 +396,16 @@ def _build_strategy_config(analysis: StrategyDraftAnalysis, draft_id: str) -> St
 
 def _maybe_analyze_with_llm(prompt: str) -> StrategyDraftAnalysis | None:
     secret_store = LocalSecretStore()
-    status = secret_store.get_status(DEEPSEEK_PROVIDER_NAME)
+    status = secret_store.get_status(GLM_PROVIDER_NAME)
     if not status.configured:
         return None
 
-    provider = DeepSeekLLMProvider(secret_store=secret_store)
+    provider = GLMLLMProvider(secret_store=secret_store)
     request = LLMRequest(
         role_id=AgentRoleId("strategy_author"),
         prompt_version=AgentPromptVersionId(_PROMPT_VERSION),
-        model_provider=DEEPSEEK_PROVIDER_NAME,
-        model_name=DEEPSEEK_V4_PRO,
+        model_provider=GLM_PROVIDER_NAME,
+        model_name=GLM_STRONG_MODEL,
         messages=[
             LLMMessage(
                 role=LLMMessageRole.SYSTEM,
@@ -461,8 +461,8 @@ def _maybe_analyze_with_llm(prompt: str) -> StrategyDraftAnalysis | None:
         next_action=analysis.next_action or "先补齐信息，再继续起草",
         source=StrategyDraftSource.AI,
         prompt_version=_PROMPT_VERSION,
-        model_provider=DEEPSEEK_PROVIDER_NAME,
-        model_name=DEEPSEEK_V4_PRO,
+        model_provider=GLM_PROVIDER_NAME,
+        model_name=GLM_STRONG_MODEL,
         llm_attempted=True,
         llm_status=str(response.status),
     )

@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 from kronos.agent.roles import (
-    DEEPSEEK_V4_FLASH,
-    DEEPSEEK_V4_PRO,
     DEFAULT_MODEL_PROVIDER,
+    GLM_CHEAP_MODEL,
+    GLM_STRONG_MODEL,
     AgentRoleRegistry,
     AgentRoleRegistryError,
     default_agent_roles,
@@ -35,7 +35,7 @@ def test_default_roles_cover_initial_agent_committee() -> None:
         AgentRoleKind.TOOL_OPERATOR,
     } <= role_kinds
     assert {role.model_provider for role in roles} == {DEFAULT_MODEL_PROVIDER}
-    assert {role.model_name for role in roles} == {DEEPSEEK_V4_PRO, DEEPSEEK_V4_FLASH}
+    assert {role.model_name for role in roles} == {GLM_STRONG_MODEL, GLM_CHEAP_MODEL}
 
 
 def test_role_registry_can_disable_and_enable_role() -> None:

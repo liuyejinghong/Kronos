@@ -4,14 +4,25 @@ from __future__ import annotations
 
 from kronos.agent.types import AgentPromptVersionId, AgentRole, AgentRoleId, AgentRoleKind
 
-DEFAULT_MODEL_PROVIDER = "deepseek"
-DEFAULT_MODEL_NAME = "deepseek-v4-pro"
-DEEPSEEK_V4_PRO = "deepseek-v4-pro"
-DEEPSEEK_V4_FLASH = "deepseek-v4-flash"
+# Provider ruling D-20260928-002: GLM (Zhipu) replaces DeepSeek; model tiers
+# confirmed at wiring time against the Zhipu model overview
+# (https://docs.bigmodel.cn/cn/guide/start/model-overview.md) and the
+# OpenAI-compatible endpoint guide
+# (https://docs.bigmodel.cn/cn/guide/develop/openai/introduction.md).
+# Strong tier (research judgment roles): glm-4.6 — flagship-era model for
+# advanced reasoning, coding and tool use (200K context).
+# Cheap tier (light parsing / fast reviewer roles): glm-4.5-air — lightweight
+# variant purpose-built for agent-centric work (128K context). The free
+# glm-4.7-flash tier exists but stays below the air tier on reasoning quality.
+DEFAULT_MODEL_PROVIDER = "glm"
+GLM_STRONG_MODEL = "glm-4.6"
+GLM_CHEAP_MODEL = "glm-4.5-air"
+# Backwards-compatible aliases for the previous pro/flash tier naming.
+DEFAULT_MODEL_NAME = GLM_STRONG_MODEL
 
-DEEPSEEK_MODELS = [
-    {"id": DEEPSEEK_V4_PRO, "label_zh": "DeepSeek-V4-Pro", "label_en": "DeepSeek-V4-Pro"},
-    {"id": DEEPSEEK_V4_FLASH, "label_zh": "DeepSeek-V4-Flash", "label_en": "DeepSeek-V4-Flash"},
+GLM_MODELS = [
+    {"id": GLM_STRONG_MODEL, "label_zh": "GLM-4.6", "label_en": "GLM-4.6"},
+    {"id": GLM_CHEAP_MODEL, "label_zh": "GLM-4.5-Air", "label_en": "GLM-4.5-Air"},
 ]
 
 
@@ -22,7 +33,8 @@ class AgentRoleRegistryError(KeyError):
 def default_agent_roles() -> list[AgentRole]:
     """Return the default multi-role Agent committee.
 
-    Heavy reasoning roles use DeepSeek-V4-Pro; lighter/faster roles use DeepSeek-V4-Flash.
+    Heavy reasoning roles use the GLM strong tier; lighter/faster roles use the
+    GLM cheap tier (D-20260928-002).
     """
     return [
         AgentRole(
@@ -31,7 +43,7 @@ def default_agent_roles() -> list[AgentRole]:
             name_zh="研究员",
             prompt_version=AgentPromptVersionId("researcher-prompt-v1"),
             model_provider=DEFAULT_MODEL_PROVIDER,
-            model_name=DEEPSEEK_V4_PRO,
+            model_name=GLM_STRONG_MODEL,
         ),
         AgentRole(
             role_id=AgentRoleId("opposition_reviewer"),
@@ -39,7 +51,7 @@ def default_agent_roles() -> list[AgentRole]:
             name_zh="反方审查",
             prompt_version=AgentPromptVersionId("opposition-reviewer-prompt-v1"),
             model_provider=DEFAULT_MODEL_PROVIDER,
-            model_name=DEEPSEEK_V4_PRO,
+            model_name=GLM_STRONG_MODEL,
         ),
         AgentRole(
             role_id=AgentRoleId("risk_reviewer"),
@@ -47,7 +59,7 @@ def default_agent_roles() -> list[AgentRole]:
             name_zh="风控审查",
             prompt_version=AgentPromptVersionId("risk-reviewer-prompt-v1"),
             model_provider=DEFAULT_MODEL_PROVIDER,
-            model_name=DEEPSEEK_V4_FLASH,
+            model_name=GLM_CHEAP_MODEL,
         ),
         AgentRole(
             role_id=AgentRoleId("decision_reviewer"),
@@ -55,7 +67,7 @@ def default_agent_roles() -> list[AgentRole]:
             name_zh="投委会裁决",
             prompt_version=AgentPromptVersionId("decision-reviewer-prompt-v1"),
             model_provider=DEFAULT_MODEL_PROVIDER,
-            model_name=DEEPSEEK_V4_PRO,
+            model_name=GLM_STRONG_MODEL,
         ),
         AgentRole(
             role_id=AgentRoleId("execution_record_analyst"),
@@ -63,7 +75,7 @@ def default_agent_roles() -> list[AgentRole]:
             name_zh="执行记录分析",
             prompt_version=AgentPromptVersionId("execution-record-analyst-prompt-v1"),
             model_provider=DEFAULT_MODEL_PROVIDER,
-            model_name=DEEPSEEK_V4_FLASH,
+            model_name=GLM_CHEAP_MODEL,
         ),
     ]
 

@@ -477,7 +477,7 @@ def test_llm_settings_masks_provider_secret(tmp_path: Path) -> None:
     client = _client(tmp_path)
 
     set_response = client.put(
-        "/api/settings/llm/providers/deepseek/secret",
+        "/api/settings/llm/providers/glm/secret",
         json={"api_key": "sk-real-secret-1234"},
     )
     settings_response = client.get("/api/settings/llm")
@@ -493,12 +493,12 @@ def test_llm_settings_masks_provider_secret(tmp_path: Path) -> None:
 def test_llm_provider_status_is_masked_and_local_only(tmp_path: Path) -> None:
     client = _client(tmp_path)
 
-    missing_response = client.get("/api/settings/llm/providers/deepseek/status")
+    missing_response = client.get("/api/settings/llm/providers/glm/status")
     client.put(
-        "/api/settings/llm/providers/deepseek/secret",
+        "/api/settings/llm/providers/glm/secret",
         json={"api_key": "sk-real-secret-5678"},
     )
-    configured_response = client.get("/api/settings/llm/providers/deepseek/status")
+    configured_response = client.get("/api/settings/llm/providers/glm/status")
 
     assert missing_response.status_code == 200
     assert missing_response.json()["configured"] is False
@@ -508,7 +508,7 @@ def test_llm_provider_status_is_masked_and_local_only(tmp_path: Path) -> None:
     assert configured_response.json()["status"] == "completed"
     assert configured_response.json()["masked_api_key"].endswith("5678")
     assert "sk-real-secret-5678" not in configured_response.text
-    assert configured_response.json()["model_name"] == "deepseek-v4-pro"
+    assert configured_response.json()["model_name"] == "glm-4.6"
 
 
 def test_llm_secret_rejects_unsupported_provider(tmp_path: Path) -> None:

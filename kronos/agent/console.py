@@ -38,7 +38,7 @@ class ConversationContext:
     last_run_id: str | None = None
     turn_count: int = 0
     is_first_time: bool = True
-    deepseek_configured: bool = False
+    glm_configured: bool = False
 
     _past_runs: list[Path] = field(default_factory=list)
 
@@ -102,13 +102,13 @@ class AgentConsole:
 
         try:
             from kronos.agent.secrets import LocalSecretStore
-            self.ctx.deepseek_configured = LocalSecretStore().get_status("deepseek").configured
+            self.ctx.glm_configured = LocalSecretStore().get_status("glm").configured
         except Exception as exc:
             log.warning(
                 "agent_console.secret_scan_failed",
                 error_type=type(exc).__name__,
             )
-        self.ctx.has_model = self.ctx.deepseek_configured
+        self.ctx.has_model = self.ctx.glm_configured
 
         exp_root = Path("reports/research/experiments")
         if exp_root.exists():
@@ -178,7 +178,7 @@ class AgentConsole:
                 if self.ctx.synthetic_data
                 else f"  [{', '.join(self.ctx.data_symbols[:3])}{span}]"
             )
-            if self.ctx.deepseek_configured:
+            if self.ctx.glm_configured:
                 self._say(self._t("conv.model_ready_short"))
             else:
                 self._say(self._t("conv.model_not_ready_short"))
@@ -205,7 +205,7 @@ class AgentConsole:
         self._say("")
         latest = self.ctx._past_runs[-1].name if self.ctx._past_runs else None
         data_str = ", ".join(self.ctx.data_symbols[:3])
-        model_str = self._t("conv.model_ready_short") if self.ctx.deepseek_configured else self._t("conv.model_not_ready_short")
+        model_str = self._t("conv.model_ready_short") if self.ctx.glm_configured else self._t("conv.model_not_ready_short")
         self._show_assistant_focus()
         self._say(self._t("conv.welcome_back", syms=data_str, model=model_str))
         if latest:
@@ -508,7 +508,7 @@ class AgentConsole:
         self._say("")
         self._say(self._t("conv.explore_line1", n=len(candidates)))
         self._say(self._t("conv.explore_line2", syms=", ".join(self.ctx.data_symbols) if self.ctx.data_symbols else "无"))
-        self._say(self._t("conv.explore_line3", model=self._t("conv.yes") if self.ctx.deepseek_configured else self._t("conv.no")))
+        self._say(self._t("conv.explore_line3", model=self._t("conv.yes") if self.ctx.glm_configured else self._t("conv.no")))
         self._say("")
         self._say(self._t("conv.explore_prompt"))
         self._say("")
