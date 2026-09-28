@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -24,6 +25,12 @@ class WebAppContext:
     #: State directory for the v0.5.0 conversation runtime (conversations /
     #: tasks / budget SQLite stores); created lazily by the service.
     state_path: Path = field(default_factory=lambda: Path("state"))
+    #: Local market data root (mirrors ``[data] base_path`` in configs/*.toml).
+    data_path: Path = field(default_factory=lambda: Path("data"))
+    #: Directory where frozen data-snapshot manifests are written.
+    snapshots_path: Path = field(default_factory=lambda: Path("state") / "snapshots")
+    #: Pinned freqtrade virtualenv used by the research verdict bridge.
+    freqtrade_venv_path: Path = field(default_factory=lambda: Path(".tools") / "freqtrade-venv")
 
 
 def create_app(
@@ -35,6 +42,9 @@ def create_app(
     material_store_path: str | Path | None = None,
     paper_path: str | Path | None = None,
     state_path: str | Path | None = None,
+    data_path: str | Path | None = None,
+    snapshots_path: str | Path | None = None,
+    freqtrade_venv_path: str | Path | None = None,
 ) -> FastAPI:
     """Create the local FastAPI app for the Kronos Agent workbench."""
     root = Path(project_root or ".").resolve()
@@ -48,6 +58,13 @@ def create_app(
         ),
         paper_path=Path(paper_path or root / "reports" / "paper"),
         state_path=Path(state_path or root / "state"),
+        data_path=Path(data_path or root / "data"),
+        snapshots_path=Path(snapshots_path or root / "state" / "snapshots"),
+        freqtrade_venv_path=Path(
+            freqtrade_venv_path
+            or os.environ.get("KRONOS_FREQTRADE_VENV")
+            or root / ".tools" / "freqtrade-venv"
+        ),
     )
 
     app = FastAPI(

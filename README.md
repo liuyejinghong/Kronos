@@ -43,6 +43,7 @@ cd Kronos-trial
 
 进阶使用：`kronos agent start`（交互式对话 Agent）。
 Docker 用户：`docker compose up`。
+一键启动 Web 工作台（后端 + 前端，幂等，支持 `stop` / `status`）：`scripts/launch_kronos.sh`。
 
 更新和卸载：
 

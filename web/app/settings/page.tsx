@@ -1,12 +1,16 @@
-import { Coins, Database, KeyRound, Settings } from "lucide-react";
-import type { ReactNode } from "react";
+import { Settings } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
+import { SettingsView } from "@/components/settings/settings-view";
 
 /**
- * 设置页外壳（占位骨架）。
- * 只提供「模型 / 预算 / 数据路径」三个分区的标签与说明，不含任何逻辑或请求；
- * 模型 Key 配置走后端 SecretStore，由 P18 接入。
+ * 设置页：模型 / 预算 / 数据路径三个分区（P18）。
+ *
+ * 页面本身是服务端外壳；交互逻辑在 `components/settings/SettingsView`：
+ * - 模型：GLM Key 经后端 SecretStore 保存，界面只显示掩码；连通性测试消耗一次调用。
+ * - 预算：展示 BudgetLimits 默认上限（用量接口待接线，不构造假数据）。
+ * - 数据路径：从 `GET /api/settings/system` 读取的只读本地路径。
+ * Key 未配置时顶部出现首启横幅；对话页的确定性路径不依赖 Key，不会因此受阻。
  */
 export default function SettingsPage() {
   return (
@@ -23,61 +27,8 @@ export default function SettingsPage() {
           </p>
         </header>
 
-        <div className="grid min-w-0 gap-4">
-          {SETTINGS_SECTIONS.map((section) => (
-            <section
-              className="rounded-lg border border-slate-200 bg-white p-4"
-              key={section.key}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
-                  {section.icon}
-                  {section.title}
-                </h2>
-                <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-500">
-                  {section.badge}
-                </span>
-              </div>
-              <p className="mt-2 max-w-3xl break-words text-sm leading-6 text-slate-500">
-                {section.description}
-              </p>
-            </section>
-          ))}
-        </div>
+        <SettingsView />
       </div>
     </AppShell>
   );
 }
-
-type SettingsSection = {
-  key: string;
-  title: string;
-  badge: string;
-  description: string;
-  icon: ReactNode;
-};
-
-const SETTINGS_SECTIONS: SettingsSection[] = [
-  {
-    key: "model",
-    title: "模型",
-    badge: "待接入",
-    description:
-      "模型 API Key 通过本地后端 SecretStore 安全存储，密钥不会进入前端页面或浏览器存储。配置表单将在后续版本提供。",
-    icon: <KeyRound className="h-4 w-4 text-teal-700" />,
-  },
-  {
-    key: "budget",
-    title: "预算",
-    badge: "待接入",
-    description: "LLM 调用预算上限与用量统计将在后续版本提供。",
-    icon: <Coins className="h-4 w-4 text-teal-700" />,
-  },
-  {
-    key: "data-paths",
-    title: "数据路径",
-    badge: "待接入",
-    description: "本地行情数据目录与回测数据范围配置将在后续版本提供。",
-    icon: <Database className="h-4 w-4 text-teal-700" />,
-  },
-];

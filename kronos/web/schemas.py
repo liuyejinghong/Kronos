@@ -271,6 +271,37 @@ class AvailableModelResponse(BaseModel):
     label_en: str
 
 
+class ProviderProbeResponse(BaseModel):
+    """Masked result of one provider connectivity probe.
+
+    ``reachable=True`` means the single probe chat call completed; the
+    response never echoes the API key (masked value only) and never includes
+    model output content, so it is safe for the settings UI.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str
+    configured: bool
+    masked_api_key: str | None = None
+    base_url: str
+    model_name: str
+    reachable: bool = False
+    latency_ms: int | None = None
+    message_zh: str
+
+
+class SystemPathsResponse(BaseModel):
+    """Read-only local filesystem paths shown on the settings page."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    state_dir: str
+    data_dir: str
+    snapshots_dir: str
+    freqtrade_venv: str
+
+
 class LLMSettingsResponse(BaseModel):
     """LLM settings overview for the local settings page."""
 

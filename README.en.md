@@ -43,6 +43,7 @@ cd Kronos-trial
 One command: generate data → register R-breaker → run backtest → see results. `kronos report latest` now starts with a result card: data used, strategy evaluated, whether the conclusion is reliable, and the next step. `kronos strategy draft --prompt "..."` can draft R-breaker ideas into TOML, then guide you through three gates: check config, dry run, and enter the candidate pool. Chinese: `kronos quickstart --lang zh`.
 
 Advanced: `kronos agent start` (interactive conversational Agent).
+One-shot Web workbench launcher (backend + frontend, idempotent, supports `stop` / `status`): `scripts/launch_kronos.sh`.
 
 Update and uninstall:
 
