@@ -1,0 +1,34 @@
+# Kronos testnet autonomy policy (machine-executable).
+#
+# Loaded by kronos.research.verdict.policy_schema.TestnetAutonomyPolicy.
+# Codifies the autonomy boundary recorded in DECISIONS.md:
+#
+#   - D-20260927-015: the resident agent has wide research autonomy, including
+#     testnet order placement; only live execution requires an explicit human
+#     gate.
+#   - D-20260927-016: research residency is a bounded, budgeted scheduler
+#     activity; every trading action stays auditable.
+#   - D-20260928-002: the previously granted testnet autonomy is codified here
+#     as a machine-executable policy. Research and testnet actions within this
+#     policy need no per-step approval; live execution retains a non-inferable
+#     human gate (explicit per session). The policy is written in v0.5.0 but
+#     takes effect in phases 2-3; v0.5.0 itself has no trading authority.
+
+environment = "testnet_only"
+
+# Currently granted capabilities. Adding a capability is a policy change and
+# must go through the DECISIONS.md revision process, never silently.
+capabilities = ["paper_single_order"]
+
+# Hard caps for autonomous testnet activity.
+max_notional_usdt = 100.0
+max_orders_per_day = 10
+
+allowed_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+# Audit artifacts that MUST exist for every autonomous order.
+audit = ["client_order_id_ledger", "error_ledger", "report_artifact"]
+
+[live_trading]
+enabled = false
+human_gate = "explicit_per_session"
