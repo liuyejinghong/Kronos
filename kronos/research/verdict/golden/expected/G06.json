@@ -1,0 +1,86 @@
+{
+ "case_id": "G06",
+ "final_equity": 9998.624653,
+ "closed_trades": [
+  {
+   "trade_id": "G06-T1",
+   "symbol": "BTCUSDT",
+   "direction": "long",
+   "entry_ts_ms": 1780366500000,
+   "exit_ts_ms": 1780444800000,
+   "entry_price": 60130.05,
+   "exit_price": 60169.9,
+   "qty": 0.166306,
+   "gross_pnl": 6.627294,
+   "total_fees": 8.002641,
+   "net_pnl": -1.375347,
+   "holding_bars": 87,
+   "exit_reason": "day_end_flat"
+  }
+ ],
+ "ledger_events": [
+  {
+   "ts_ms": 1780366500000,
+   "event": "order",
+   "symbol": "BTCUSDT",
+   "side": "buy",
+   "note": "entry open_long q=1.000000"
+  },
+  {
+   "ts_ms": 1780366500000,
+   "event": "fill",
+   "symbol": "BTCUSDT",
+   "side": "buy",
+   "qty": 0.166306,
+   "price": 60130.05
+  },
+  {
+   "ts_ms": 1780366500000,
+   "event": "fee",
+   "symbol": "BTCUSDT",
+   "fee": 3.999995,
+   "fee_asset": "USDT"
+  },
+  {
+   "ts_ms": 1780366500000,
+   "event": "position_open",
+   "symbol": "BTCUSDT",
+   "side": "buy",
+   "qty": 0.166306,
+   "price": 60130.05,
+   "equity": 9996.000005,
+   "note": "open_long"
+  },
+  {
+   "ts_ms": 1780444800000,
+   "event": "order",
+   "symbol": "BTCUSDT",
+   "side": "sell",
+   "note": "exit day_end_flat (force close at UTC day end)"
+  },
+  {
+   "ts_ms": 1780444800000,
+   "event": "fill",
+   "symbol": "BTCUSDT",
+   "side": "sell",
+   "qty": 0.166306,
+   "price": 60169.9
+  },
+  {
+   "ts_ms": 1780444800000,
+   "event": "fee",
+   "symbol": "BTCUSDT",
+   "fee": 4.002646,
+   "fee_asset": "USDT"
+  },
+  {
+   "ts_ms": 1780444800000,
+   "event": "position_close",
+   "symbol": "BTCUSDT",
+   "side": "sell",
+   "realized_pnl": -1.375347,
+   "equity": 9998.624653,
+   "note": "day_end_flat"
+  }
+ ]
+}
