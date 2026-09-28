@@ -240,7 +240,7 @@
 
 | # | 事项 | 索引 |
 |---|------|------|
-| 99 | `wip` v0.5.0：规划基线（外部评审采纳）+ P0/P1 全部裁决 + OpenSpec 开发包（23 个子代理包，M0–M4 编排）就绪；当前卡点仅剩 M0 出口的 owner 批准 | 规划：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）；OpenSpec：`openspec/changes/p5-strategy-verdict-loop/`（本地）；D-20260928-001/002 |
+| 99 | `wip` v0.5.0：**M0 已过门**（协议+金标准冻结、Freqtrade 内核、lot 取整正典，D-20260928-003）；M1 并行开发中（P06-P18 剩余包） | 规划：`docs/RELEASE_0.5.0_STRATEGY_VERDICT_LOOP.md`（公开）；OpenSpec：`openspec/changes/p5-strategy-verdict-loop/`（本地）；D-20260928-001/002/003 |
 | 100 | `done` P1 五问已裁决（2026-09-28）：只判研究价值 / 完整 UTC 日 / 15m+1h / 模型换 GLM 智谱（外发边界与预算初值按建议）/ 本机 Mac 为准 / testnet 政策化现在做（阶段 2-3 生效） | D-20260928-002 |
 
 ---
