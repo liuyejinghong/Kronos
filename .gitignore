@@ -124,3 +124,6 @@ docs/RISK_ENGINE_ACCEPTANCE.md
 docs/SIGNAL_DIAGNOSTICS_ACCEPTANCE.md
 docs/TRADER_*.md
 docs/WALKFORWARD_ACCEPTANCE.md
+
+# Pinned external-tool venvs (P08 freqtrade kernel)
+.tools/
